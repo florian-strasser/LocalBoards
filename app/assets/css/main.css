@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+    --color-*: initial;
+    --color-primary: #004632;
+    --color-secondary: #b33e04;
+    --color-white: #ffffff;
+    --color-gray: #3d5e59;
+    --color-slate: #e8f2e7;
+    --color-black: #000000;
+}
+
+html,
+body {
+    background: var(--color-slate);
+    color: var(--color-gray);
+}
+
+.container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+    scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.fade-enter-active,
+.fade-leave-active {
+    transition:
+        opacity 1s ease,
+        transform 1s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    transform: translateY(2rem);
+}
+.app-nav .router-link-exact-active {
+    color: var(--color-secondary);
+}

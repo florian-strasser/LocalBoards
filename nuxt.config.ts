@@ -1,0 +1,35 @@
+import tailwindcss from "@tailwindcss/vite";
+export default defineNuxtConfig({
+  compatibilityDate: "2025-07-15",
+  devtools: { enabled: true },
+  modules: ["@nuxt/fonts", "@nuxtjs/i18n"],
+  app: {
+    head: {
+      title: process.env.APP_NAME || "OpenHive",
+      htmlAttrs: {
+        lang: "en",
+      },
+      link: [{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" }],
+    },
+  },
+  css: ["~/assets/css/main.css"],
+  i18n: {
+    defaultLocale: "en",
+    locales: [
+      {
+        code: "en",
+        name: "English",
+        file: "en.json",
+      },
+      {
+        code: "de",
+        name: "Deutsch",
+        file: "de.json",
+      },
+    ],
+  },
+  vite: {
+    plugins: [tailwindcss()],
+  },
+  ssr: true,
+});
