@@ -155,7 +155,7 @@ const editor = useEditor({
             },
         }),
     ],
-    onUpdate: () => {
+    onBlur: () => {
         model.value = editor.value.getHTML();
     },
     injectCSS: false,

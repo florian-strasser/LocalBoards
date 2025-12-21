@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   modules: ["@nuxt/fonts", "@nuxtjs/i18n"],
   app: {
     head: {
-      title: process.env.APP_NAME || "OpenHive",
+      title: process.env.APP_NAME || "LocalBoards",
       htmlAttrs: {
         lang: "en",
       },

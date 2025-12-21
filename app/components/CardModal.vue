@@ -17,6 +17,7 @@
                 <input
                     type="text"
                     v-model="name"
+                    @blur="saveCard"
                     class="text-2xl font-bold text-primary w-full"
                 />
             </div>
@@ -46,6 +47,7 @@ const currentStatus = ref(data.value.card.status);
 
 const toggleStatus = () => {
     currentStatus.value = !currentStatus.value;
+    saveCard();
 };
 
 // Function to save the card data
@@ -60,7 +62,6 @@ const saveCard = async () => {
                 status: currentStatus.value,
             },
         });
-        console.log(response);
         emit("card-updated", response.card);
     } catch (err) {
         console.error("Failed to save card:", err);
@@ -69,7 +70,7 @@ const saveCard = async () => {
 
 // Watch for changes in name, content, or currentStatus
 watch(
-    [name, content, currentStatus],
+    [content],
     () => {
         saveCard();
     },
