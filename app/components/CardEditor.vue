@@ -57,6 +57,17 @@
             </li>
             <li>
                 <button
+                    @click="editor.chain().focus().toggleTaskList().run()"
+                    class="hover:text-secondary"
+                    :class="{
+                        'text-secondary': editor.isActive('taskList'),
+                    }"
+                >
+                    <ListChecks class="size-5" />
+                </button>
+            </li>
+            <li>
+                <button
                     @click="addImage"
                     class="hover:text-secondary"
                     :class="{ 'text-secondary': editor.isActive('image') }"
@@ -86,9 +97,11 @@ import {
     ListOrdered,
     FileImage,
     Code,
+    ListChecks,
 } from "lucide-vue-next";
 import { useEditor, EditorContent } from "@tiptap/vue-3";
 import { Placeholder } from "@tiptap/extensions";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Image from "@tiptap/extension-image";
 import FileHandler from "@tiptap/extension-file-handler";
 import StarterKit from "@tiptap/starter-kit";
@@ -154,6 +167,8 @@ const editor = useEditor({
                 });
             },
         }),
+        TaskList,
+        TaskItem,
     ],
     onBlur: () => {
         model.value = editor.value.getHTML();
@@ -167,56 +182,3 @@ const addImage = () => {
     }
 };
 </script>
-<style>
-.tiptap {
-    padding: 1.5rem;
-    border: 2px color-mix(in oklab, var(--color-gray) 30%, transparent) solid;
-    border-radius: var(--radius-xl);
-    outline: 0 !important;
-}
-.tiptap:focus {
-    border-color: var(--color-secondary);
-}
-.tiptap :first-child {
-    margin-top: 0 !important;
-}
-.tiptap > p,
-.tiptap > h1,
-.tiptap > h2,
-.tiptap > h3,
-.tiptap > h4,
-.tiptap > h5,
-.tiptap > h6 {
-    margin-top: 1rem;
-}
-.tiptap > p.is-editor-empty:first-child::before {
-    color: var(--gray-4);
-    content: attr(data-placeholder);
-    float: left;
-    height: 0;
-    pointer-events: none;
-}
-.tiptap > ul,
-.tiptap > ol {
-    margin-top: 1rem;
-    padding-left: 1.25rem;
-}
-.tiptap > ul {
-    list-style: disc;
-}
-.tiptap > ol {
-    list-style: decimal;
-}
-.tiptap > pre {
-    margin-top: 1rem;
-    padding: 1rem 1.25rem;
-    background: var(--color-slate);
-    border-radius: var(--radius-xl);
-}
-.tiptap img {
-    display: block;
-    height: auto;
-    margin-top: 1rem;
-    max-width: 100%;
-}
-</style>

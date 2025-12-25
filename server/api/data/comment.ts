@@ -1,0 +1,79 @@
+import { defineEventHandler, readBody, getQuery } from "h3";
+import { setupDatabase } from "../../../app/lib/databaseSetup";
+
+export default defineEventHandler(async (event) => {
+  // Check the HTTP method
+  const method = event.req.method;
+
+  try {
+    // Initialize database
+    const db = setupDatabase();
+
+    if (method === "GET") {
+      // Handle GET request to fetch comments for a card
+      const { cardID } = getQuery(event);
+
+      if (!cardID) {
+        event.res.statusCode = 400;
+        return { error: "Card ID is required" };
+      }
+      // return [{ card: cardID }];
+
+      // Fetch comments for the card with user information using a LEFT JOIN
+      // return { card: cardID };
+      const [rows] = await db.execute(
+        "SELECT comments.id AS id, comments.card AS card, comments.user AS user, user.name AS userName, comments.content AS content, comments.date AS date FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.card = ? ORDER BY comments.date DESC",
+        [cardID],
+      );
+      const comments = rows.map((row) => ({
+        id: row.id,
+        card: row.card,
+        user: row.user,
+        userName: row.userName || "Unknown User",
+        content: row.content,
+        date: row.date,
+      }));
+
+      return { comments: comments };
+    } else if (method === "POST") {
+      // Handle POST request to create a new comment
+      const { card, content, user } = await readBody(event);
+
+      if (!card || !content || !user) {
+        event.res.statusCode = 400;
+        return { error: "Card ID, content, and user are required" };
+      }
+
+      // Create new comment
+      const [result] = await db.execute(
+        "INSERT INTO comments (card, user, content) VALUES (?, ?, ?)",
+        [card, user, content],
+      );
+
+      // Fetch the created comment with user information using a LEFT JOIN
+      const [rows] = await db.execute(
+        "SELECT comments.*, user.name AS userName FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.id = ?",
+        [result.insertId],
+      );
+      const comment = rows[0]
+        ? {
+            id: rows[0].id,
+            card: rows[0].card,
+            user: rows[0].user,
+            userName: rows[0].userName || "Unknown User",
+            content: rows[0].content,
+            date: rows[0].date,
+          }
+        : null;
+
+      return { comment };
+    } else {
+      event.res.statusCode = 405;
+      return { error: "Method not allowed" };
+    }
+  } catch (error) {
+    console.error("Database error:", error);
+    event.res.statusCode = 500;
+    return { error: "Internal server error" };
+  }
+});

@@ -22,6 +22,7 @@ body {
     margin-left: auto;
     margin-right: auto;
 }
+
 .hide-scrollbar {
     -ms-overflow-style: none; /* Internet Explorer 10+ */
     scrollbar-width: none;
@@ -29,6 +30,7 @@ body {
 .hide-scrollbar::-webkit-scrollbar {
     display: none;
 }
+
 .fade-enter-active,
 .fade-leave-active {
     transition:
@@ -43,4 +45,85 @@ body {
 }
 .app-nav .router-link-exact-active {
     color: var(--color-secondary);
+}
+
+.tiptap {
+    padding: 1.5rem;
+    border: 2px color-mix(in oklab, var(--color-gray) 30%, transparent) solid;
+    border-radius: var(--radius-xl);
+    outline: 0 !important;
+}
+.tiptap:focus {
+    border-color: var(--color-secondary);
+}
+.tiptap :first-child,
+.wysiwyg-wrapper :first-child {
+    margin-top: 0 !important;
+}
+.tiptap > p,
+.tiptap > h1,
+.tiptap > h2,
+.tiptap > h3,
+.tiptap > h4,
+.tiptap > h5,
+.tiptap > h6,
+.wysiwyg-wrapper > p,
+.wysiwyg-wrapper > h1,
+.wysiwyg-wrapper > h2,
+.wysiwyg-wrapper > h3,
+.wysiwyg-wrapper > h4,
+.wysiwyg-wrapper > h5,
+.wysiwyg-wrapper > h6 {
+    margin-top: 1rem;
+}
+.tiptap > p.is-editor-empty:first-child::before {
+    color: var(--gray-4);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+}
+.tiptap > ul,
+.tiptap > ol,
+.wysiwyg-wrapper > ul,
+.wysiwyg-wrapper > ol {
+    margin-top: 1rem;
+    padding-left: 1.25rem;
+}
+.tiptap > ul,
+.wysiwyg-wrapper > ul {
+    list-style: disc;
+}
+.tiptap > ol,
+.wysiwyg-wrapper > ol {
+    list-style: decimal;
+}
+.tiptap > ul[data-type="taskList"],
+.wysiwyg-wrapper > ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0rem;
+}
+.tiptap > ul[data-type="taskList"] > li,
+.wysiwyg-wrapper > ul[data-type="taskList"] > li {
+    display: flex;
+}
+.tiptap > ul[data-type="taskList"] > li label,
+.wysiwyg-wrapper > ul[data-type="taskList"] > li label {
+    flex-grow: 0;
+    flex-shrink: 0;
+    margin-right: 0.5em;
+}
+.tiptap > pre,
+.wysiwyg-wrapper > pre {
+    margin-top: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--color-slate);
+    border-radius: var(--radius-xl);
+}
+.tiptap img,
+.wysiwyg-wrapper img {
+    display: block;
+    height: auto;
+    margin-top: 1rem;
+    max-width: 100%;
 }
