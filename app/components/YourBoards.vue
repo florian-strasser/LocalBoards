@@ -25,4 +25,10 @@ const { data, error } = await useFetch("/api/data/boards", {
     method: "POST",
     body: { userId: props.userID },
 });
+if (error.value) {
+    throw createError({
+        status: 500,
+        statusText: "Can't connect to the database",
+    });
+}
 </script>

@@ -70,7 +70,8 @@ const createNewComment = () => {
     newCommentCreation.value = true;
 };
 
-const createComment = async () => {
+const createComment = async (e) => {
+    console.log(e);
     try {
         const data = await $fetch<{ comment?: Comment }>("/api/data/comment", {
             method: "POST",

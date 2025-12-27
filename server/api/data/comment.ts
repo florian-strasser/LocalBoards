@@ -22,13 +22,14 @@ export default defineEventHandler(async (event) => {
       // Fetch comments for the card with user information using a LEFT JOIN
       // return { card: cardID };
       const [rows] = await db.execute(
-        "SELECT comments.id AS id, comments.card AS card, comments.user AS user, user.name AS userName, comments.content AS content, comments.date AS date FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.card = ? ORDER BY comments.date DESC",
+        "SELECT comments.id AS id, comments.card AS card, comments.user AS user, user.name AS userName, user.image AS image, comments.content AS content, comments.date AS date FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.card = ? ORDER BY comments.date DESC",
         [cardID],
       );
       const comments = rows.map((row) => ({
         id: row.id,
         card: row.card,
         user: row.user,
+        userImage: row.image,
         userName: row.userName || "Unknown User",
         content: row.content,
         date: row.date,

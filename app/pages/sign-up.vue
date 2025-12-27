@@ -66,7 +66,12 @@ useHead({
     title: "Signup",
 });
 const schema = z.object({
-    name: z.string("Name required"),
+    name: z
+        .string()
+        .min(1, "Name is required")
+        .refine((val) => val.trim().length > 0, {
+            message: "Name cannot be only blank spaces",
+        }),
     email: z.email("Invalid e-mail address"),
     password: z
         .string("Password required")

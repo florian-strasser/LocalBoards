@@ -3,6 +3,7 @@
         <ul v-if="editor" class="editor-toolbar flex gap-3 flex-wrap">
             <li>
                 <button
+                    type="button"
                     @click="editor.chain().focus().toggleBold().run()"
                     :disabled="!editor.can().chain().focus().toggleBold().run()"
                     class="hover:text-secondary"
@@ -13,6 +14,7 @@
             </li>
             <li>
                 <button
+                    type="button"
                     @click="editor.chain().focus().toggleItalic().run()"
                     :disabled="
                         !editor.can().chain().focus().toggleItalic().run()
@@ -25,6 +27,7 @@
             </li>
             <li>
                 <button
+                    type="button"
                     @click="editor.chain().focus().toggleStrike().run()"
                     :disabled="
                         !editor.can().chain().focus().toggleStrike().run()
@@ -37,6 +40,7 @@
             </li>
             <li>
                 <button
+                    type="button"
                     @click="editor.chain().focus().toggleBulletList().run()"
                     class="hover:text-secondary"
                     :class="{ 'text-secondary': editor.isActive('bulletList') }"
@@ -46,6 +50,7 @@
             </li>
             <li>
                 <button
+                    type="button"
                     @click="editor.chain().focus().toggleOrderedList().run()"
                     class="hover:text-secondary"
                     :class="{
@@ -57,6 +62,7 @@
             </li>
             <li>
                 <button
+                    type="button"
                     @click="editor.chain().focus().toggleTaskList().run()"
                     class="hover:text-secondary"
                     :class="{
@@ -68,6 +74,7 @@
             </li>
             <li>
                 <button
+                    type="button"
                     @click="addImage"
                     class="hover:text-secondary"
                     :class="{ 'text-secondary': editor.isActive('image') }"
@@ -77,6 +84,7 @@
             </li>
             <li>
                 <button
+                    type="button"
                     @click="editor.chain().focus().toggleCodeBlock().run()"
                     class="hover:text-secondary"
                     :class="{ 'text-secondary': editor.isActive('codeBlock') }"

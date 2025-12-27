@@ -6,12 +6,30 @@
         />
         <div v-if="comments.length > 0" class="mt-4 space-y-4">
             <div v-for="comment in comments" :key="comment.id">
-                <div class="bg-slate p-6 rounded-xl">
+                <div class="bg-primary/10 p-6 rounded-xl">
                     <div class="wysiwyg-wrapper" v-html="comment.content" />
                 </div>
-                <p class="text-sm text-gray-500 mt-2">
-                    {{ comment.userName }} | {{ formatDate(comment.date) }}
-                </p>
+                <div class="flex mt-2 items-center gap-x-2">
+                    <div class="w-8 shrink-0 grow-0">
+                        <div
+                            class="relative aspect-square rounded-full overflow-clip"
+                        >
+                            <img
+                                v-if="comment.userImage"
+                                :src="comment.userImage"
+                                class="absolute top-0 left-0 w-full h-full object-cover"
+                            />
+                            <div
+                                class="absolute top-0 left-0 w-full h-full bg-primary text-white flex justify-center items-center"
+                            >
+                                {{ comment.userName.substring(0, 1) }}
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-sm grow shrink">
+                        {{ comment.userName }} | {{ formatDate(comment.date) }}
+                    </p>
+                </div>
             </div>
         </div>
         <div v-else class="mt-4 text-gray-500">No comments yet.</div>
