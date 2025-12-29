@@ -3,7 +3,10 @@
         <AppHeader />
         <div class="w-full pt-12 pb-7 grow-0 shrink-0">
             <div class="container">
-                <div v-if="accessError" class="text-red-500 text-center">
+                <div
+                    v-if="accessError"
+                    class="bg-secondary text-white text-center py-3 px-6 rounded-lg"
+                >
                     {{ accessError }}
                 </div>
                 <div v-else class="flex justify-between">
@@ -11,17 +14,27 @@
                         {{ boardName }}
                     </h1>
 
-                    <div class="flex gap-x-4 items-center">
+                    <div v-if="writeAccess" class="flex gap-x-4 items-center">
                         <button
                             @click="openModal"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
+                            v-tooltip="'Board settings'"
                         >
                             <Cog6ToothIcon class="size-6" />
                         </button>
                         <button
-                            v-if="boardID !== 'new'"
+                            v-if="userID === boardUser"
+                            @click="inviteModal = true"
+                            class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
+                            v-tooltip="'Invite users'"
+                        >
+                            <UserPlusIcon class="size-6" />
+                        </button>
+                        <button
+                            v-if="userID === boardUser"
                             @click="deleteModal = true"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
+                            v-tooltip="'Delete board'"
                         >
                             <TrashIcon class="size-6" />
                         </button>
@@ -32,7 +45,7 @@
         <div class="w-full grow shrink-0 pb-12 overflow-scroll hide-scrollbar">
             <div class="container">
                 <div
-                    v-if="boardID !== 'new'"
+                    v-if="!accessError"
                     ref="areasWrapper"
                     class="mt-4"
                     :class="{
@@ -43,22 +56,25 @@
                     <div
                         v-for="area in areas"
                         :key="area.id"
-                        class="bg-white p-4 rounded-lg"
+                        class="bg-white p-4 space-y-2 rounded-lg"
                         :class="{
                             'max-w-full w-92 shrink-0 grow-0':
                                 boardStyle == 'kanban',
                             'w-full': boardStyle == 'todo',
                         }"
                     >
-                        <div class="flex justify-between items-center mb-2">
+                        <div class="flex justify-between items-center">
                             <input
                                 v-model="area.name"
                                 @blur="updateAreaName(area)"
+                                :disabled="!writeAccess"
                                 class="font-bold bg-transparent text-primary focus:outline-none shrink grow"
                             />
                             <button
+                                v-if="writeAccess"
                                 @click="deleteAreaModal = area.id"
                                 class="text-primary hover:text-secondary shrink-0 grow-0"
+                                v-tooltip="'Delete'"
                             >
                                 <TrashIcon class="size-5" />
                             </button>
@@ -66,7 +82,7 @@
                         <div
                             v-if="cards[area.id]"
                             :data-area-id="area.id"
-                            class="mb-1 space-y-1 card-wrapper"
+                            class="space-y-1 card-wrapper"
                         >
                             <button
                                 v-for="card in cards[area.id]"
@@ -84,13 +100,14 @@
                             </button>
                         </div>
                         <NewCardForm
+                            v-if="writeAccess"
                             :boardID="boardID * 1"
                             :areaID="area.id"
                             @card-created="handleCardCreated"
                         />
                     </div>
                     <div
-                        v-if="boardID !== 'new'"
+                        v-if="writeAccess"
                         :class="{
                             'max-w-full w-92 shrink-0 grow-0':
                                 boardStyle == 'kanban',
@@ -176,7 +193,7 @@
                 </form>
             </div>
         </ModalWindow>
-        <ModalWindow v-model="deleteModal">
+        <ModalWindow v-if="userID === boardUser" v-model="deleteModal">
             <h2 class="text-4xl text-primary mb-3">
                 Do you want to delete this board?
             </h2>
@@ -188,6 +205,9 @@
             >
                 Delete Board
             </button>
+        </ModalWindow>
+        <ModalWindow v-if="userID === boardUser" v-model="inviteModal">
+            <InviteModal :boardID="boardID" />
         </ModalWindow>
         <ModalWindow v-model="deleteAreaModal">
             <h2 class="text-4xl text-primary mb-3">
@@ -205,6 +225,7 @@
         <ModalWindow v-model="cardModal">
             <CardModal
                 :cardID="cardModal"
+                :writeAccess="writeAccess"
                 v-if="cardModal"
                 @card-updated="handleCardUpdated"
             />
@@ -220,6 +241,7 @@ import {
     XMarkIcon,
     PlusIcon,
     TrashIcon,
+    UserPlusIcon,
 } from "@heroicons/vue/24/outline";
 
 const nuxtApp = useNuxtApp();
@@ -239,6 +261,7 @@ const route = useRoute();
 const boardID = ref(route.params.id);
 
 const boardName = ref("Untitled Board");
+const boardUser = ref(false);
 const boardStyle = ref("kanban");
 const boardStatus = ref("private");
 
@@ -251,6 +274,7 @@ const optionsActive = ref(false);
 
 const deleteModal = ref(false);
 const deleteAreaModal = ref(false);
+const inviteModal = ref(false);
 
 const areasWrapper = ref(null);
 const areas = ref([]);
@@ -261,6 +285,8 @@ const cardModal = ref(false);
 const newAreaName = ref("");
 const newAreaCreation = ref(false);
 const newAreaInput = ref(null);
+
+const writeAccess = ref(false);
 
 const createNewArea = async () => {
     newAreaName.value = "";
@@ -345,30 +371,6 @@ const fetchCardsForArea = async (areaId) => {
     }
 };
 
-// Load cards for all areas when the board is loaded
-if (boardID.value !== "new") {
-    try {
-        const { data, error } = await useFetch(
-            `/api/data/areas?boardId=${boardID.value}`,
-            {
-                method: "GET",
-            },
-        );
-
-        if (error.value) {
-            console.error("Error fetching areas:", error.value);
-        } else if (data.value?.areas) {
-            areas.value = data.value.areas;
-            // Fetch cards for each area
-            for (const area of areas.value) {
-                await fetchCardsForArea(area.id);
-            }
-        }
-    } catch (err) {
-        console.error("Error:", err);
-    }
-}
-
 const updateAreaName = async (area) => {
     try {
         await $fetch("/api/data/area", {
@@ -383,7 +385,7 @@ const updateAreaName = async (area) => {
         console.error("Error updating area:", err);
     }
 };
-
+// Delete Area
 const deleteArea = async (areaId) => {
     try {
         await $fetch(`/api/data/area?id=${areaId}&boardId=${boardID.value}`, {
@@ -403,60 +405,12 @@ const deleteArea = async (areaId) => {
     }
 };
 
-// Load areas when the board is loaded
-if (boardID.value !== "new") {
-    try {
-        const { data, error } = await useFetch(
-            `/api/data/areas?boardId=${boardID.value}`,
-            {
-                method: "GET",
-            },
-        );
-
-        if (error.value) {
-            console.error("Error fetching areas:", error.value);
-        } else if (data.value?.areas) {
-            areas.value = data.value.areas;
-        }
-    } catch (err) {
-        console.error("Error:", err);
-    }
-}
-
 const openModal = () => {
     newBoardName.value = boardName.value;
     newBoardStyle.value = boardStyle.value;
     newBoardStatus.value = boardStatus.value;
     optionsActive.value = true;
 };
-
-if (boardID.value === "new") {
-} else {
-    try {
-        const { data, error } = await useFetch(
-            `/api/data/board?id=${boardID.value}&userId=${userID}`,
-            {
-                method: "GET",
-            },
-        );
-
-        if (error.value) {
-            console.error("Error fetching board:", error.value);
-            if (error.value.statusCode === 403) {
-                accessError.value = "You don't have access to this board";
-            }
-        } else if (data.value?.board) {
-            boardName.value = data.value.board.name;
-            boardStyle.value = data.value.board.style || "kanban";
-            boardStatus.value = data.value.board.status || "private";
-            newBoardName.value = boardName.value;
-            newBoardStyle.value = boardStyle.value;
-            newBoardStatus.value = boardStatus.value;
-        }
-    } catch (err) {
-        console.error("Error:", err);
-    }
-}
 
 // Save board name with debounce
 const saveBoard = async () => {
@@ -467,7 +421,7 @@ const saveBoard = async () => {
         const data = await $fetch("/api/data/board", {
             method: "POST",
             body: {
-                id: boardID.value === "new" ? null : boardID.value,
+                id: boardID.value ? boardID.value : null,
                 userId: userID,
                 name: newName,
                 style: newBoardStyle.value,
@@ -477,13 +431,6 @@ const saveBoard = async () => {
         if (!data) {
             console.error("Error updating board");
         } else {
-            // If creating a new board, update the route with the new ID
-            if (boardID.value === "new" && data.board?.id) {
-                // Update the URL virtually without redirecting
-                boardID.value = data.board.id;
-                initSort();
-                history.replaceState(null, "", `/board/${data.board.id}`);
-            }
             boardName.value = newBoardName.value;
             boardStyle.value = newBoardStyle.value;
             boardStatus.value = newBoardStatus.value;
@@ -584,42 +531,99 @@ const initSort = () => {
                 });
             }
         });
-        const sortable = Sortable.create(areasWrapper.value, {
-            group: "areas",
-            onEnd: async (event) => {
-                if (
-                    event.oldIndex !== undefined &&
-                    event.newIndex !== undefined
-                ) {
-                    // Get the updated areas array with new order
-                    const updatedAreas = [...areas.value];
-                    // Remove the moved item
-                    const movedItem = updatedAreas.splice(event.oldIndex, 1)[0];
-                    // Add the moved item at the new position
-                    updatedAreas.splice(event.newIndex, 0, movedItem);
-                    console.log("should update");
-                    try {
-                        // Call the API to update the order
-                        await $fetch("/api/data/board", {
-                            method: "PATCH",
-                            body: {
-                                boardId: boardID.value,
-                                areas: updatedAreas,
-                            },
-                        });
-                        // Update the local areas array
-                        areas.value = updatedAreas;
-                    } catch (error) {
-                        console.error("Error updating area order:", error);
-                        // Optionally revert the local change if the API call fails
-                        areas.value = [...updatedAreas];
+        if (writeAccess.value) {
+            const sortable = Sortable.create(areasWrapper.value, {
+                group: "areas",
+                onEnd: async (event) => {
+                    if (
+                        event.oldIndex !== undefined &&
+                        event.newIndex !== undefined
+                    ) {
+                        // Get the updated areas array with new order
+                        const updatedAreas = [...areas.value];
+                        // Remove the moved item
+                        const movedItem = updatedAreas.splice(
+                            event.oldIndex,
+                            1,
+                        )[0];
+                        // Add the moved item at the new position
+                        updatedAreas.splice(event.newIndex, 0, movedItem);
+                        console.log("should update");
+                        try {
+                            // Call the API to update the order
+                            await $fetch("/api/data/board", {
+                                method: "PATCH",
+                                body: {
+                                    boardId: boardID.value,
+                                    areas: updatedAreas,
+                                },
+                            });
+                            // Update the local areas array
+                            areas.value = updatedAreas;
+                        } catch (error) {
+                            console.error("Error updating area order:", error);
+                            // Optionally revert the local change if the API call fails
+                            areas.value = [...updatedAreas];
+                        }
                     }
-                }
-            },
-        });
+                },
+            });
+        }
     }
 };
+// Fetch board
+try {
+    const { data, error } = await useFetch(
+        `/api/data/board?id=${boardID.value}&userId=${userID}`,
+        {
+            method: "GET",
+        },
+    );
 
+    if (error.value) {
+        console.error("Error fetching board:", error.value);
+        if (error.value.statusCode === 403) {
+            accessError.value = "You don't have access to this board";
+        }
+        if (error.value.statusCode === 404) {
+            accessError.value = "This board does not exist";
+        }
+    } else if (data.value?.board) {
+        boardName.value = data.value.board.name;
+        boardUser.value = data.value.board.user;
+        boardStyle.value = data.value.board.style || "kanban";
+        boardStatus.value = data.value.board.status || "private";
+        newBoardName.value = boardName.value;
+        newBoardStyle.value = boardStyle.value;
+        newBoardStatus.value = boardStatus.value;
+        writeAccess.value = data.value.writeAccess;
+    }
+} catch (err) {
+    console.error("Error:", err);
+}
+// Load cards for all areas when the board is loaded
+if (!accessError.value) {
+    try {
+        const { data, error } = await useFetch(
+            `/api/data/areas?boardId=${boardID.value}`,
+            {
+                method: "GET",
+            },
+        );
+
+        if (error.value) {
+            console.error("Error fetching areas:", error.value);
+        } else if (data.value?.areas) {
+            areas.value = data.value.areas;
+            // Fetch cards for each area
+            for (const area of areas.value) {
+                await fetchCardsForArea(area.id);
+            }
+        }
+    } catch (err) {
+        console.error("Error:", err);
+    }
+}
 onMounted(() => {
     initSort();
 });

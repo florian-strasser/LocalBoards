@@ -8,12 +8,13 @@
             :name="item.name"
             :style="item.style"
         />
-        <NuxtLink
-            to="/board/new"
+        <button
+            type="button"
             class="bg-white text-primary hover:bg-secondary hover:text-white min-h-48 flex flex-col justify-center items-center rounded-lg"
+            @click="handleClick"
         >
             <PlusIcon class="size-12" />
-        </NuxtLink>
+        </button>
     </div>
 </template>
 <script setup lang="ts">
@@ -21,6 +22,9 @@ import { PlusIcon } from "@heroicons/vue/24/solid";
 const props = defineProps({
     userID: String,
 });
+
+const emit = defineEmits(["new-board-button-clicked"]);
+
 const { data, error } = await useFetch("/api/data/boards", {
     method: "POST",
     body: { userId: props.userID },
@@ -31,4 +35,8 @@ if (error.value) {
         statusText: "Can't connect to the database",
     });
 }
+
+const handleClick = () => {
+    emit("new-board-button-clicked");
+};
 </script>

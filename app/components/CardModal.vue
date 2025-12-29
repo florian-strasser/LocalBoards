@@ -3,12 +3,14 @@
         <div class="flex items-center gap-3 mb-4">
             <button
                 type="button"
+                :disabled="!props.writeAccess"
                 class="flex items-center justify-center size-7 rounded-full shrink-0 grow-0 text-white"
                 @click="toggleStatus"
                 :class="{
                     'bg-secondary': currentStatus,
                     'border-2 border-gray/30 hover:border-secondary':
-                        !currentStatus,
+                        !currentStatus && writeAccess,
+                    'border-2 border-gray/30': !currentStatus && !writeAccess,
                 }"
             >
                 <Check class="size-4" />
@@ -23,10 +25,13 @@
             </div>
         </div>
         <div class="mb-4">
-            <CardEditor v-model="content" />
+            <CardEditor v-if="writeAccess" v-model="content" />
+            <div v-else class="wysiwyg-wrapper" v-html="content" />
         </div>
-        <h3 class="text-xl font-bold text-primary">Comments and activity</h3>
-        <CommentSection :cardID="props.cardID" />
+        <CommentSection
+            :cardID="props.cardID"
+            :writeAccess="props.writeAccess"
+        />
     </div>
     <div v-else-if="error">Error loading card: {{ error }}</div>
     <div v-else>Loading...</div>
@@ -35,6 +40,7 @@
 import { Check } from "lucide-vue-next";
 const props = defineProps({
     cardID: Number,
+    writeAccess: Boolean,
 });
 
 const emit = defineEmits(["card-updated"]);

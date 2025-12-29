@@ -127,3 +127,24 @@ body {
     margin-top: 1rem;
     max-width: 100%;
 }
+.has-triangle-bottom::before,
+.has-triangle-top::before {
+    position: absolute;
+    display: block;
+    content: "";
+    left: 50%;
+}
+.has-triangle-bottom::before {
+    bottom: 0;
+    transform: translate(-50%, 100%);
+    border-left: 0.5rem transparent solid;
+    border-right: 0.5rem transparent solid;
+    border-top: 0.5rem var(--color-primary) solid;
+}
+.has-triangle-top::before {
+    top: 0;
+    transform: translate(-50%, -100%);
+    border-left: 0.5rem transparent solid;
+    border-right: 0.5rem transparent solid;
+    border-bottom: 0.5rem var(--color-primary) solid;
+}

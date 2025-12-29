@@ -83,10 +83,6 @@ export default defineEventHandler(async (event) => {
         id,
       ]);
 
-      if (results.affectedRows === 0) {
-        event.res.statusCode = 404;
-        return { error: "Cards not found or already deleted" };
-      }
       // Delete the area
       const [result] = await db.execute("DELETE FROM areas WHERE id = ?", [id]);
 

@@ -1,5 +1,6 @@
 <template>
-    <div>
+    <div v-if="props.writeAccess || comments.length > 0">
+        <h3 class="text-xl font-bold text-primary">Comments and activity</h3>
         <NewCommentForm
             :cardID="props.cardID"
             @Comment-created="handleCommentCreated"
@@ -20,6 +21,7 @@
                                 class="absolute top-0 left-0 w-full h-full object-cover"
                             />
                             <div
+                                v-else
                                 class="absolute top-0 left-0 w-full h-full bg-primary text-white flex justify-center items-center"
                             >
                                 {{ comment.userName.substring(0, 1) }}
@@ -39,6 +41,7 @@
 <script setup lang="ts">
 const props = defineProps({
     cardID: Number,
+    writeAccess: Boolean,
 });
 
 interface Comment {

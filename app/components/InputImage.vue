@@ -6,7 +6,7 @@
         <div class="flex gap-2">
             <div class="w-34">
                 <div
-                    class="aspect-square relative rounded-lg bg-slate overflow-clip"
+                    class="aspect-square relative rounded-lg bg-slate"
                     @click="triggerFileInput"
                     @dragover.prevent="handleDragOver"
                     @dragleave.prevent="handleDragLeave"
@@ -19,7 +19,7 @@
                     <img
                         v-if="data"
                         :src="data"
-                        class="absolute top-0 left-0 w-full h-full object-cover"
+                        class="absolute top-0 left-0 w-full h-full object-cover rounded-lg"
                     />
                     <div
                         v-else
@@ -33,14 +33,16 @@
                             }}
                         </p>
                     </div>
-                    <button
-                        v-if="data"
-                        type="button"
-                        class="absolute top-1 right-1 flex justify-center items-center w-8 h-7 bg-primary hover:bg-secondary text-white rounded-md"
-                        @click.stop="data = undefined"
-                    >
-                        <Trash class="size-4" />
-                    </button>
+                    <div v-if="data" class="absolute top-1 right-1">
+                        <button
+                            type="button"
+                            class="flex justify-center items-center w-8 h-7 bg-primary hover:bg-secondary text-white rounded-md"
+                            @click.stop="data = undefined"
+                            v-tooltip="'Remove'"
+                        >
+                            <Trash class="size-4" />
+                        </button>
+                    </div>
                 </div>
                 <input
                     type="file"

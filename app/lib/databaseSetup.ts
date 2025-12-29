@@ -69,10 +69,10 @@ export function setupDatabase() {
       id INT PRIMARY KEY AUTO_INCREMENT,
       board INT NOT NULL,
       user VARCHAR(255) NOT NULL,
+      permission ENUM('read', 'edit') DEFAULT 'read',
       date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (board) REFERENCES boards(id)
     );
   `);
-
   return db;
 }

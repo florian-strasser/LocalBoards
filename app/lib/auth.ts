@@ -4,7 +4,7 @@ import { admin } from "better-auth/plugins";
 import { setupDatabase } from "~/lib/databaseSetup";
 import { sendEmail } from "~/lib/sendEmail";
 
-const appName = process.env.APP_NAME || "OpenHive";
+const appName = process.env.APP_NAME || "LocalBoards";
 const baseURL = process.env.PUBLIC_URL || "https://boards.florian-strasser.de";
 
 const buildTitle = (title) => {
@@ -19,8 +19,8 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url, token }, request) => {
       await sendEmail({
         to: user.email,
-        subject: buildTitle("Passwort zurücksetzen"),
-        text: `Klicken Sie auf diesen Link um ein neues Passwort zu vergeben: ${baseURL}/passwort-zuruecksetzen/${token}`,
+        subject: buildTitle("Reset your password"),
+        text: `Click on this link to assign a new password: ${baseURL}/reset-password/${token}`,
       });
     },
     onPasswordReset: async ({ user }, request) => {
@@ -28,7 +28,10 @@ export const auth = betterAuth({
       console.log(`Password for user ${user.email} has been reset.`);
     },
   },
-  trustedOrigins: ["https://ra7.florian-strasser.de", "http://localhost:3000"],
+  trustedOrigins: [
+    "https://boards.florian-strasser.de",
+    "http://localhost:3000",
+  ],
   socialProviders: {
     // Add social providers if needed
   },

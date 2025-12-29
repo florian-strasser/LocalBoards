@@ -4,7 +4,7 @@
         <ContentWrapper>
             <SectionHeader>Your Account</SectionHeader>
             <SettingsForm />
-            <h2 class="text-4xl text-primary mt-8 mb-4">Change password</h2>
+            <h2 class="text-5xl text-primary mt-12 mb-5">Change password</h2>
             <PasswordForm />
         </ContentWrapper>
         <AppFooter />

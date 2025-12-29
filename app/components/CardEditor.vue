@@ -8,6 +8,7 @@
                     :disabled="!editor.can().chain().focus().toggleBold().run()"
                     class="hover:text-secondary"
                     :class="{ 'text-secondary': editor.isActive('bold') }"
+                    v-tooltip="'Bold'"
                 >
                     <Bold class="size-5" />
                 </button>
@@ -21,6 +22,7 @@
                     "
                     class="hover:text-secondary"
                     :class="{ 'text-secondary': editor.isActive('italic') }"
+                    v-tooltip="'Italic'"
                 >
                     <Italic class="size-5" />
                 </button>
@@ -34,6 +36,7 @@
                     "
                     class="hover:text-secondary"
                     :class="{ 'text-secondary': editor.isActive('strike') }"
+                    v-tooltip="'Strike'"
                 >
                     <Strikethrough class="size-5" />
                 </button>
@@ -44,6 +47,7 @@
                     @click="editor.chain().focus().toggleBulletList().run()"
                     class="hover:text-secondary"
                     :class="{ 'text-secondary': editor.isActive('bulletList') }"
+                    v-tooltip="'Bullet list'"
                 >
                     <List class="size-5" />
                 </button>
@@ -56,6 +60,7 @@
                     :class="{
                         'text-secondary': editor.isActive('orderedList'),
                     }"
+                    v-tooltip="'Ordered List'"
                 >
                     <ListOrdered class="size-5" />
                 </button>
@@ -68,6 +73,7 @@
                     :class="{
                         'text-secondary': editor.isActive('taskList'),
                     }"
+                    v-tooltip="'Check list'"
                 >
                     <ListChecks class="size-5" />
                 </button>
@@ -78,6 +84,7 @@
                     @click="addImage"
                     class="hover:text-secondary"
                     :class="{ 'text-secondary': editor.isActive('image') }"
+                    v-tooltip="'Image'"
                 >
                     <FileImage class="size-5" />
                 </button>
@@ -88,6 +95,7 @@
                     @click="editor.chain().focus().toggleCodeBlock().run()"
                     class="hover:text-secondary"
                     :class="{ 'text-secondary': editor.isActive('codeBlock') }"
+                    v-tooltip="'Codeblock'"
                 >
                     <Code class="size-5" />
                 </button>

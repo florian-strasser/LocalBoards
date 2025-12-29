@@ -31,12 +31,28 @@ export default defineEventHandler(async (event) => {
 
       // Check if the user has access to this board
       const userId = query.userId;
+      let writeAccess = false;
       if (board.status === "private" && (!userId || board.user !== userId)) {
-        event.res.statusCode = 403;
-        return { error: "You don't have access to this board" };
+        // Check if the user has an invitation
+        const [invitationRows] = await db.execute(
+          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+          [id, userId],
+        );
+
+        if (invitationRows.length === 0) {
+          event.res.statusCode = 403;
+          return { error: "You don't have access to this board" };
+        }
+        // Determine write access based on invitation permission
+        writeAccess = invitationRows[0].permission === "edit";
+      } else if (board.user === userId) {
+        // User is the creator of the board, so they have write access
+        writeAccess = true;
+      } else if (board.status === "public") {
+        writeAccess = true;
       }
 
-      return { board };
+      return { board, writeAccess };
     } else if (method === "POST") {
       // Get the board data from the request body
       const { id, userId, name, style, status } = await readBody(event);
@@ -68,8 +84,16 @@ export default defineEventHandler(async (event) => {
 
         // Check if the user has access to this board
         if (board.user !== userId) {
-          event.res.statusCode = 403;
-          return { error: "You don't have access to this board" };
+          // Check if the user has an invitation with edit permission
+          const [invitationRows] = await db.execute(
+            "SELECT permission FROM invitations WHERE board = ? AND user = ? AND permission = 'edit'",
+            [id, userId],
+          );
+
+          if (invitationRows.length === 0) {
+            event.res.statusCode = 403;
+            return { error: "You don't have access to this board" };
+          }
         }
       } else {
         // Create new board
