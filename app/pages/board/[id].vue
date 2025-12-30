@@ -103,6 +103,7 @@
                             v-if="writeAccess"
                             :boardID="boardID * 1"
                             :areaID="area.id"
+                            :userID="userID"
                             @card-created="handleCardCreated"
                         />
                     </div>

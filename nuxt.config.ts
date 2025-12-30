@@ -31,6 +31,18 @@ export default defineNuxtConfig({
       },
     ],
   },
+  nitro: {
+    experimental: {
+      tasks: true,
+    },
+    scheduledTasks: {
+      // Run `notification` task every 6 hours
+      "0 0 * * *": ["notification"],
+      "0 6 * * *": ["notification"],
+      "0 12 * * *": ["notification"],
+      "0 18 * * *": ["notification"],
+    },
+  },
   vite: {
     plugins: [tailwindcss()],
   },

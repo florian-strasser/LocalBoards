@@ -121,11 +121,16 @@ export default defineEventHandler(async (event) => {
         [boardId, creatorId, permission],
       );
 
-      await sendEmail({
-        to: mail,
-        subject: buildTitle("You have been invited to use a Board"),
-        text: `Click on this link to take a look at the board: ${baseURL}/board/${board.id}`,
-      });
+      // Create a notification for the invited user
+      await db.query(
+        "INSERT INTO notifications (userId, type, boardId, message) VALUES (?, ?, ?, ?)",
+        [
+          creatorId,
+          "invitation",
+          boardId,
+          `You have been invited to the board: ${board.name}`,
+        ],
+      );
 
       return { message: "Invitation created successfully" };
     } else if (method === "DELETE") {

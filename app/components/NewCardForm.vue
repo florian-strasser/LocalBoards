@@ -36,9 +36,12 @@
 </template>
 <script setup lang="ts">
 import { PlusIcon, XMarkIcon } from "@heroicons/vue/24/outline";
+import { authClient } from "@/lib/auth-client";
+
 const props = defineProps({
     boardID: Number,
     areaID: Number,
+    userID: String,
 });
 
 const emit = defineEmits(["card-created"]);
@@ -64,6 +67,7 @@ const createCard = async () => {
                 areaId: props.areaID,
                 name: newCardName.value,
                 status: false, // Default status is false
+                user: props.userID,
             },
         });
         if (data.card) {

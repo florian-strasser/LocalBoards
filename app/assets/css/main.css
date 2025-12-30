@@ -43,9 +43,6 @@ body {
     opacity: 0;
     transform: translateY(2rem);
 }
-.app-nav .router-link-exact-active {
-    color: var(--color-secondary);
-}
 
 .tiptap {
     padding: 1.5rem;

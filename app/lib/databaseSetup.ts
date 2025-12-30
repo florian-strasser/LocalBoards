@@ -74,5 +74,20 @@ export function setupDatabase() {
       FOREIGN KEY (board) REFERENCES boards(id)
     );
   `);
+  // 6. Notifications (depends on boards and cards)
+  db.execute(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        userId VARCHAR(255) NOT NULL,
+        type ENUM('invitation', 'comment', 'card_created') NOT NULL,
+        boardId INT,
+        cardId INT,
+        message TEXT,
+        isRead BOOLEAN DEFAULT FALSE,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (boardId) REFERENCES boards(id),
+        FOREIGN KEY (cardId) REFERENCES cards(id)
+      );
+  `);
   return db;
 }

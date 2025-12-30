@@ -74,7 +74,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
 import { Trash } from "lucide-vue-next";
 
 const props = defineProps({

@@ -36,11 +36,11 @@ export default defineEventHandler(async (event) => {
       return { card };
     } else if (method === "POST") {
       // Handle POST request to create a new card
-      const { areaId, name, content, status } = await readBody(event);
+      const { areaId, name, content, status, user } = await readBody(event);
 
-      if (!areaId || !name) {
+      if (!areaId || !name || !user) {
         event.res.statusCode = 400;
-        return { error: "Area ID and name are required" };
+        return { error: "Area ID, name, and user are required" };
       }
 
       // Create new card
@@ -53,6 +53,41 @@ export default defineEventHandler(async (event) => {
         result.insertId,
       ]);
       const card = rows[0];
+
+      // Fetch all users who have access to the board (owner and invited users)
+      const [boardRows] = await db.execute(
+        "SELECT user, id AS boardId FROM boards WHERE id = (SELECT board FROM areas WHERE id = ?)",
+        [areaId],
+      );
+      const boardOwner = boardRows[0]?.user;
+      const boardId = boardRows[0]?.boardId;
+
+      const [invitedUsers] = await db.execute(
+        "SELECT user FROM invitations WHERE board = (SELECT board FROM areas WHERE id = ?)",
+        [areaId],
+      );
+
+      // Create notifications for the board owner and invited users
+      const usersToNotify = [
+        boardOwner,
+        ...invitedUsers.map((inv) => inv.user),
+      ].filter(Boolean);
+
+      for (const userId of usersToNotify) {
+        if (userId !== user) {
+          // Don't notify the user who created the card
+          await db.execute(
+            "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+            [
+              userId,
+              "card_created",
+              boardId,
+              card.id,
+              `New card created: ${card.name}`,
+            ],
+          );
+        }
+      }
 
       return { card };
     } else if (method === "PUT") {

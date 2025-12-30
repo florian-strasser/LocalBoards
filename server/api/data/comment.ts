@@ -67,6 +67,41 @@ export default defineEventHandler(async (event) => {
           }
         : null;
 
+      // Fetch all users who have access to the board (owner and invited users)
+      const [boardRows] = await db.execute(
+        "SELECT user, id AS boardId FROM boards WHERE id = (SELECT board FROM areas WHERE id = (SELECT area FROM cards WHERE id = ?))",
+        [card],
+      );
+      const boardOwner = boardRows[0]?.user;
+      const boardId = boardRows[0]?.boardId;
+
+      const [invitedUsers] = await db.execute(
+        "SELECT user FROM invitations WHERE board = (SELECT board FROM areas WHERE id = (SELECT area FROM cards WHERE id = ?))",
+        [card],
+      );
+
+      // Create notifications for the board owner and invited users
+      const usersToNotify = [
+        boardOwner,
+        ...invitedUsers.map((inv) => inv.user),
+      ].filter(Boolean);
+
+      for (const userId of usersToNotify) {
+        if (userId !== user) {
+          // Don't notify the user who created the comment
+          await db.execute(
+            "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+            [
+              userId,
+              "comment",
+              boardId,
+              card,
+              `New comment on card: ${rows[0]?.name || "a card"}`,
+            ],
+          );
+        }
+      }
+
       return { comment };
     } else {
       event.res.statusCode = 405;
