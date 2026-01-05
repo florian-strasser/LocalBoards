@@ -35,8 +35,8 @@
     </div>
 </template>
 <script setup lang="ts">
+import { socket } from "~/lib/socket";
 import { PlusIcon, XMarkIcon } from "@heroicons/vue/24/outline";
-import { authClient } from "@/lib/auth-client";
 
 const props = defineProps({
     boardID: Number,
@@ -44,7 +44,7 @@ const props = defineProps({
     userID: String,
 });
 
-const emit = defineEmits(["card-created"]);
+const emits = defineEmits(["card-created"]);
 
 const newCardCreation = ref(false);
 const newCardName = ref("");
@@ -73,7 +73,11 @@ const createCard = async () => {
         if (data.card) {
             newCardName.value = "";
             newCardCreation.value = false;
-            emit("card-created", data.card);
+            emits("card-created", data.card);
+            socket.emit("cardCreated", {
+                boardId: props.boardID,
+                card: data.card,
+            });
         }
     } catch (err) {
         console.error("Error creating card:", err);

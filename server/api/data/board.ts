@@ -140,6 +140,12 @@ export default defineEventHandler(async (event) => {
         return { error: "You don't have permission to delete this board" };
       }
 
+      // Delete all invitations associated with the board
+      await db.execute("DELETE FROM invitations WHERE board = ?", [id]);
+
+      // Delete all notifications associated with the cards in the board's areas
+      await db.execute(`DELETE FROM notifications WHERE boardId = ?`, [id]);
+
       // Delete all cards associated with the board's areas
       await db.execute(
         "DELETE FROM cards WHERE area IN (SELECT id FROM areas WHERE board = ?)",

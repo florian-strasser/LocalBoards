@@ -6,15 +6,15 @@ const mysqlUser = process.env.MYSQL_USER || "dbu_psrpqd_1";
 const mysqlPassword = process.env.MYSQL_PASSWORD || "suj#HH8y9PfbWswS";
 const mysqlDatabase = process.env.MYSQL_DATABASE || "mysql_psrpqd";
 
-export function setupDatabase() {
-  const db = createPool({
-    host: mysqlHost,
-    user: mysqlUser,
-    password: mysqlPassword,
-    database: mysqlDatabase,
-    timezone: "Z", // Important to ensure consistent timezone values
-  });
+const db = createPool({
+  host: mysqlHost,
+  user: mysqlUser,
+  password: mysqlPassword,
+  database: mysqlDatabase,
+  timezone: "Z", // Important to ensure consistent timezone values
+});
 
+export function setupDatabase() {
   // Create tables in the correct order for foreign key constraints
   // 1. Boards (no dependencies)
   db.execute(`

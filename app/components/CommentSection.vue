@@ -5,6 +5,10 @@
             :cardID="props.cardID"
             @Comment-created="handleCommentCreated"
         />
+        <CommentConnection
+            :cardID="props.cardID"
+            @comment-created="handleCommentCreated"
+        />
         <div v-if="comments.length > 0" class="mt-4 space-y-4">
             <div v-for="comment in comments" :key="comment.id">
                 <div class="bg-primary/10 p-6 rounded-xl">

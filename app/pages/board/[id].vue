@@ -42,7 +42,7 @@
                 </div>
             </div>
         </div>
-        <div class="w-full grow shrink-0 pb-12 overflow-scroll hide-scrollbar">
+        <div class="w-full grow shrink-0 pb-5 overflow-scroll hide-scrollbar">
             <div class="container">
                 <div
                     v-if="!accessError"
@@ -92,11 +92,27 @@
                                 class="bg-primary/10 text-primary text-left p-2 rounded-md w-full"
                                 @click="cardModal = card.id"
                             >
-                                <h3 class="font-bold">{{ card.name }}</h3>
-                                <p>
-                                    Status:
-                                    {{ card.status ? "Completed" : "Pending" }}
-                                </p>
+                                <div class="flex gap-x-2">
+                                    <div
+                                        class="w-6 h-6 rounded-full flex justify-center items-center shrink-0 grow-0"
+                                        :class="{
+                                            'bg-gray/20 text-primary':
+                                                card.status,
+                                            'border border-gray/30':
+                                                !card.status,
+                                        }"
+                                    >
+                                        <Check
+                                            v-if="card.status"
+                                            class="size-4"
+                                        />
+                                    </div>
+                                    <div class="shrink grow">
+                                        <h3 class="font-bold">
+                                            {{ card.name }}
+                                        </h3>
+                                    </div>
+                                </div>
                             </button>
                         </div>
                         <NewCardForm
@@ -153,6 +169,22 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="container pb-12 grow-0 shrink-0">
+            <Connection
+                :userID="userID"
+                :boardID="boardID"
+                @board-updated="handleBoardUpdated"
+                @board-deleted="handleBoardDeleted"
+                @areas-updated="handleAreasUpdated"
+                @card-created="handleCardCreated"
+                @card-updated="handleCardUpdated"
+                @card-moved="handleCardMoved"
+                @card-orderd="handleCardOrderd"
+                @area-created="handleNewArea"
+                @area-updated="handleAreaUpdated"
+                @area-deleted="handleDeleteArea"
+            />
         </div>
         <ModalWindow v-model="optionsActive">
             <div>
@@ -226,6 +258,7 @@
         <ModalWindow v-model="cardModal">
             <CardModal
                 :cardID="cardModal"
+                :boardID="boardID * 1"
                 :writeAccess="writeAccess"
                 v-if="cardModal"
                 @card-updated="handleCardUpdated"
@@ -235,6 +268,7 @@
     </div>
 </template>
 <script setup lang="ts">
+import { socket } from "~/lib/socket";
 import { authClient } from "@/lib/auth-client";
 import Sortable from "sortablejs";
 import {
@@ -244,6 +278,8 @@ import {
     TrashIcon,
     UserPlusIcon,
 } from "@heroicons/vue/24/outline";
+
+import { Check } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
 
@@ -300,15 +336,44 @@ const createNewArea = async () => {
 };
 
 const handleCardUpdated = (updatedCard) => {
-    // console.log(updatedCard);
     const cardIndex = cards.value[updatedCard.area].findIndex(
         (card) => card.id === updatedCard.id,
     );
-    console.log(cards.value[updatedCard.area][cardIndex]);
-
     if (cardIndex !== -1) {
         // Update the card in the `cards` array
         cards.value[updatedCard.area][cardIndex] = updatedCard;
+    }
+};
+
+const handleCardMoved = (movedCard) => {
+    const cardId = movedCard.cardId;
+    const fromArray = movedCard.fromAreaId;
+    const toArray = movedCard.toAreaId;
+    const newIndex = movedCard.newIndex;
+    const currentIndex = cards.value[fromArray].findIndex(
+        (item) => item.id === cardId * 1,
+    );
+    if (currentIndex === -1) {
+        console.error("Item not found in the array.");
+    } else {
+        const [itemToMove] = cards.value[fromArray].splice(currentIndex, 1);
+        cards.value[toArray].splice(newIndex, 0, itemToMove);
+    }
+};
+
+const handleCardOrderd = (orderdCard) => {
+    const newIndex = orderdCard.newIndex;
+    const currentIndex = cards.value[orderdCard.areaId].findIndex(
+        (item) => item.id === orderdCard.cardId * 1,
+    );
+    if (currentIndex === -1) {
+        console.error("Item not found in the array.");
+    } else {
+        const [itemToMove] = cards.value[orderdCard.areaId].splice(
+            currentIndex,
+            1,
+        );
+        cards.value[orderdCard.areaId].splice(newIndex, 0, itemToMove);
     }
 };
 
@@ -329,7 +394,11 @@ const createArea = async () => {
                 }
             });
             areas.value.push(data.area);
-            // Fetch cards for the new area
+
+            socket.emit("areaCreated", {
+                boardId: boardID.value,
+                area: data.area,
+            });
             await fetchCardsForArea(data.area.id);
             await nextTick(); // Wait for the DOM to update
             initSort();
@@ -341,6 +410,31 @@ const createArea = async () => {
     } catch (err) {
         console.error("Error creating area:", err);
     }
+};
+
+const handleNewArea = async (area) => {
+    areas.value.push(area);
+    await nextTick(); // Wait for the DOM to update
+    initSort();
+};
+
+const handleAreaUpdated = async (area) => {
+    areas.value[areas.value.findIndex((item) => item.id === area.id)].name =
+        area.name;
+};
+
+const handleDeleteArea = async (areaId) => {
+    // Find the area with the matching ID
+    const areaToDelete = areas.value.find((area) => area.id === areaId);
+
+    if (areaToDelete) {
+        areas.value = areas.value.filter((area) => area.id !== areaId);
+    } else {
+        console.error("Area not found with ID:", areaId);
+    }
+    //areas.value.push(area);
+    await nextTick(); // Wait for the DOM to update
+    // initSort();
 };
 
 // Fetch cards for a specific area
@@ -382,6 +476,10 @@ const updateAreaName = async (area) => {
                 name: area.name,
             },
         });
+        socket.emit("areaUpdated", {
+            boardId: boardID.value,
+            area: area,
+        });
     } catch (err) {
         console.error("Error updating area:", err);
     }
@@ -398,6 +496,12 @@ const deleteArea = async (areaId) => {
         // Remove the cards for the area
         delete cards.value[areaId];
         deleteAreaModal.value = false;
+
+        socket.emit("areaDeleted", {
+            boardId: boardID.value,
+            area: areaId,
+        });
+
         await nuxtApp.callHook("app:toast", {
             message: "Area deleted",
         });
@@ -436,6 +540,14 @@ const saveBoard = async () => {
             boardStyle.value = newBoardStyle.value;
             boardStatus.value = newBoardStatus.value;
             optionsActive.value = false;
+
+            socket.emit("boardUpdated", {
+                boardID: boardID.value,
+                boardName: boardName.value,
+                boardStyle: boardStyle.value,
+                boardStatus: boardStatus.value,
+            });
+
             await nuxtApp.callHook("app:toast", {
                 message: "Board saved",
             });
@@ -444,6 +556,7 @@ const saveBoard = async () => {
         console.error("Error:", err);
     }
 };
+
 const handleCardCreated = (card) => {
     if (!cards.value[card.area]) {
         cards.value[card.area] = [];
@@ -453,6 +566,24 @@ const handleCardCreated = (card) => {
         card.status = false;
     }
     cards.value[card.area].push(card);
+};
+
+const handleBoardUpdated = (board) => {
+    boardName.value = board.boardName;
+    boardStyle.value = board.boardStyle;
+    boardStatus.value = board.boardStatus;
+};
+
+const handleAreasUpdated = (updatedAreas) => {
+    areas.value = updatedAreas;
+};
+
+const handleBoardDeleted = async () => {
+    cards.value = {};
+    await nuxtApp.callHook("app:toast", {
+        message: "Board has been deleted",
+    });
+    await navigateTo("/dashboard/");
 };
 
 const deleteBoard = async () => {
@@ -472,6 +603,9 @@ const deleteBoard = async () => {
             });
             // Remove all cards when the board is deleted
             cards.value = {};
+            socket.emit("boardDeleted", {
+                boardID: boardID.value,
+            });
             await navigateTo("/dashboard/");
         }
     } catch (err) {
@@ -482,7 +616,6 @@ const deleteBoard = async () => {
 const initSort = () => {
     if (areasWrapper.value) {
         Array.from(areasWrapper.value.children).forEach((child) => {
-            console.log(child);
             const el = child.querySelector(".card-wrapper");
             if (el) {
                 const sortChild = Sortable.create(el, {
@@ -504,6 +637,14 @@ const initSort = () => {
                                         newIndex: event.newIndex,
                                     },
                                 });
+
+                                socket.emit("cardMoved", {
+                                    boardId: boardID.value,
+                                    cardId,
+                                    fromAreaId,
+                                    toAreaId,
+                                    newIndex: event.newIndex,
+                                });
                             } catch (error) {
                                 console.error("Error moving card:", error);
                             }
@@ -520,6 +661,13 @@ const initSort = () => {
                                         areaId,
                                         newIndex: event.newIndex,
                                     },
+                                });
+
+                                socket.emit("cardOrderd", {
+                                    boardId: boardID.value,
+                                    cardId,
+                                    areaId,
+                                    newIndex: event.newIndex,
                                 });
                             } catch (error) {
                                 console.error(
@@ -561,6 +709,10 @@ const initSort = () => {
                             });
                             // Update the local areas array
                             areas.value = updatedAreas;
+                            socket.emit("areasUpdated", {
+                                boardId: boardID.value,
+                                areas: updatedAreas,
+                            });
                         } catch (error) {
                             console.error("Error updating area order:", error);
                             // Optionally revert the local change if the API call fails

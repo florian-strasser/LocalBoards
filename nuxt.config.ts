@@ -2,7 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  modules: ["@nuxt/fonts", "@nuxtjs/i18n"],
+  modules: ["@nuxt/fonts"],
   app: {
     head: {
       title: process.env.APP_NAME || "LocalBoards",
@@ -34,6 +34,7 @@ export default defineNuxtConfig({
   nitro: {
     experimental: {
       tasks: true,
+      websocket: true,
     },
     scheduledTasks: {
       // Run `notification` task every 6 hours

@@ -38,10 +38,15 @@ export default defineEventHandler(async (event) => {
         ]);
         area = rows[0];
       } else {
+        const [arows] = await db.execute(
+          "SELECT * FROM areas WHERE board = ?",
+          [boardId],
+        );
+
         // Create new area
         const [result] = await db.execute(
-          "INSERT INTO areas (board, name) VALUES (?, ?)",
-          [boardId, name],
+          "INSERT INTO areas (board, name, sort) VALUES (?, ?, ?)",
+          [boardId, name, arows.length + 1],
         );
 
         const [rows] = await db.execute("SELECT * FROM areas WHERE id = ?", [
@@ -77,6 +82,12 @@ export default defineEventHandler(async (event) => {
         event.res.statusCode = 403;
         return { error: "You don't have permission to delete this area" };
       }
+
+      // Delete notifications related to cards in the area
+      await db.execute(
+        "DELETE FROM notifications WHERE cardId IN (SELECT id FROM cards WHERE area = ?)",
+        [id],
+      );
 
       // Delete cards from area
       const [results] = await db.execute("DELETE FROM cards WHERE area = ?", [

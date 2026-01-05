@@ -16,29 +16,17 @@ export default defineEventHandler(async (event) => {
       }
 
       try {
+        // Update sort order of other cards in the destination area
+        await db.execute(
+          "UPDATE cards SET sort = sort + 1 WHERE sort >= ? AND area = ?",
+          [newIndex, areaId],
+        );
+
         // Update the card's sort order
         await db.execute("UPDATE cards SET sort = ? WHERE id = ?", [
           newIndex,
           cardId,
         ]);
-
-        // Update sort order of other cards in the same area
-        const [cardsInArea] = await db.execute(
-          "SELECT id FROM cards WHERE area = ? AND id != ?",
-          [areaId, cardId],
-        );
-
-        let currentIndex = 0;
-        for (const card of cardsInArea) {
-          if (currentIndex === newIndex) {
-            currentIndex++;
-          }
-          await db.execute("UPDATE cards SET sort = ? WHERE id = ?", [
-            currentIndex,
-            card.id,
-          ]);
-          currentIndex++;
-        }
 
         return { success: true };
       } catch (error) {

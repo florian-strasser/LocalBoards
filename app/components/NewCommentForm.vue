@@ -29,6 +29,7 @@
     </div>
 </template>
 <script setup lang="ts">
+import { socket } from "~/lib/socket";
 import { authClient } from "@/lib/auth-client";
 import { PlusIcon, XMarkIcon } from "@heroicons/vue/24/outline";
 
@@ -84,6 +85,10 @@ const createComment = async (e) => {
         if (data.comment) {
             newComment.value = "";
             newCommentCreation.value = false;
+            socket.emit("commentCreated", {
+                cardID: props.cardID,
+                comment: data.comment,
+            });
             emit("Comment-created", data.comment);
         }
     } catch (err) {

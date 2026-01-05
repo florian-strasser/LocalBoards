@@ -37,13 +37,15 @@
     <div v-else>Loading...</div>
 </template>
 <script setup lang="ts">
+import { socket } from "~/lib/socket";
 import { Check } from "lucide-vue-next";
 const props = defineProps({
     cardID: Number,
+    boardID: Number,
     writeAccess: Boolean,
 });
 
-const emit = defineEmits(["card-updated"]);
+const emits = defineEmits(["card-updated"]);
 
 const { data, error } = await useFetch(`/api/data/card?cardID=${props.cardID}`);
 
@@ -68,7 +70,11 @@ const saveCard = async () => {
                 status: currentStatus.value,
             },
         });
-        emit("card-updated", response.card);
+        emits("card-updated", response.card);
+        socket.emit("cardUpdated", {
+            boardId: props.boardID,
+            card: response.card,
+        });
     } catch (err) {
         console.error("Failed to save card:", err);
     }
