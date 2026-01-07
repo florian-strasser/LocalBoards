@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
 
       // Fetch the created comment with user information using a LEFT JOIN
       const [rows] = await db.execute(
-        "SELECT comments.*, user.name AS userName FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.id = ?",
+        "SELECT comments.*, user.name AS userName, user.image AS userImage FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.id = ?",
         [result.insertId],
       );
       const comment = rows[0]
@@ -61,6 +61,7 @@ export default defineEventHandler(async (event) => {
             id: rows[0].id,
             card: rows[0].card,
             user: rows[0].user,
+            userImage: rows[0].userImage,
             userName: rows[0].userName || "Unknown User",
             content: rows[0].content,
             date: rows[0].date,

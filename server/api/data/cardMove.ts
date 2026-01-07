@@ -7,6 +7,21 @@ export default defineEventHandler(async (event) => {
   try {
     const db = setupDatabase();
 
+    const renumberSortValues = async (areaId) => {
+      // Get all cards in the area ordered by their current sort value
+      const [cards] = await db.execute(
+        "SELECT id FROM cards WHERE area = ? ORDER BY sort ASC",
+        [areaId],
+      );
+      // Update each card with sequential sort values
+      for (let i = 0; i < cards.length; i++) {
+        await db.execute("UPDATE cards SET sort = ? WHERE id = ?", [
+          i,
+          cards[i].id,
+        ]);
+      }
+    };
+
     if (method === "POST") {
       const { cardId, fromAreaId, toAreaId, newIndex } = await readBody(event);
 
@@ -30,6 +45,9 @@ export default defineEventHandler(async (event) => {
           newIndex,
           cardId,
         ]);
+
+        await renumberSortValues(toAreaId);
+        await renumberSortValues(fromAreaId);
 
         return { success: true };
       } catch (error) {

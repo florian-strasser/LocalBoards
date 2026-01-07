@@ -52,6 +52,7 @@ interface Comment {
     id: number;
     card: number;
     user: string;
+    userImage: string;
     userName: string;
     content: string;
     date: string;

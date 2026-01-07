@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
       }
 
       const [cards] = await db.execute(
-        "SELECT id, area, name, content, status FROM cards WHERE area = ? ORDER BY sort ASC",
+        "SELECT id, area, name, content, status, sort FROM cards WHERE area = ? ORDER BY sort ASC",
         [areaId],
       );
 
