@@ -14,29 +14,30 @@
                         {{ boardName }}
                     </h1>
 
-                    <div v-if="writeAccess" class="flex gap-x-4 items-center">
+                    <div
+                        v-if="userID === boardUser"
+                        class="flex gap-x-4 items-center"
+                    >
                         <button
                             @click="openModal"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
                             v-tooltip="'Board settings'"
                         >
-                            <Cog6ToothIcon class="size-6" />
+                            <Pencil class="size-5" />
                         </button>
                         <button
-                            v-if="userID === boardUser"
                             @click="inviteModal = true"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
                             v-tooltip="'Invite users'"
                         >
-                            <UserPlusIcon class="size-6" />
+                            <UserRoundPlus class="size-5" />
                         </button>
                         <button
-                            v-if="userID === boardUser"
                             @click="deleteModal = true"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
                             v-tooltip="'Delete board'"
                         >
-                            <TrashIcon class="size-6" />
+                            <Trash2 class="size-5" />
                         </button>
                     </div>
                 </div>
@@ -74,9 +75,9 @@
                                 v-if="writeAccess"
                                 @click="deleteAreaModal = area.id"
                                 class="text-primary hover:text-secondary shrink-0 grow-0"
-                                v-tooltip="'Delete'"
+                                v-tooltip="$t('delete')"
                             >
-                                <TrashIcon class="size-5" />
+                                <Trash2 class="size-5" />
                             </button>
                         </div>
                         <div
@@ -84,36 +85,11 @@
                             :data-area-id="area.id"
                             class="space-y-1 card-wrapper"
                         >
-                            <button
+                            <CardTile
                                 v-for="card in cards[area.id]"
-                                :key="card.id"
-                                :data-card-id="card.id"
-                                type="button"
-                                class="bg-primary/10 text-primary text-left p-2 rounded-md w-full"
-                                @click="cardModal = card.id"
-                            >
-                                <div class="flex gap-x-2">
-                                    <div
-                                        class="w-6 h-6 rounded-full flex justify-center items-center shrink-0 grow-0"
-                                        :class="{
-                                            'bg-gray/20 text-primary':
-                                                card.status,
-                                            'border border-gray/30':
-                                                !card.status,
-                                        }"
-                                    >
-                                        <Check
-                                            v-if="card.status"
-                                            class="size-4"
-                                        />
-                                    </div>
-                                    <div class="shrink grow">
-                                        <h3 class="font-bold">
-                                            {{ card.name }}
-                                        </h3>
-                                    </div>
-                                </div>
-                            </button>
+                                :card="card"
+                                v-model="cardModal"
+                            />
                         </div>
                         <NewCardForm
                             v-if="writeAccess"
@@ -136,9 +112,9 @@
                             @click="createNewArea"
                             class="bg-white text-primary hover:bg-secondary hover:text-white p-4 rounded-lg flex w-full items-center gap-x-1"
                         >
-                            <PlusIcon class="size-5" /><span
-                                >Create New Area</span
-                            >
+                            <PlusIcon class="size-5" /><span>{{
+                                $t("createNewArea")
+                            }}</span>
                         </button>
                         <form
                             v-else
@@ -148,21 +124,21 @@
                             <input
                                 v-model="newAreaName"
                                 ref="newAreaInput"
-                                placeholder="Enter an area name"
+                                :placeholder="$t('enterAnAreaName')"
                                 class="font-bold bg-transparent text-primary focus:outline-none w-full"
                             />
                             <div class="flex gap-x-1 mt-2">
                                 <input
                                     type="submit"
                                     class="bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
-                                    value="Create area"
+                                    :value="$t('createArea')"
                                 />
                                 <button
                                     type="button"
                                     @click="newAreaCreation = false"
                                     class="px-4 bg-primary/10 text-primary hover:bg-secondary hover:text-white rounded-lg"
                                 >
-                                    <XMarkIcon class="size-5" />
+                                    <X class="size-5" />
                                 </button>
                             </div>
                         </form>
@@ -244,15 +220,15 @@
         </ModalWindow>
         <ModalWindow v-model="deleteAreaModal">
             <h2 class="text-4xl text-primary mb-3">
-                Do you want to delete this area?
+                {{ $t("deleteAreaHeadline") }}
             </h2>
-            <p class="mb-6">Every card will be deleted too.</p>
+            <p class="mb-6">{{ $t("deleteAreaText") }}</p>
             <button
                 @click="deleteArea(deleteAreaModal)"
                 type="button"
                 class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
             >
-                Delete Area
+                {{ $t("deleteAreaButton") }}
             </button>
         </ModalWindow>
         <ModalWindow v-model="cardModal">
@@ -271,15 +247,8 @@
 import { socket } from "~/lib/socket";
 import { authClient } from "@/lib/auth-client";
 import Sortable from "sortablejs";
-import {
-    Cog6ToothIcon,
-    XMarkIcon,
-    PlusIcon,
-    TrashIcon,
-    UserPlusIcon,
-} from "@heroicons/vue/24/outline";
-
-import { Check } from "lucide-vue-next";
+import { Pencil, UserRoundPlus, Trash2, X } from "lucide-vue-next";
+import { PlusIcon } from "@heroicons/vue/24/outline";
 
 const nuxtApp = useNuxtApp();
 
@@ -404,7 +373,7 @@ const createArea = async () => {
             initSort();
             // Should enable sorting for cards within the area at this point
             await nuxtApp.callHook("app:toast", {
-                message: "Area created",
+                message: $t("areaCreated"),
             });
         }
     } catch (err) {
@@ -503,7 +472,7 @@ const deleteArea = async (areaId) => {
         });
 
         await nuxtApp.callHook("app:toast", {
-            message: "Area deleted",
+            message: $t("areaDeleted"),
         });
     } catch (err) {
         console.error("Error deleting area:", err);

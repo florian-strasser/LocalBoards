@@ -6,7 +6,7 @@
                 type="button"
                 class="bg-primary hover:bg-secondary px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
             >
-                <PlusIcon class="size-5" /><span>Create new card</span>
+                <Plus class="size-5" /><span>{{ $t("createNewCard") }}</span>
             </button>
         </div>
         <form v-else @submit.prevent="createCard">
@@ -14,21 +14,21 @@
                 v-model="newCardName"
                 rows="2"
                 ref="newCardInput"
-                placeholder="Enter an card name"
+                :placeholder="$t('enterAnCardName')"
                 class="font-bold text-primary resize-none focus:outline-none w-full p-2 rounded-md bg-primary/10"
             />
             <div class="flex gap-x-1 mt-2">
                 <input
                     type="submit"
                     class="bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
-                    value="Create card"
+                    :value="$t('createCard')"
                 />
                 <button
                     type="button"
                     @click="newCardCreation = false"
                     class="px-4 bg-primary/10 text-primary hover:bg-secondary hover:text-white rounded-lg"
                 >
-                    <XMarkIcon class="size-5" />
+                    <X class="size-5" />
                 </button>
             </div>
         </form>
@@ -36,7 +36,7 @@
 </template>
 <script setup lang="ts">
 import { socket } from "~/lib/socket";
-import { PlusIcon, XMarkIcon } from "@heroicons/vue/24/outline";
+import { Plus, X } from "lucide-vue-next";
 
 const props = defineProps({
     boardID: Number,

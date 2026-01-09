@@ -3,10 +3,10 @@
         <AppHeader />
         <ContentWrapper>
             <SectionHeader
-                tooltip="Create new board"
+                :tooltip="$t('createNewBoard')"
                 asButton
                 @sectionHeaderButtonClicked="createBoard = true"
-                >Your Boards</SectionHeader
+                >{{ $t("yourBoards") }}</SectionHeader
             >
             <YourBoards
                 v-if="session"
@@ -50,7 +50,7 @@
                     <input
                         type="submit"
                         class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
-                        value="Create Board"
+                        :value="$t('createBoard')"
                     />
                 </form>
             </div>

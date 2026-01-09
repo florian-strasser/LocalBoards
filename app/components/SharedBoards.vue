@@ -1,6 +1,6 @@
 <template>
     <div v-if="data.boards.length > 0" class="mt-12">
-        <h2 class="text-5xl text-primary mb-5">Shared Boards</h2>
+        <h2 class="text-5xl text-primary mb-5">{{ $t("sharedBoards") }}</h2>
         <div
             class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8"
         >

@@ -2,7 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  modules: ["@nuxt/fonts"],
+  modules: ["@nuxt/fonts", "@nuxtjs/i18n"],
   app: {
     head: {
       title: process.env.APP_NAME || "LocalBoards",
@@ -15,8 +15,15 @@ export default defineNuxtConfig({
       ],
     },
   },
+  runtimeConfig: {
+    mysqlHost: "localhost",
+    mysqlDatabase: "ra7",
+    mysqlUser: "root",
+    mysqlPassword: "root1234",
+  },
   css: ["~/assets/css/main.css"],
   i18n: {
+    strategy: "prefix_except_default",
     defaultLocale: "en",
     locales: [
       {
@@ -47,5 +54,12 @@ export default defineNuxtConfig({
   vite: {
     plugins: [tailwindcss()],
   },
+  site: {
+    url: "https://boards.florian-strasser.de",
+    name: "LocalBoards",
+    trailingSlash: true,
+    defaultLocale: "de",
+  },
   ssr: true,
+  telemetry: false,
 });

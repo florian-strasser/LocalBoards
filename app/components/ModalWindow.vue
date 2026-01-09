@@ -17,7 +17,7 @@
                     @click="open = false"
                     class="absolute top-0 right-0 size-10 flex justify-center items-center rounded-full bg-primary text-white hover:bg-secondary transform translate-x-1/2 -translate-y-1/2"
                 >
-                    <XMarkIcon class="size-5" />
+                    <X class="size-5" />
                 </button>
                 <slot />
             </div>
@@ -25,7 +25,7 @@
     </div>
 </template>
 <script setup lang="ts">
-import { XMarkIcon } from "@heroicons/vue/24/solid";
+import { X } from "lucide-vue-next";
 const open = defineModel();
 
 const handleEscKey = (event) => {

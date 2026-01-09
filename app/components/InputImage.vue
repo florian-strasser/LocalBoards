@@ -29,7 +29,7 @@
                             {{
                                 isDragging
                                     ? "Drop image here"
-                                    : "Click to upload or drag & drop"
+                                    : $t("settingsClickToUpload")
                             }}
                         </p>
                     </div>
@@ -38,9 +38,9 @@
                             type="button"
                             class="flex justify-center items-center w-8 h-7 bg-primary hover:bg-secondary text-white rounded-md"
                             @click.stop="data = undefined"
-                            v-tooltip="'Remove'"
+                            v-tooltip="$t('remove')"
                         >
-                            <Trash class="size-4" />
+                            <Trash2 class="size-4" />
                         </button>
                     </div>
                 </div>
@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { Trash } from "lucide-vue-next";
+import { Trash2 } from "lucide-vue-next";
 
 const props = defineProps({
     label: String,

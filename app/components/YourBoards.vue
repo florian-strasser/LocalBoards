@@ -10,15 +10,15 @@
         />
         <button
             type="button"
-            class="bg-white text-primary hover:bg-secondary hover:text-white min-h-48 flex flex-col justify-center items-center rounded-lg"
+            class="bg-white cursor-pointer text-primary hover:bg-secondary hover:text-white min-h-48 flex flex-col justify-center items-center rounded-lg"
             @click="handleClick"
         >
-            <PlusIcon class="size-12" />
+            <Plus class="size-10" />
         </button>
     </div>
 </template>
 <script setup lang="ts">
-import { PlusIcon } from "@heroicons/vue/24/solid";
+import { Plus } from "lucide-vue-next";
 const props = defineProps({
     userID: String,
 });

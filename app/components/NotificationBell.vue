@@ -3,7 +3,7 @@
         <button
             @click="toggleNotifications"
             class="relative text-gray hover:text-secondary cursor-pointer block"
-            v-tooltip="'Notifications'"
+            v-tooltip="$t('headerNotifications')"
         >
             <Bell class="size-5" />
             <span
@@ -18,7 +18,9 @@
             class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50"
         >
             <div class="p-4 border-b">
-                <h3 class="text-lg font-semibold">Notifications</h3>
+                <h3 class="text-lg font-semibold">
+                    {{ $t("headerNotifications") }}
+                </h3>
             </div>
             <div class="max-h-96 overflow-y-auto">
                 <div

@@ -20,5 +20,5 @@ logs
 
 # Local env files
 .env
-.env.*
+.env.prod
 !.env.example

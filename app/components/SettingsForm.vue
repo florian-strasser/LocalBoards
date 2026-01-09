@@ -5,7 +5,7 @@
     >
         <div class="flex flex-col md:flex-row gap-y-4 gap-x-5">
             <InputImage
-                label="Profile Picture"
+                :label="$t('settingsProfilePicture')"
                 :images="[
                     '/images/profile_placeholder_01.png',
                     '/images/profile_placeholder_02.png',
@@ -23,7 +23,7 @@
         <input
             type="submit"
             class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-secondary text-white"
-            value="Save changes"
+            :value="$t('settingsSaveChanges')"
         />
     </form>
 </template>
@@ -58,7 +58,7 @@ const handleSettings = async () => {
             image: image.value,
         });
         await nuxtApp.callHook("app:toast", {
-            message: "Saved user data",
+            message: $t("settingsSavedUserData"),
         });
     } catch (e) {
         // Handle validation errors

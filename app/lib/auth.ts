@@ -4,15 +4,16 @@ import { admin } from "better-auth/plugins";
 import { setupDatabase } from "~/lib/databaseSetup";
 import { sendEmail } from "~/lib/sendEmail";
 
+const runtimeConfig = useRuntimeConfig();
+
 const appName = process.env.APP_NAME || "LocalBoards";
-const baseURL = process.env.PUBLIC_URL || "https://boards.florian-strasser.de";
+const baseURL = runtimeConfig.boardsUrl || "https://boards.florian-strasser.de";
 
 const buildTitle = (title) => {
   return title + " | " + appName;
 };
 
 export const auth = betterAuth({
-  // database: new Database("./sqlite.db"),
   database: setupDatabase(),
   emailAndPassword: {
     enabled: true,
@@ -28,10 +29,7 @@ export const auth = betterAuth({
       console.log(`Password for user ${user.email} has been reset.`);
     },
   },
-  trustedOrigins: [
-    "https://boards.florian-strasser.de",
-    "http://localhost:3000",
-  ],
+  trustedOrigins: [baseURL, "http://localhost:3000"],
   socialProviders: {
     // Add social providers if needed
   },

@@ -8,19 +8,19 @@
             @click="handleClick"
             v-tooltip="props.tooltip"
         >
-            <PlusIcon class="size-6" />
+            <Plus class="size-5" />
         </button>
         <NuxtLink
             v-if="!props.asButton && props.url"
             :to="props.url"
             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
             v-tooltip="props.tooltip"
-            ><PlusIcon class="size-6"
+            ><Plus class="size-5"
         /></NuxtLink>
     </div>
 </template>
 <script setup lang="ts">
-import { PlusIcon } from "@heroicons/vue/24/solid";
+import { Plus } from "lucide-vue-next";
 
 const emit = defineEmits(["section-header-button-clicked"]);
 

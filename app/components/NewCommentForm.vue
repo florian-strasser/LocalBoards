@@ -6,7 +6,9 @@
                 type="button"
                 class="bg-primary hover:bg-secondary px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
             >
-                <PlusIcon class="size-5" /><span>Write a comment</span>
+                <PlusIcon class="size-5" /><span>{{
+                    $t("writeAComment")
+                }}</span>
             </button>
         </div>
         <form v-else @submit.prevent="createComment">
@@ -15,7 +17,7 @@
                 <input
                     type="submit"
                     class="bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
-                    value="Create Comment"
+                    :value="$t('createComment')"
                 />
                 <button
                     type="button"

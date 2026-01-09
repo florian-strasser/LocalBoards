@@ -1,6 +1,8 @@
 <template>
     <div v-if="props.writeAccess || comments.length > 0">
-        <h3 class="text-xl font-bold text-primary">Comments and activity</h3>
+        <h3 class="text-xl font-bold text-primary">
+            {{ $t("commentsAndActivity") }}
+        </h3>
         <NewCommentForm
             :cardID="props.cardID"
             @Comment-created="handleCommentCreated"
@@ -38,7 +40,7 @@
                 </div>
             </div>
         </div>
-        <div v-else class="mt-4 text-gray-500">No comments yet.</div>
+        <div v-else class="mt-4 text-gray-500">{{ $t("noCommentsYet") }}</div>
     </div>
 </template>
 

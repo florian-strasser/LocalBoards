@@ -1,10 +1,9 @@
 import { createPool } from "mysql2/promise";
-
-const mysqlHost =
-  process.env.MYSQL_HOST || "mysql-psrpqd.pg-s-d693st.db.project.host";
-const mysqlUser = process.env.MYSQL_USER || "dbu_psrpqd_1";
-const mysqlPassword = process.env.MYSQL_PASSWORD || "suj#HH8y9PfbWswS";
-const mysqlDatabase = process.env.MYSQL_DATABASE || "mysql_psrpqd";
+const runtimeConfig = useRuntimeConfig();
+const mysqlHost = runtimeConfig.mysqlHost || "localhost";
+const mysqlUser = runtimeConfig.mysqlUser || "root";
+const mysqlPassword = runtimeConfig.mysqlPassword || "root1234";
+const mysqlDatabase = runtimeConfig.mysqlDatabase || "ra7";
 
 const db = createPool({
   host: mysqlHost,
@@ -15,6 +14,7 @@ const db = createPool({
 });
 
 export function setupDatabase() {
+  console.log(runtimeConfig);
   // Create tables in the correct order for foreign key constraints
   // 1. Boards (no dependencies)
   db.execute(`

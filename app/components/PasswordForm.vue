@@ -5,20 +5,20 @@
     >
         <InputField
             type="password"
-            label="Old password"
+            :label="$t('settingsOldPassword')"
             required
             v-model="oldPassword"
         />
         <InputField
             type="password"
-            label="New password"
+            :label="$t('settingsNewPassword')"
             required
             v-model="newPassword"
         />
         <input
             type="submit"
             class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-secondary text-white"
-            value="Save new password"
+            :value="$t('settingsSaveNewPassword')"
         />
     </form>
 </template>
