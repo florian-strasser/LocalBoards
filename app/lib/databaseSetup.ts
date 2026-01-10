@@ -14,8 +14,8 @@ const db = createPool({
 });
 
 export function setupDatabase() {
-  // Create better-auth tables
-  // Create better-auth tables
+  console.log(runtimeConfig);
+  // Create better-auth account table
   db.execute(`CREATE TABLE IF NOT EXISTS \`account\` (
       \`id\` varchar(36) NOT NULL,
       \`accountId\` text NOT NULL,
