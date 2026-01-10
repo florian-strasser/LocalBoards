@@ -6,31 +6,20 @@
                 @submit.prevent="handleSaveUser"
                 class="space-y-6"
             >
-                <ErrorMessage v-if="errorMessage">{{
-                    errorMessage
-                }}</ErrorMessage>
                 <div class="form-group">
-                    <label
-                        for="username"
-                        class="block text-sm/6 font-medium text-gray"
-                        >Username</label
-                    >
                     <InputField
                         type="text"
-                        name="username"
+                        :label="$t('name')"
+                        name="name"
                         :required="true"
-                        v-model="username"
+                        v-model="name"
                     />
                 </div>
 
                 <div class="form-group">
-                    <label
-                        for="email"
-                        class="block text-sm/6 font-medium text-gray"
-                        >Email</label
-                    >
                     <InputField
                         type="email"
+                        :label="$t('email')"
                         name="email"
                         :required="true"
                         v-model="email"
@@ -40,17 +29,16 @@
                 <input
                     type="submit"
                     class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
-                    value="Save user information"
+                    :value="$t('saveUserInformation')"
                 />
             </form>
             <div v-else class="space-y-5">
                 <p>
-                    Here you can copy all data from the edited user to save or
-                    send it to the person who uses this account:
+                    {{ $t("saveUserMessage") }}
                 </p>
                 <p>
-                    Username: {{ username }}<br />
-                    Email: {{ email }}
+                    {{ $t("name") }}: {{ name }}<br />
+                    {{ $t("email") }}: {{ email }}
                 </p>
             </div>
         </ContentBox>
@@ -59,15 +47,23 @@
 <script setup lang="ts">
 import { authClient } from "@/lib/auth-client";
 
+const nuxtApp = useNuxtApp();
+
 const props = defineProps({
     id: String,
-    email: String,
-    username: String,
 });
 
-const username = ref(props.username);
-const email = ref(props.email);
-const errorMessage = ref("");
+const { data: userData, error } = await authClient.admin.listUsers({
+    query: {
+        limit: 1,
+        filterField: "id",
+        filterValue: props.id,
+        filterOperator: "eq",
+    },
+});
+
+const name = ref(userData.users[0].name);
+const email = ref(userData.users[0].email);
 
 const savedUser = ref(false);
 
@@ -77,16 +73,17 @@ const handleSaveUser = async () => {
             userId: props.id,
             data: {
                 email: email.value,
-                username: username.value,
+                name: name.value,
             },
         });
         if (error) {
-            throw new Error("Email or Username is already taken");
+            throw new Error($t("error_EMAIL_TAKEN"));
         }
         savedUser.value = true;
     } catch (err) {
-        errorMessage.value =
-            err.message || "An error occurred while updating the user";
+        await nuxtApp.callHook("app:toast", {
+            message: err.message || $t("error_UPDATING_USER"),
+        });
     }
 };
 </script>

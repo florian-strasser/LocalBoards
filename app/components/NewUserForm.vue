@@ -6,16 +6,13 @@
                 @submit.prevent="handleNewUser"
                 class="space-y-6"
             >
-                <ErrorMessage v-if="errorMessage">{{
-                    errorMessage
-                }}</ErrorMessage>
                 <div class="form-group">
                     <InputField
                         type="text"
-                        name="username"
-                        :label="$t('username')"
+                        name="name"
+                        :label="$t('name')"
                         :required="true"
-                        v-model="username"
+                        v-model="name"
                     />
                 </div>
 
@@ -30,7 +27,7 @@
                 </div>
 
                 <div class="form-group">
-                    <div class="flex gap-x-4">
+                    <div class="flex gap-x-4 items-end">
                         <InputField
                             type="text"
                             :label="$t('password')"
@@ -40,7 +37,8 @@
                         />
                         <button
                             type="button"
-                            class="bg-primary text-white hover:bg-secondary px-4 rounded-lg"
+                            class="bg-primary text-white hover:bg-secondary px-4 h-11 rounded-lg"
+                            v-tooltip="$t('generatePassword')"
                             @click="password = generateRandomPassword()"
                         >
                             <BoltIcon class="size-6" />
@@ -49,11 +47,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="block text-sm/6 font-medium text-gray"
-                        >Role</label
-                    >
+                    <label class="block text-sm/6 font-medium text-gray">{{
+                        $t("role")
+                    }}</label>
                     <RadioList
-                        :values="['user', 'admin']"
+                        :values="[
+                            { value: 'user', label: $t('user') },
+                            { value: 'admin', label: $t('admin') },
+                        ]"
                         name="role"
                         v-model="role"
                     />
@@ -62,18 +63,16 @@
                 <input
                     type="submit"
                     class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
-                    value="Create Account"
+                    :value="$t('createAccount')"
                 />
             </form>
             <div v-else class="space-y-5">
                 <p>
-                    Here you can copy all data from the created user to save or
-                    send it to the person who uses this account:
+                    {{ $t("accountCreatedMessage") }}
                 </p>
                 <p>
-                    Username: {{ username }}<br />
-                    Email: {{ email }}<br />
-                    Password: {{ password }}
+                    {{ $t("email") }}: {{ email }}<br />
+                    {{ $t("password") }}: {{ password }}
                 </p>
             </div>
         </ContentBox>
@@ -82,6 +81,8 @@
 <script setup lang="ts">
 import { authClient } from "@/lib/auth-client";
 import { BoltIcon } from "@heroicons/vue/24/solid";
+
+const nuxtApp = useNuxtApp();
 
 const generateRandomPassword = () => {
     const chars =
@@ -93,46 +94,32 @@ const generateRandomPassword = () => {
     return result;
 };
 
-const username = ref("");
+const name = ref("");
 const email = ref("");
 const password = ref(generateRandomPassword());
 const role = ref("user");
-const errorMessage = ref("");
 
 const createdUser = ref(false);
 
 const handleNewUser = async () => {
-    const { data: response, error } = await authClient.isUsernameAvailable(
+    await authClient.admin.createUser(
         {
-            username: username.value, // required
+            email: email.value,
+            password: password.value,
+            name: name.value,
+            role: role.value,
         },
         {
             onSuccess: async (ctx) => {
-                if (ctx.data.available) {
-                    const { data: newUser, error } =
-                        await authClient.admin.createUser(
-                            {
-                                email: email.value,
-                                password: password.value,
-                                name: username.value,
-                                role: role.value,
-                                data: { username: username.value },
-                            },
-                            {
-                                onSuccess: async (ctx) => {
-                                    createdUser.value = true;
-                                },
-                                onError: (ctx) => {
-                                    errorMessage.value = ctx.error.message;
-                                },
-                            },
-                        );
-                } else {
-                    errorMessage.value = "Username is already taken";
-                }
+                createdUser.value = true;
+                await nuxtApp.callHook("app:toast", {
+                    message: $t("userCreated"),
+                });
             },
-            onError: (ctx) => {
-                errorMessage.value = ctx.error.message;
+            onError: async (ctx) => {
+                await nuxtApp.callHook("app:toast", {
+                    message: $t("error_" + ctx.error.code),
+                });
             },
         },
     );

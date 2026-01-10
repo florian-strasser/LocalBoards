@@ -1,24 +1,30 @@
 # LocalBoards
 
-LocalBoards is a open-source self-hosted Trello clone (MIT License). Users can create boards, invite others, and manage Kanban cards. There are also admin features to administrate the users. No external services used. All data is saved in your own database. LocalBoards is currently available in (EN, DE, FR, ES, IT, NL & PL). If your language is not here feel free to open an issue.
+LocalBoards is an open-source (MIT License), self-hosted Kanban board system. It allows users to create boards, invite collaborators, and manage Kanban cards. It also includes admin features for user management. All data is stored in your own database, with no reliance on external services.
 
-## Login with admin default data
+We support real-time multiplayer updates. When you edit a card, area, or rename it, the changes are instantly reflected for all users viewing the board. Comments on cards are also updated in real-time across all browsers. This is powered by an internal Socket.IO integration.
 
-E-Mail: admin@domain.com
-Password: admin123
+LocalBoards is currently available in the following languages: English (EN), German (DE), French (FR), Spanish (ES), Italian (IT), Dutch (NL), and Polish (PL).
 
-## Self Hosted
+## Install
 
-To install clone this repository and install dependencies:
+To install LocalBoards, follow these steps:
+
+### Clone the Repository
 
 ```bash
 git clone https://github.com/florian-strasser/LocalBoards
 cd LocalBoards
+```
+
+### Install Dependencies
+
+```bash
 npm install
 ```
 
-### Enviroment variables
-Create a .env file (and a .env.local file if you need a local build beside your production build) with following settings and adjust with your own database and mail configuration. It's important that you set NUXT_BOARDS_URL to the same URL you define for BETTER_AUTH_URL:
+### Configure Environment Variables
+Create a `.env` file (and optionally a `.env.local` file for local development) with the following settings. Adjust the values to match your database and email configuration. Ensure that `NUXT_BOARDS_URL` and `BETTER_AUTH_URL` are set to the same URL.
 
 ```dotenv
 # App Name
@@ -46,7 +52,7 @@ NUXT_EMAIL_USER=contact@yourdomain.com
 NUXT_EMAIL_PASS=password1234
 ```
 
-### Build the app:
+### Build the Application
 
 ```bash
 npx nuxt build
@@ -54,7 +60,7 @@ npx nuxt build
 
 Move the builded app from /.output to your favorite hosting solution, that is able to run a nodejs app.
 
-### Run the app:
+### Run the Application
 
 ```bash
 node ./server/index.mjs
@@ -62,17 +68,25 @@ node ./server/index.mjs
 
 ## Contribute
 
-Since i maintain this project alone without any monetary interest, i want to encourage anyone to help if you found an issue. Feel free to open PR's if you find any issues. There is no contribution guide at the moment.
+LocalBoards is maintained as a solo project without any monetary incentives. Contributions are highly encouraged! If you encounter any issues or have suggestions for improvements, feel free to open a pull request. There is currently no formal contribution guide, but your help is always welcome.
 
-### Run development local
+### Running Locally for Development
+
+To run the application locally for development:
 
 ```bash
 npm run dev
 ```
-Or with a custom .env.local file:
+
+Or, if you have a custom `.env.local` file:
 ```bash
 npx nuxt dev --dotenv .env.local
 ```
 
-### Build local
+### Building Locally
+
+To build the application locally:
+
+```bash
 npx nuxt build --dotenv .env.local
+```

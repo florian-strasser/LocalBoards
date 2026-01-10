@@ -2,7 +2,12 @@
     <div class="min-h-screen flex flex-col justify-between">
         <AppHeader />
         <ContentWrapper>
-            <UserList />
+            <SectionHeader url="/new-user/" :tooltip="$t('newUser')">{{
+                $t("users")
+            }}</SectionHeader>
+            <ContentBox>
+                <UserList />
+            </ContentBox>
         </ContentWrapper>
         <AppFooter />
     </div>

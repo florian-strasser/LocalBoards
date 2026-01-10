@@ -82,6 +82,11 @@ export default defineEventHandler(async (event) => {
         event.res.statusCode = 403;
         return { error: "You don't have permission to delete this area" };
       }
+      // Delete comments related to cards in the area
+      await db.execute(
+        "DELETE FROM comments WHERE card IN (SELECT id FROM cards WHERE area = ?)",
+        [id],
+      );
 
       // Delete notifications related to cards in the area
       await db.execute(

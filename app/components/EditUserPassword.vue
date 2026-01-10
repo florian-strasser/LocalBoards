@@ -6,21 +6,19 @@
                 @submit.prevent="handleSavePassword"
                 class="space-y-6"
             >
-                <ErrorMessage v-if="errorMessage">{{
-                    errorMessage
-                }}</ErrorMessage>
                 <div class="form-group">
-                    <div class="flex gap-x-4">
+                    <div class="flex items-end gap-x-4">
                         <InputField
                             type="text"
-                            label="New Password"
+                            :label="$t('newPassword')"
                             name="password"
                             required
                             v-model="password"
                         />
                         <button
                             type="button"
-                            class="bg-primary text-white hover:bg-secondary px-4 rounded-lg"
+                            class="bg-primary text-white hover:bg-secondary px-4 h-11 rounded-lg"
+                            v-tooltip="$t('generatePassword')"
                             @click="password = generateRandomPassword()"
                         >
                             <BoltIcon class="size-6" />
@@ -31,15 +29,14 @@
                 <input
                     type="submit"
                     class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
-                    value="Save new password"
+                    :value="$t('changePassword')"
                 />
             </form>
             <div v-else class="space-y-5">
                 <p>
-                    Here you can copy the password to save or send it to the
-                    person who uses this account:
+                    {{ $t("newPasswordMessage") }}
                 </p>
-                <p>Password: {{ password }}</p>
+                <p>{{ $t("password") }}: {{ password }}</p>
             </div>
         </ContentBox>
     </div>
@@ -47,6 +44,8 @@
 <script setup lang="ts">
 import { authClient } from "@/lib/auth-client";
 import { BoltIcon } from "@heroicons/vue/24/solid";
+
+const nuxtApp = useNuxtApp();
 
 const props = defineProps({
     id: String,
@@ -63,7 +62,6 @@ const generateRandomPassword = () => {
 };
 
 const password = ref("");
-const errorMessage = ref("");
 
 const changedPassword = ref(false);
 
@@ -78,8 +76,10 @@ const handleSavePassword = async () => {
             onSuccess: async (ctx) => {
                 changedPassword.value = true;
             },
-            onError: (ctx) => {
-                errorMessage.value = ctx.error.message;
+            onError: async (ctx) => {
+                await nuxtApp.callHook("app:toast", {
+                    message: $t("error_" + ctx.error.code),
+                });
             },
         },
     );

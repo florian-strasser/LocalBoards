@@ -9,7 +9,7 @@
                 >
                     {{ accessError }}
                 </div>
-                <div v-else class="flex justify-between">
+                <div v-else class="flex justify-between flex-wrap gap-y-4">
                     <h1 class="text-5xl text-primary transform -translate-y-1">
                         {{ boardName }}
                     </h1>
