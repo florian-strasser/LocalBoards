@@ -1,9 +1,9 @@
 import { createPool } from "mysql2/promise";
 const runtimeConfig = useRuntimeConfig();
-const mysqlHost = runtimeConfig.mysqlHost || "localhost";
-const mysqlUser = runtimeConfig.mysqlUser || "root";
-const mysqlPassword = runtimeConfig.mysqlPassword || "root1234";
-const mysqlDatabase = runtimeConfig.mysqlDatabase || "ra7";
+const mysqlHost = runtimeConfig.mysqlHost;
+const mysqlUser = runtimeConfig.mysqlUser;
+const mysqlPassword = runtimeConfig.mysqlPassword;
+const mysqlDatabase = runtimeConfig.mysqlDatabase;
 
 const db = createPool({
   host: mysqlHost,
@@ -14,7 +14,64 @@ const db = createPool({
 });
 
 export function setupDatabase() {
-  console.log(runtimeConfig);
+  // Create better-auth tables
+  // Create better-auth tables
+  db.execute(`CREATE TABLE IF NOT EXISTS \`account\` (
+      \`id\` varchar(36) NOT NULL,
+      \`accountId\` text NOT NULL,
+      \`providerId\` text NOT NULL,
+      \`userId\` varchar(36) NOT NULL,
+      \`accessToken\` text,
+      \`refreshToken\` text,
+      \`idToken\` text,
+      \`accessTokenExpiresAt\` timestamp(3) NULL DEFAULT NULL,
+      \`refreshTokenExpiresAt\` timestamp(3) NULL DEFAULT NULL,
+      \`scope\` text,
+      \`password\` text,
+      \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+      \`updatedAt\` timestamp(3) NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
+
+  // Create the session table for better-auth
+  db.execute(`CREATE TABLE IF NOT EXISTS \`session\` (
+      \`id\` varchar(36) NOT NULL,
+      \`expiresAt\` timestamp(3) NOT NULL,
+      \`token\` varchar(255) NOT NULL,
+      \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+      \`updatedAt\` timestamp(3) NOT NULL,
+      \`ipAddress\` text,
+      \`userAgent\` text,
+      \`userId\` varchar(36) NOT NULL,
+      \`impersonatedBy\` text
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
+
+  // Create the user table for better-auth
+  db.execute(`CREATE TABLE IF NOT EXISTS \`user\` (
+      \`id\` varchar(36) NOT NULL,
+      \`name\` varchar(255) NOT NULL,
+      \`email\` varchar(255) NOT NULL,
+      \`emailVerified\` tinyint(1) NOT NULL,
+      \`image\` text,
+      \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+      \`updatedAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+      \`role\` text,
+      \`banned\` tinyint(1) DEFAULT NULL,
+      \`banReason\` text,
+      \`banExpires\` timestamp(3) NULL DEFAULT NULL,
+      \`username\` varchar(255) DEFAULT NULL,
+      \`displayUsername\` text
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
+
+  // Create the verification table for better-auth
+  db.execute(`CREATE TABLE IF NOT EXISTS \`verification\` (
+      \`id\` varchar(36) NOT NULL,
+      \`identifier\` varchar(255) NOT NULL,
+      \`value\` text NOT NULL,
+      \`expiresAt\` timestamp(3) NOT NULL,
+      \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+      \`updatedAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
+
   // Create tables in the correct order for foreign key constraints
   // 1. Boards (no dependencies)
   db.execute(`

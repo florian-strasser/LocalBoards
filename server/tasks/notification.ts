@@ -2,17 +2,76 @@
 import { setupDatabase } from "~/lib/databaseSetup";
 import { sendEmail } from "~/lib/sendEmail";
 
-const appName = process.env.APP_NAME || "LocalBoards";
-const baseURL = process.env.PUBLIC_URL || "https://boards.florian-strasser.de";
+const runtimeConfig = useRuntimeConfig();
+
+const appName = runtimeConfig.appName;
+const baseURL = runtimeConfig.boardsUrl;
+
+const language = runtimeConfig.language;
+
+const textList = {
+  en: {
+    youHaveUnreadNotifications: "You have unread notifications",
+    youHaveTheFollowingUnreadNotifications:
+      "You have the following unread notifications",
+    clickHereToViewYourNotifications: "Click here to view your notifications",
+    notificationInvitedToBoard: "You have been invited to the board:",
+    notificationNewComment: "New comment on card:",
+    notificationNewCard: "New card created:",
+  },
+  de: {
+    youHaveUnreadNotifications: "Du hast ungelesene Benachrichtigungen",
+    youHaveTheFollowingUnreadNotifications:
+      "Du hast folgende ungelesene Benachrichtigungen",
+    clickHereToViewYourNotifications:
+      "Klicke hier, um deine Benachrichtigungen anzuzeigen",
+    notificationInvitedToBoard: "Du wurdest zum Board eingeladen",
+    notificationNewComment: "Neuer Kommentar auf Karte",
+    notificationNewCard: "Neue Karte erstellt",
+  },
+};
+
+const translateText = (text: string): string => {
+  const languageTexts = textList[language] || textList.en; // Fallback to English
+  const translatedText = languageTexts?.[text];
+  if (!translatedText) {
+    console.warn(`Translation for key "${text}" not found.`);
+    return text; // Return the original text as a fallback
+  }
+  return translatedText;
+};
 
 const buildTitle = (title) => {
   return title + " | " + appName;
 };
 
+const translateNotification = (message: string): string => {
+  // Extract the static part of the message
+  const staticPart = message.split(":")[0];
+
+  // Map the static part to a translation key
+  const translationKeyMap = {
+    "You have been invited to the board": "notificationInvitedToBoard",
+    "New comment on card": "notificationNewComment",
+    "New card created": "notificationNewCard",
+  };
+
+  // Get the translation key
+  const translationKey = translationKeyMap[staticPart];
+
+  if (translationKey) {
+    // Replace the static part with the translated text
+    const dynamicPart = message.split(":").slice(1);
+    return `${translateText(translationKey)}: ${dynamicPart}`;
+  } else {
+    // Fallback to the original message if no translation is found
+    return message;
+  }
+};
+
 const sendNotification = async () => {
   try {
     const db = setupDatabase();
-
     // Fetch all unread notifications
     const [rows] = await db.execute(
       "SELECT * FROM notifications WHERE isRead = FALSE",
@@ -46,7 +105,7 @@ const sendNotification = async () => {
       const userNotifications = notificationsByUser[userId];
       const notificationMessages = userNotifications
         .map((notification) => {
-          return `- ${notification.message}`;
+          return `- ${translateNotification(notification.message)}`;
         })
         .join("\n");
 
@@ -60,8 +119,16 @@ const sendNotification = async () => {
       if (userEmail) {
         await sendEmail({
           to: userEmail,
-          subject: buildTitle("You have unread notifications"),
-          text: `You have the following unread notifications:\n\n${notificationMessages}\n\nClick here to view your notifications: ${baseURL}/dashboard/`,
+          subject: buildTitle(translateText("youHaveUnreadNotifications")),
+          text:
+            translateText("youHaveTheFollowingUnreadNotifications") +
+            ":\n\n" +
+            notificationMessages +
+            "\n\n" +
+            translateText("clickHereToViewYourNotifications") +
+            ": " +
+            baseURL +
+            "/dashboard/",
         });
 
         // Mark notifications as read after sending the email

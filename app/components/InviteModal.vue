@@ -1,6 +1,8 @@
 <template>
     <div>
-        <h2 class="text-4xl text-primary text-left mb-3">Permissions</h2>
+        <h2 class="text-4xl text-primary text-left mb-3">
+            {{ $t("permissions") }}
+        </h2>
         <div
             v-if="invitations.length > 0"
             class="relative pb-5 mb-5 border-b border-primary/30"
@@ -48,7 +50,7 @@
                         <button
                             @click="removeInvitation(invitation.user)"
                             class="text-primary hover:text-secondary"
-                            v-tooltip="'Remove'"
+                            v-tooltip="$t('remove')"
                         >
                             <Trash class="size-4" />
                         </button>
@@ -58,7 +60,7 @@
             <div
                 class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white px-2 text-sm"
             >
-                INVITE MORE USER
+                {{ $t("inviteMoreUser") }}
             </div>
         </div>
         <form @submit.prevent="createInvitation" class="text-left space-y-5">
@@ -66,17 +68,20 @@
                 <InputField
                     type="email"
                     name="inviteEmail"
-                    label="User Email"
+                    :label="$t('userEmail')"
                     required
                     v-model="inviteEmail"
                 />
             </div>
             <div>
-                <label class="block text-sm/6 font-medium text-gray"
-                    >Permission</label
-                >
+                <label class="block text-sm/6 font-medium text-gray">{{
+                    $t("permission")
+                }}</label>
                 <RadioList
-                    :values="['read', 'edit']"
+                    :values="[
+                        { value: 'read', label: $t('permissionRead') },
+                        { value: 'edit', label: $t('permissionWrite') },
+                    ]"
                     name="permission"
                     v-model="invitePermission"
                 />
@@ -84,7 +89,7 @@
             <input
                 type="submit"
                 class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
-                value="Send Invitation"
+                :value="$t('sendInvitation')"
             />
         </form>
     </div>
@@ -148,7 +153,7 @@ const createInvitation = async () => {
             });
         } else if (data.message) {
             await nuxtApp.callHook("app:toast", {
-                message: "Invitation sent",
+                message: $t("invitationSent"),
             });
             inviteEmail.value = "";
             invitePermission.value = "read";
@@ -174,7 +179,7 @@ const removeInvitation = async (userId) => {
 
         if (data.message) {
             await nuxtApp.callHook("app:toast", {
-                message: "Invitation removed",
+                message: $t("invitationRemoved"),
             });
             // Refetch invitations to update the list
             fetchData();

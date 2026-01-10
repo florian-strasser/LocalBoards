@@ -6,8 +6,32 @@ import { sendEmail } from "~/lib/sendEmail";
 
 const runtimeConfig = useRuntimeConfig();
 
-const appName = process.env.APP_NAME || "LocalBoards";
-const baseURL = runtimeConfig.boardsUrl || "https://boards.florian-strasser.de";
+const appName = runtimeConfig.appName;
+const baseURL = runtimeConfig.boardsUrl;
+
+const language = runtimeConfig.language;
+
+const textList = {
+  en: {
+    resetYourPassword: "Reset your password",
+    resetYourPasswordText: "Click on this link to assign a new password",
+  },
+  de: {
+    resetYourPassword: "Passwort zurücksetzen",
+    resetYourPasswordText:
+      "Klicke auf diesen Link, um ein neues Passwort zu vergeben",
+  },
+};
+
+const translateText = (text: string): string => {
+  const languageTexts = textList[language] || textList.en; // Fallback to English
+  const translatedText = languageTexts?.[text];
+  if (!translatedText) {
+    console.warn(`Translation for key "${text}" not found.`);
+    return text; // Return the original text as a fallback
+  }
+  return translatedText;
+};
 
 const buildTitle = (title) => {
   return title + " | " + appName;
@@ -20,8 +44,13 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url, token }, request) => {
       await sendEmail({
         to: user.email,
-        subject: buildTitle("Reset your password"),
-        text: `Click on this link to assign a new password: ${baseURL}/reset-password/${token}`,
+        subject: buildTitle(translateText("resetYourPassword")),
+        text:
+          translateText("resetYourPasswordText") +
+          ": " +
+          baseURL +
+          "/reset-password/" +
+          token,
       });
     },
     onPasswordReset: async ({ user }, request) => {

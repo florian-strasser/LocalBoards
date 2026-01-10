@@ -17,8 +17,14 @@
 </template>
 <script setup lang="ts">
 import { authClient } from "@/lib/auth-client";
+
 const route = useRoute();
 const userID = route.params.id;
+
+useHead({
+    title: $t("editUser") + " #" + userID,
+});
+
 const { data: userData, error } = await authClient.admin.listUsers({
     query: {
         limit: 1,

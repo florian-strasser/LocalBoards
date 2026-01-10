@@ -3,7 +3,7 @@
         <div class="container text-gray">
             Made with ♥ by
             <a
-                href="https://www.florian-strasser.de"
+                href="https://github.com/florian-strasser"
                 target="_blank"
                 class="text-gray hover:text-secondary"
                 >Florian Strasser</a

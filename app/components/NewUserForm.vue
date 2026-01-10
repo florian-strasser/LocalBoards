@@ -10,42 +10,30 @@
                     errorMessage
                 }}</ErrorMessage>
                 <div class="form-group">
-                    <label
-                        for="username"
-                        class="block text-sm/6 font-medium text-gray"
-                        >Username</label
-                    >
                     <InputField
                         type="text"
                         name="username"
+                        :label="$t('username')"
                         :required="true"
                         v-model="username"
                     />
                 </div>
 
                 <div class="form-group">
-                    <label
-                        for="email"
-                        class="block text-sm/6 font-medium text-gray"
-                        >Email</label
-                    >
                     <InputField
                         type="email"
                         name="email"
+                        :label="$t('email')"
                         :required="true"
                         v-model="email"
                     />
                 </div>
 
                 <div class="form-group">
-                    <label
-                        for="password"
-                        class="block text-sm/6 font-medium text-gray"
-                        >Password</label
-                    >
                     <div class="flex gap-x-4">
                         <InputField
                             type="text"
+                            :label="$t('password')"
                             name="password"
                             :required="true"
                             v-model="password"

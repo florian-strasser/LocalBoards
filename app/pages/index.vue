@@ -7,14 +7,14 @@
                         <div
                             class="text-center block py-3 px-5 bg-white rounded-t-lg"
                         >
-                            Login
+                            {{ $t("login") }}
                         </div>
                         <div class="bg-white">
                             <NuxtLink
                                 to="/sign-up/"
                                 class="text-primary hover:text-secondary text-center block py-3 px-5 rounded-bl-lg bg-slate"
                             >
-                                Sign up
+                                {{ $t("signUp") }}
                             </NuxtLink>
                         </div>
                     </div>
@@ -25,29 +25,30 @@
                         >
                             <InputField
                                 type="email"
-                                label="E-Mail"
+                                :label="$t('email')"
                                 required
                                 v-model="email"
                             />
                             <InputField
                                 type="password"
-                                label="Password"
+                                :label="$t('password')"
                                 required
                                 v-model="password"
                             />
                             <input
                                 type="submit"
                                 class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-secondary text-white"
-                                value="Login"
+                                :value="$t('loginBtn')"
                             />
                         </form>
                     </div>
                     <div class="text-center mt-4 text-sm">
-                        <a
+                        <NuxtLink
                             class="text-primary hover:text-secondary"
-                            href="/lost-password/"
-                            >Lost password?</a
+                            to="/lost-password/"
                         >
+                            {{ $t("lostPasswordQuestion") }}
+                        </NuxtLink>
                     </div>
                 </div>
             </div>
@@ -60,7 +61,7 @@ import * as z from "zod";
 const nuxtApp = useNuxtApp();
 
 useHead({
-    title: "Login",
+    title: $t("login"),
 });
 
 const schema = z.object({
@@ -93,8 +94,9 @@ const handleLogin = async () => {
                 },
                 onError: async (ctx) => {
                     const response = await JSON.parse(ctx.responseText);
+                    console.log(response);
                     await nuxtApp.callHook("app:toast", {
-                        message: response.message,
+                        message: $t("error_" + response.code),
                     });
                 },
             },
@@ -103,11 +105,13 @@ const handleLogin = async () => {
         // Handle validation errors
         if (e instanceof z.ZodError) {
             const errors = await JSON.parse(e);
+            console.log(errors[0]);
             await nuxtApp.callHook("app:toast", {
-                message: errors[0].message,
+                message: $t("error_" + errors[0].code),
             });
             // You can display these errors to the user
         } else {
+            console.log(e);
             await nuxtApp.callHook("app:toast", {
                 message: e,
             });

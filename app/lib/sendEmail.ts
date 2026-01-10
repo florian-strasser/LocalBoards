@@ -1,10 +1,14 @@
 import nodemailer from "nodemailer";
 
-const emailHost = process.env.EMAIL_HOST || "mail.agenturserver.de";
-const emailPort = process.env.EMAIL_PORT || 465;
-const emailSecure = process.env.EMAIL_SECURE || true;
-const emailUser = process.env.EMAIL_USER || "test@florian-strasser.de";
-const emailPass = process.env.EMAIL_PASS || "ry1!jj-nf_Iiqh[i";
+const runtimeConfig = useRuntimeConfig();
+
+const appName = runtimeConfig.appName;
+
+const emailHost = runtimeConfig.emailHost;
+const emailPort = runtimeConfig.emailPort;
+const emailSecure = runtimeConfig.emailSecure;
+const emailUser = runtimeConfig.emailUser;
+const emailPass = runtimeConfig.emailPass;
 
 const transporter = nodemailer.createTransport({
   host: emailHost,

@@ -22,27 +22,36 @@
                         <InputField
                             type="text"
                             name="boardName"
-                            label="Board Name"
+                            :label="$t('boardName')"
                             required
                             v-model="newBoardName"
                         />
                     </div>
                     <div>
-                        <label class="block text-sm/6 font-medium text-gray"
-                            >Style</label
-                        >
+                        <label class="block text-sm/6 font-medium text-gray">{{
+                            $t("boardStyle")
+                        }}</label>
                         <RadioList
-                            :values="['kanban', 'todo']"
+                            :values="[
+                                { value: 'kanban', label: $t('kanBan') },
+                                { value: 'todo', label: $t('toDo') },
+                            ]"
                             name="style"
                             v-model="newBoardStyle"
                         />
                     </div>
                     <div>
-                        <label class="block text-sm/6 font-medium text-gray"
-                            >Status</label
-                        >
+                        <label class="block text-sm/6 font-medium text-gray">{{
+                            $t("boardStatus")
+                        }}</label>
                         <RadioList
-                            :values="['private', 'public']"
+                            :values="[
+                                {
+                                    value: 'private',
+                                    label: $t('statusPrivate'),
+                                },
+                                { value: 'public', label: $t('statusPublic') },
+                            ]"
                             name="status"
                             v-model="newBoardStatus"
                         />
@@ -63,6 +72,10 @@ import { authClient } from "@/lib/auth-client";
 
 const nuxtApp = useNuxtApp();
 
+useHead({
+    title: $t("dashboard"),
+});
+
 const relativeFetch = ((url: string, opts?: any) => {
     try {
         if (url.startsWith("http")) url = new URL(url).pathname;
@@ -76,7 +89,7 @@ const userID = session.value.user.id;
 
 const createBoard = ref(false);
 
-const newBoardName = ref("Untitled Board");
+const newBoardName = ref($t("untitledBoard"));
 const newBoardStyle = ref("kanban");
 const newBoardStatus = ref("private");
 
@@ -97,11 +110,11 @@ const saveBoard = async () => {
         });
         if (!data) {
             await nuxtApp.callHook("app:toast", {
-                message: "Error creating board",
+                message: $t("error_creating_board"),
             });
         } else {
             await nuxtApp.callHook("app:toast", {
-                message: "Board created",
+                message: $t("boardCreated"),
             });
             await navigateTo(`/board/${data.board.id}`);
         }

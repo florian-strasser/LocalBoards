@@ -21,21 +21,21 @@
                         <button
                             @click="openModal"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
-                            v-tooltip="'Board settings'"
+                            v-tooltip="$t('boardSettings')"
                         >
                             <Pencil class="size-5" />
                         </button>
                         <button
                             @click="inviteModal = true"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
-                            v-tooltip="'Invite users'"
+                            v-tooltip="$t('inviteUsers')"
                         >
                             <UserRoundPlus class="size-5" />
                         </button>
                         <button
                             @click="deleteModal = true"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
-                            v-tooltip="'Delete board'"
+                            v-tooltip="$t('deleteBoard')"
                         >
                             <Trash2 class="size-5" />
                         </button>
@@ -169,27 +169,36 @@
                         <InputField
                             type="text"
                             name="boardName"
-                            label="Board Name"
+                            :label="$t('boardName')"
                             required
                             v-model="newBoardName"
                         />
                     </div>
                     <div>
-                        <label class="block text-sm/6 font-medium text-gray"
-                            >Style</label
-                        >
+                        <label class="block text-sm/6 font-medium text-gray">{{
+                            $t("boardStyle")
+                        }}</label>
                         <RadioList
-                            :values="['kanban', 'todo']"
+                            :values="[
+                                { value: 'kanban', label: $t('kanBan') },
+                                { value: 'todo', label: $t('toDo') },
+                            ]"
                             name="style"
                             v-model="newBoardStyle"
                         />
                     </div>
                     <div>
-                        <label class="block text-sm/6 font-medium text-gray"
-                            >Status</label
-                        >
+                        <label class="block text-sm/6 font-medium text-gray">{{
+                            $t("boardStatus")
+                        }}</label>
                         <RadioList
-                            :values="['private', 'public']"
+                            :values="[
+                                {
+                                    value: 'private',
+                                    label: $t('statusPrivate'),
+                                },
+                                { value: 'public', label: $t('statusPublic') },
+                            ]"
                             name="status"
                             v-model="newBoardStatus"
                         />
@@ -197,22 +206,22 @@
                     <input
                         type="submit"
                         class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
-                        value="Save Board"
+                        :value="$t('saveBoard')"
                     />
                 </form>
             </div>
         </ModalWindow>
         <ModalWindow v-if="userID === boardUser" v-model="deleteModal">
             <h2 class="text-4xl text-primary mb-3">
-                Do you want to delete this board?
+                {{ $t("deleteBoardTitle") }}
             </h2>
-            <p class="mb-6">Every card will be deleted too.</p>
+            <p class="mb-6">{{ $t("deleteBoardText") }}</p>
             <button
                 @click="deleteBoard"
                 type="button"
                 class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
             >
-                Delete Board
+                {{ $t("deleteBoardBtn") }}
             </button>
         </ModalWindow>
         <ModalWindow v-if="userID === boardUser" v-model="inviteModal">
@@ -266,7 +275,7 @@ const userID = session.value.user.id;
 const route = useRoute();
 const boardID = ref(route.params.id);
 
-const boardName = ref("Untitled Board");
+const boardName = ref($t("untitledBoard"));
 const boardUser = ref(false);
 const boardStyle = ref("kanban");
 const boardStatus = ref("private");
@@ -518,7 +527,7 @@ const saveBoard = async () => {
             });
 
             await nuxtApp.callHook("app:toast", {
-                message: "Board saved",
+                message: $t("boardSaved"),
             });
         }
     } catch (err) {
@@ -550,7 +559,7 @@ const handleAreasUpdated = (updatedAreas) => {
 const handleBoardDeleted = async () => {
     cards.value = {};
     await nuxtApp.callHook("app:toast", {
-        message: "Board has been deleted",
+        message: $t("boardHasBeenDeleted"),
     });
     await navigateTo("/dashboard/");
 };
@@ -568,7 +577,7 @@ const deleteBoard = async () => {
             console.error("Error deleting board");
         } else {
             await nuxtApp.callHook("app:toast", {
-                message: "Board deleted",
+                message: $t("boardDeleted"),
             });
             // Remove all cards when the board is deleted
             cards.value = {};
@@ -712,6 +721,9 @@ try {
         }
     } else if (data.value?.board) {
         boardName.value = data.value.board.name;
+        useHead({
+            title: data.value.board.name,
+        });
         boardUser.value = data.value.board.user;
         boardStyle.value = data.value.board.style || "kanban";
         boardStatus.value = data.value.board.status || "private";
@@ -721,6 +733,9 @@ try {
         writeAccess.value = data.value.writeAccess;
     }
 } catch (err) {
+    useHead({
+        title: $t("unknownBoard"),
+    });
     console.error("Error:", err);
 }
 // Load cards for all areas when the board is loaded

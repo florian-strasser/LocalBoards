@@ -1,6 +1,6 @@
 <template>
     <label class="block flex gap-x-2">
-        <div class="group grid size-4 grid-cols-1 mt-0.5 shrink-0 grow-0">
+        <div class="group grid size-5 grid-cols-1 mt-0.5 shrink-0 grow-0">
             <input
                 type="checkbox"
                 :required="props.required"
@@ -28,7 +28,7 @@
                 ></path>
             </svg>
         </div>
-        <div class="text-sm grow shrink">
+        <div class="grow shrink">
             <span v-html="props.label" />
             <span v-if="props.required" class="text-secondary ml-1">*</span>
         </div>

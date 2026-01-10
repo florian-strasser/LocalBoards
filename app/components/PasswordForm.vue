@@ -54,11 +54,11 @@ const handlePassword = async () => {
         });
         if (error) {
             await nuxtApp.callHook("app:toast", {
-                message: error.message,
+                message: $t("error_" + error.code),
             });
         } else {
             await nuxtApp.callHook("app:toast", {
-                message: "Saved user data",
+                message: $t("savedPassword"),
             });
         }
     } catch (e) {
@@ -66,7 +66,7 @@ const handlePassword = async () => {
         if (e instanceof z.ZodError) {
             const errors = await JSON.parse(e);
             await nuxtApp.callHook("app:toast", {
-                message: errors[0].message,
+                message: $t("error_" + errors[0].code),
             });
             // You can display these errors to the user
         } else {

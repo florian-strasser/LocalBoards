@@ -33,10 +33,18 @@
 <script setup lang="ts">
 import { authClient } from "@/lib/auth-client";
 
+const relativeFetch = ((url: string, opts?: any) => {
+    try {
+        if (url.startsWith("http")) url = new URL(url).pathname;
+    } catch {}
+    return useFetch(url, opts);
+}) as any;
+
 const deleteModal = ref(false);
 const userList = ref([]);
 
-const { data: users, error } = await authClient.admin.listUsers(useFetch);
+const { data: users, error } = await useFetch("/api/auth/admin/list-users");
+// const { data: users, error } = authClient.admin.listUsers(relativeFetch);
 
 if (users && users.users) {
     userList.value = users.users;

@@ -30,7 +30,7 @@ const handleLogout = async () => {
                 <li>
                     <NotificationBell :userID="session.user.id" />
                 </li>
-                <li v-if="session.user.role == 'admin'">
+                <li v-if="session.user.role === 'admin'">
                     <NuxtLinkLocale
                         to="/users/"
                         class="text-gray hover:text-secondary cursor-pointer block"

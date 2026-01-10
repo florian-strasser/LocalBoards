@@ -29,7 +29,9 @@
                     class="p-4 border-b hover:bg-gray-50"
                     :class="{ 'bg-gray-100': !notification.isRead }"
                 >
-                    <p class="text-sm">{{ notification.message }}</p>
+                    <p class="text-sm">
+                        {{ translateNotification(notification.message) }}
+                    </p>
                     <p class="text-xs text-gray-500 mt-1">
                         {{ formatDate(notification.createdAt) }}
                     </p>
@@ -78,6 +80,30 @@ const fetchNotifications = async () => {
 const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString();
+};
+
+const translateNotification = (message: string): string => {
+    // Extract the static part of the message
+    const staticPart = message.split(":")[0];
+
+    // Map the static part to a translation key
+    const translationKeyMap = {
+        "You have been invited to the board": "notificationInvitedToBoard",
+        "New comment on card": "notificationNewComment",
+        "New card created": "notificationNewCard",
+    };
+
+    // Get the translation key
+    const translationKey = translationKeyMap[staticPart];
+
+    if (translationKey) {
+        // Replace the static part with the translated text
+        const dynamicPart = message.split(":").slice(1);
+        return `${$t(translationKey)}: ${dynamicPart}`;
+    } else {
+        // Fallback to the original message if no translation is found
+        return message;
+    }
 };
 
 onMounted(() => {

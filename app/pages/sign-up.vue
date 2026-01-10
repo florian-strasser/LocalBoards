@@ -9,13 +9,13 @@
                                 to="/"
                                 class="text-primary hover:text-secondary text-center block py-3 px-5 rounded-br-lg bg-slate"
                             >
-                                Login
+                                {{ $t("login") }}
                             </NuxtLink>
                         </div>
                         <div
                             class="text-center block py-3 px-5 bg-white rounded-t-lg"
                         >
-                            Sign up
+                            {{ $t("signUp") }}
                         </div>
                     </div>
                     <div class="bg-white rounded-lg rounded-tr-none p-5">
@@ -25,31 +25,39 @@
                         >
                             <InputField
                                 type="text"
-                                label="Name"
+                                :label="$t('name')"
                                 required
                                 v-model="name"
                             />
                             <InputField
                                 type="email"
-                                label="E-Mail"
+                                :label="$t('email')"
                                 required
                                 v-model="email"
                             />
                             <InputField
                                 type="password"
-                                label="Password"
+                                :label="$t('password')"
                                 required
                                 v-model="password"
                             />
                             <InputCheckbox
-                                label="I have read and accept the <a class='text-secondary' href='https://www.florian-strasser.de/datenschutz/'>Privacy Policy</a>."
+                                :label="
+                                    $t('signUpHintBefore') +
+                                    ' <a class=\'text-secondary\' href=\'' +
+                                    privacyURL +
+                                    '\'>' +
+                                    $t('privacyPolicy') +
+                                    '</a> ' +
+                                    $t('signUpHintAfter')
+                                "
                                 required
                                 v-model="privacy"
                             />
                             <input
                                 type="submit"
                                 class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-secondary text-white"
-                                value="Sign up"
+                                :value="$t('signUpBtn')"
                             />
                         </form>
                     </div>
@@ -61,10 +69,16 @@
 <script setup lang="ts">
 import { authClient } from "@/lib/auth-client";
 import * as z from "zod";
+
 const nuxtApp = useNuxtApp();
+
 useHead({
-    title: "Signup",
+    title: $t("signUp"),
 });
+
+const privacyURL = nuxtApp.$config.public.privacyUrl;
+console.log(privacyURL);
+
 const schema = z.object({
     name: z
         .string()
@@ -108,13 +122,13 @@ const handleSignUp = async () => {
             {
                 onSuccess: async (ctx) => {
                     await nuxtApp.callHook("app:toast", {
-                        message: "Successfully registered",
+                        message: $t("successfullySignedUp"),
                     });
                     await navigateTo("/dashboard/");
                 },
                 onError: async (ctx) => {
                     await nuxtApp.callHook("app:toast", {
-                        message: ctx.error.message,
+                        message: $t("error_" + ctx.error.code),
                     });
                 },
             },
@@ -124,7 +138,7 @@ const handleSignUp = async () => {
         if (e instanceof z.ZodError) {
             const errors = await JSON.parse(e);
             await nuxtApp.callHook("app:toast", {
-                message: errors[0].message,
+                message: $t("error_" + errors[0].code),
             });
             // You can display these errors to the user
         } else {

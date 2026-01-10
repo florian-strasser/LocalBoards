@@ -87,6 +87,11 @@ export default defineEventHandler(async (event) => {
         ...invitedUsers.map((inv) => inv.user),
       ].filter(Boolean);
 
+      // Fetch the created comment with user information using a LEFT JOIN
+      const [cRows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
+        card,
+      ]);
+
       for (const userId of usersToNotify) {
         if (userId !== user) {
           // Don't notify the user who created the comment
@@ -97,7 +102,7 @@ export default defineEventHandler(async (event) => {
               "comment",
               boardId,
               card,
-              `New comment on card: ${rows[0]?.name || "a card"}`,
+              `New comment on card: ${cRows[0]?.name || "a card"}`,
             ],
           );
         }

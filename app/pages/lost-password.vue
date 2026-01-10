@@ -12,7 +12,7 @@
                 <div class="form-group">
                     <InputField
                         type="email"
-                        label="E-Mail"
+                        :label="$t('email')"
                         name="email"
                         required
                         v-model="email"
@@ -21,7 +21,7 @@
                 <input
                     type="submit"
                     class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
-                    value="Recover password"
+                    :value="$t('lostPasswordBtn')"
                 />
             </form>
             <div
@@ -29,13 +29,13 @@
                 class="max-w-md mx-auto px-8 pb-8 pt-7 bg-white rounded-xl text-center"
             >
                 <h2 class="text-4xl text-primary mb-6">
-                    Requested new password, check your inbox
+                    {{ $t("requestedNewPasswordCheckYourInbox") }}
                 </h2>
-                <NuxtLink
-                    to="/"
-                    class="bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
-                    >Back to login</NuxtLink
-                >
+            </div>
+            <div class="text-center mt-4 text-sm">
+                <NuxtLink class="text-primary hover:text-secondary" to="/">
+                    {{ $t("backToLogin") }}
+                </NuxtLink>
             </div>
         </div>
     </div>
@@ -47,6 +47,10 @@ const email = ref("");
 
 const requestNew = ref(false);
 const errorMessage = ref("");
+
+useHead({
+    title: $t("lostPassword"),
+});
 
 const handleReset = async () => {
     const { data, error } = await authClient.requestPasswordReset({
