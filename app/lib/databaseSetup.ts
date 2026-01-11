@@ -116,7 +116,7 @@ export function setupDatabase() {
       content LONGTEXT,
       date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (card) REFERENCES cards(id)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `);
 
   // 5. Invitations (depends on boards)

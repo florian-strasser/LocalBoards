@@ -116,6 +116,6 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     console.error("Database error:", error);
     event.res.statusCode = 500;
-    return { error: "Internal server error" };
+    return { error: "Internal server error", details: error };
   }
 });
