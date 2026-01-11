@@ -80,7 +80,7 @@ export function setupDatabase() {
       name VARCHAR(255) NOT NULL,
       style ENUM('kanban', 'todo') DEFAULT 'kanban',
       status ENUM('private', 'public') DEFAULT 'private'
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `);
 
   // 2. Areas (depends on boards)
@@ -91,7 +91,7 @@ export function setupDatabase() {
       name VARCHAR(255) NOT NULL,
       sort INT DEFAULT 0,
       FOREIGN KEY (board) REFERENCES boards(id)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `);
 
   // 3. Cards (depends on areas)
@@ -104,7 +104,7 @@ export function setupDatabase() {
       content LONGTEXT,
       status BOOLEAN DEFAULT FALSE,
       FOREIGN KEY (area) REFERENCES areas(id)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `);
 
   // 4. Comments (depends on cards)
@@ -128,7 +128,7 @@ export function setupDatabase() {
       permission ENUM('read', 'edit') DEFAULT 'read',
       date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (board) REFERENCES boards(id)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `);
   // 6. Notifications (depends on boards and cards)
   db.execute(`
@@ -143,7 +143,7 @@ export function setupDatabase() {
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (boardId) REFERENCES boards(id),
         FOREIGN KEY (cardId) REFERENCES cards(id)
-      );
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `);
   return db;
 }
