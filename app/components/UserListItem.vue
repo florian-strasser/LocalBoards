@@ -17,20 +17,20 @@
                 v-tooltip="$t('delete')"
                 class="size-12 rounded-full flex bg-primary hover:bg-secondary text-white justify-center items-center cursor-pointer"
             >
-                <TrashIcon class="size-6" />
+                <Trash2 class="size-6" />
             </button>
             <NuxtLink
                 :to="'/edit-user/' + props.id"
                 v-tooltip="$t('edit')"
                 class="size-12 rounded-full flex bg-primary hover:bg-secondary text-white justify-center items-center cursor-pointer"
             >
-                <ArrowRightIcon class="size-6" />
+                <ArrowRight class="size-6" />
             </NuxtLink>
         </div>
     </div>
 </template>
 <script setup lang="ts">
-import { TrashIcon, ArrowRightIcon } from "@heroicons/vue/24/outline";
+import { Trash2, ArrowRight } from "lucide-vue-next";
 const model = defineModel();
 const props = defineProps({
     id: String,

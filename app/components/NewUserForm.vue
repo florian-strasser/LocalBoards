@@ -41,7 +41,7 @@
                             v-tooltip="$t('generatePassword')"
                             @click="password = generateRandomPassword()"
                         >
-                            <BoltIcon class="size-6" />
+                            <Zap class="size-6" />
                         </button>
                     </div>
                 </div>
@@ -80,7 +80,7 @@
 </template>
 <script setup lang="ts">
 import { authClient } from "@/lib/auth-client";
-import { BoltIcon } from "@heroicons/vue/24/solid";
+import { Zap } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
 

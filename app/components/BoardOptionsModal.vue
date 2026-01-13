@@ -46,12 +46,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { useToast } from '@/composables/useToast';
-import { $fetch } from 'ofetch';
-import ModalWindow from '@/components/ModalWindow.vue';
-import InputField from '@/components/InputField.vue';
-import RadioList from '@/components/RadioList.vue';
+import { useToast } from "@/composables/useToast";
+import ModalWindow from "@/components/ModalWindow.vue";
+import InputField from "@/components/InputField.vue";
+import RadioList from "@/components/RadioList.vue";
 
 const props = defineProps({
     modelValue: Boolean,
@@ -62,7 +60,7 @@ const props = defineProps({
     userID: String,
 });
 
-const emit = defineEmits(['update:modelValue', 'board-saved']);
+const emit = defineEmits(["update:modelValue", "board-saved"]);
 
 const isOpen = ref(props.modelValue);
 const newBoardName = ref(props.boardName);
@@ -76,10 +74,10 @@ const saveBoard = async () => {
     if (!newName) return;
 
     try {
-        const data = await $fetch('/api/data/board', {
-            method: 'POST',
+        const data = await $fetch("/api/data/board", {
+            method: "POST",
             body: {
-                id: props.boardID === 'new' ? null : props.boardID,
+                id: props.boardID === "new" ? null : props.boardID,
                 userId: props.userID,
                 name: newName,
                 style: newBoardStyle.value,
@@ -87,14 +85,14 @@ const saveBoard = async () => {
             },
         });
         if (!data) {
-            console.error('Error updating board');
+            console.error("Error updating board");
         } else {
             // If creating a new board, update the route with the new ID
-            if (props.boardID === 'new' && data.board?.id) {
+            if (props.boardID === "new" && data.board?.id) {
                 // Update the URL virtually without redirecting
-                history.replaceState(null, '', `/board/${data.board.id}`);
+                history.replaceState(null, "", `/board/${data.board.id}`);
             }
-            emit('board-saved', {
+            emit("board-saved", {
                 name: newBoardName.value,
                 style: newBoardStyle.value,
                 status: newBoardStatus.value,
@@ -102,11 +100,11 @@ const saveBoard = async () => {
             });
             isOpen.value = false;
             toast.add({
-                title: 'Board saved',
+                title: "Board saved",
             });
         }
     } catch (err) {
-        console.error('Error:', err);
+        console.error("Error:", err);
     }
 };
 
@@ -115,15 +113,15 @@ watch(
     () => props.modelValue,
     (newVal) => {
         isOpen.value = newVal;
-    }
+    },
 );
 
 // Watch for changes in isOpen to emit update:modelValue
 watch(
     () => isOpen.value,
     (newVal) => {
-        emit('update:modelValue', newVal);
-    }
+        emit("update:modelValue", newVal);
+    },
 );
 </script>
 

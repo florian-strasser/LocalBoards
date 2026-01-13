@@ -3,7 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  modules: ["@nuxt/fonts", "@nuxtjs/i18n"],
+  modules: ["@nuxtjs/i18n"],
   app: {
     head: {
       title: process.env.NUXT_APP_NAME || "LocalBoards",
@@ -76,11 +76,8 @@ export default defineNuxtConfig({
       websocket: true,
     },
     scheduledTasks: {
-      // Run `notification` task every 6 hours
-      "54 0 * * *": ["notification"],
-      "0 6 * * *": ["notification"],
-      "0 12 * * *": ["notification"],
-      "0 18 * * *": ["notification"],
+      // Run `notification` task every hour
+      "0 * * * *": ["notification"],
     },
   },
   vite: {

@@ -6,9 +6,7 @@
                 type="button"
                 class="bg-primary hover:bg-secondary px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
             >
-                <PlusIcon class="size-5" /><span>{{
-                    $t("writeAComment")
-                }}</span>
+                <Plus class="size-5" /><span>{{ $t("writeAComment") }}</span>
             </button>
         </div>
         <form v-else @submit.prevent="createComment">
@@ -24,7 +22,7 @@
                     @click="newCommentCreation = false"
                     class="px-4 bg-primary/10 text-primary hover:bg-secondary hover:text-white rounded-lg"
                 >
-                    <XMarkIcon class="size-5" />
+                    <X class="size-5" />
                 </button>
             </div>
         </form>
@@ -33,7 +31,7 @@
 <script setup lang="ts">
 import { socket } from "~/lib/socket";
 import { authClient } from "@/lib/auth-client";
-import { PlusIcon, XMarkIcon } from "@heroicons/vue/24/outline";
+import { Plus, X } from "lucide-vue-next";
 
 interface Session {
     id: string;

@@ -112,7 +112,7 @@
                             @click="createNewArea"
                             class="bg-white text-primary hover:bg-secondary hover:text-white p-4 rounded-lg flex w-full items-center gap-x-1"
                         >
-                            <PlusIcon class="size-5" /><span>{{
+                            <Plus :stroke-width="1.5" class="size-5" /><span>{{
                                 $t("createNewArea")
                             }}</span>
                         </button>
@@ -257,7 +257,7 @@ import { socket } from "~/lib/socket";
 import { authClient } from "@/lib/auth-client";
 import Sortable from "sortablejs";
 import { Pencil, UserRoundPlus, Trash2, X } from "lucide-vue-next";
-import { PlusIcon } from "@heroicons/vue/24/outline";
+import { Plus } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
 
