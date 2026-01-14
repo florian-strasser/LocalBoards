@@ -9,18 +9,18 @@
     --color-slate: #e8f2e7;
     --color-black: #000000;
 }
-
 html,
 body {
     background: var(--color-slate);
     color: var(--color-gray);
 }
-
 .container {
     padding-left: 2rem;
     padding-right: 2rem;
     margin-left: auto;
     margin-right: auto;
+    width: 100%;
+    max-width: 100%;
 }
 
 .hide-scrollbar {

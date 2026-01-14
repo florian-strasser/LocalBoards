@@ -137,49 +137,41 @@ const editor = useEditor({
         FileHandler.configure({
             allowedMimeTypes: [
                 "image/png",
+                "image/jpg",
                 "image/jpeg",
                 "image/gif",
                 "image/webp",
             ],
             onDrop: (currentEditor, files, pos) => {
-                files.forEach((file) => {
-                    const fileReader = new FileReader();
-
-                    fileReader.readAsDataURL(file);
-                    fileReader.onload = () => {
-                        currentEditor
-                            .chain()
-                            .insertContentAt(pos, {
-                                type: "image",
-                                attrs: {
-                                    src: fileReader.result,
-                                },
-                            })
-                            .focus()
-                            .run();
-                    };
+                files.forEach(async (file) => {
+                    const image = await uploadImage(file);
+                    currentEditor
+                        .chain()
+                        .insertContentAt(pos, {
+                            type: "image",
+                            attrs: {
+                                src: image.image,
+                            },
+                        })
+                        .focus()
+                        .run();
+                    model.value = editor.value.getHTML();
                 });
             },
             onPaste: (currentEditor, files) => {
-                files.forEach((file) => {
-                    const fileReader = new FileReader();
-
-                    fileReader.readAsDataURL(file);
-                    fileReader.onload = () => {
-                        currentEditor
-                            .chain()
-                            .insertContentAt(
-                                currentEditor.state.selection.anchor,
-                                {
-                                    type: "image",
-                                    attrs: {
-                                        src: fileReader.result,
-                                    },
-                                },
-                            )
-                            .focus()
-                            .run();
-                    };
+                files.forEach(async (file) => {
+                    const image = await uploadImage(file);
+                    currentEditor
+                        .chain()
+                        .insertContentAt(currentEditor.state.selection.anchor, {
+                            type: "image",
+                            attrs: {
+                                src: image.image,
+                            },
+                        })
+                        .focus()
+                        .run();
+                    model.value = editor.value.getHTML();
                 });
             },
         }),
@@ -195,6 +187,32 @@ const addImage = () => {
     const url = window.prompt("URL");
     if (url) {
         editor.chain().focus().setImage({ src: url }).run();
+    }
+};
+const uploadImage = async (file: File) => {
+    try {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const response = await fetch("/api/upload/image", {
+            method: "POST",
+            body: formData,
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to upload image");
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.imageUrl) {
+            return { image: result.imageUrl };
+        } else {
+            throw new Error("Invalid response from server");
+        }
+    } catch (error) {
+        return { error: `Error uploading image: {$error}` };
+        // You might want to show an error message to the user here
     }
 };
 </script>
