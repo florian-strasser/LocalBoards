@@ -1,14 +1,25 @@
 import { defineEventHandler, getQuery } from "h3";
+import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
+
+  const session = await auth.api.getSession({
+    headers: event.headers,
+  });
+
   const query = getQuery(event);
   const userId = query.userId;
 
   if (!userId) {
     event.res.statusCode = 400;
     return { error: "User ID is required" };
+  }
+
+  if (session.user.id !== userId) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
   }
 
   try {

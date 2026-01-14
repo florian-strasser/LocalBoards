@@ -77,7 +77,6 @@ useHead({
 });
 
 const privacyURL = nuxtApp.$config.public.privacyUrl;
-console.log(privacyURL);
 
 const schema = z.object({
     name: z

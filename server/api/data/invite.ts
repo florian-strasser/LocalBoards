@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
+import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
-import { sendEmail } from "~/lib/sendEmail";
 
 const appName = process.env.APP_NAME || "LocalBoards";
 const baseURL = process.env.PUBLIC_URL || "https://boards.florian-strasser.de";
@@ -12,6 +12,10 @@ const buildTitle = (title) => {
 export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
+
+  const session = await auth.api.getSession({
+    headers: event.headers,
+  });
 
   try {
     // Initialize database
@@ -38,13 +42,18 @@ export default defineEventHandler(async (event) => {
         return { error: "Board not found" };
       }
 
+      if (board.user !== session.user.id) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
+
       // Check if the user is the creator of the board
       const userId = query.userId;
 
       if (board.user !== userId) {
         event.res.statusCode = 403;
         return {
-          error: "You don't have permission to view invitations for this board",
+          error: "Unauthorized access",
         };
       }
 
@@ -82,12 +91,10 @@ export default defineEventHandler(async (event) => {
       }
 
       // Check if the user is the creator of the board
-      if (board.user !== userId) {
+      if (board.user !== session.user.id || board.user !== userId) {
         event.res.statusCode = 403;
         return {
-          error: "You don't have permission to invite users to this board",
-          board: board,
-          creator: creatorId,
+          error: "Unauthorized access",
         };
       }
 
@@ -156,13 +163,11 @@ export default defineEventHandler(async (event) => {
         return { error: "Board not found" };
       }
 
-      if (board.user !== userId) {
+      // Check if the user is the creator of the board
+      if (board.user !== session.user.id || board.user !== userId) {
         event.res.statusCode = 403;
         return {
-          error:
-            "You don't have permission to remove invitations for this board",
-          currentUser: userId,
-          board: board,
+          error: "Unauthorized access",
         };
       }
 

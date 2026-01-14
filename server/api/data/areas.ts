@@ -1,9 +1,14 @@
 import { defineEventHandler, getQuery } from "h3";
+import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 
 export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
+
+  const session = await auth.api.getSession({
+    headers: event.headers,
+  });
 
   try {
     // Initialize database
@@ -19,12 +24,48 @@ export default defineEventHandler(async (event) => {
         return { error: "Board ID is required for GET requests" };
       }
 
-      const [rows] = await db.execute(
-        "SELECT * FROM areas WHERE board = ? ORDER BY sort ASC",
-        [boardId],
-      );
+      const [brows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
+        boardId,
+      ]);
+      const board = brows[0];
 
-      return { areas: rows };
+      if (!board) {
+        event.res.statusCode = 404;
+        return { error: "Board not found" };
+      }
+
+      const userId = session?.user.id;
+
+      let readAccess = false;
+      if (board.status === "private" && board.user !== userId) {
+        if (!session) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
+        const [invitationRows] = await db.execute(
+          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+          [board.id, userId],
+        );
+
+        if (invitationRows.length > 0) {
+          readAccess = true;
+        }
+      } else if (board.user === userId) {
+        readAccess = true;
+      } else if (board.status === "public") {
+        readAccess = true;
+      }
+      if (readAccess) {
+        const [rows] = await db.execute(
+          "SELECT * FROM areas WHERE board = ? ORDER BY sort ASC",
+          [boardId],
+        );
+
+        return { areas: rows };
+      } else {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
     } else {
       event.res.statusCode = 405;
       return { error: "Method not allowed" };

@@ -4,6 +4,7 @@
             {{ $t("commentsAndActivity") }}
         </h3>
         <NewCommentForm
+            v-if="props.writeAccess"
             :cardID="props.cardID"
             @Comment-created="handleCommentCreated"
         />

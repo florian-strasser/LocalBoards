@@ -1,9 +1,16 @@
 import { defineEventHandler, getQuery } from "h3";
+import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 
 export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
+
+  const session = await auth.api.getSession({
+    headers: event.headers,
+  });
+
+  const userId = session?.user.id;
 
   try {
     // Initialize database
@@ -19,12 +26,48 @@ export default defineEventHandler(async (event) => {
         return { error: "Area ID is required for GET requests" };
       }
 
-      const [cards] = await db.execute(
-        "SELECT id, area, name, content, status, sort FROM cards WHERE area = ? ORDER BY sort ASC",
+      const [boardRows] = await db.execute(
+        "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
         [areaId],
       );
+      const board = boardRows[0];
 
-      return { cards };
+      if (!board) {
+        event.res.statusCode = 404;
+        return { error: "Board not found" };
+      }
+
+      let readAccess = false;
+      if (board.status === "private" && board.user !== userId) {
+        if (!session) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
+        const [invitationRows] = await db.execute(
+          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+          [board.id, userId],
+        );
+
+        if (invitationRows.length > 0) {
+          readAccess = true;
+        }
+      } else if (board.user === userId) {
+        readAccess = true;
+      } else if (board.status === "public") {
+        readAccess = true;
+      }
+
+      if (readAccess) {
+        const [cards] = await db.execute(
+          "SELECT id, area, name, content, status, sort FROM cards WHERE area = ? ORDER BY sort ASC",
+          [areaId],
+        );
+
+        return { cards };
+      } else {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
     } else {
       event.res.statusCode = 405;
       return { error: "Method not allowed" };

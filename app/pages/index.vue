@@ -94,7 +94,6 @@ const handleLogin = async () => {
                 },
                 onError: async (ctx) => {
                     const response = await JSON.parse(ctx.responseText);
-                    console.log(response);
                     await nuxtApp.callHook("app:toast", {
                         message: $t("error_" + response.code),
                     });

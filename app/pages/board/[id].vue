@@ -675,7 +675,6 @@ const initSort = () => {
                         )[0];
                         // Add the moved item at the new position
                         updatedAreas.splice(event.newIndex, 0, movedItem);
-                        console.log("should update");
                         try {
                             // Call the API to update the order
                             await $fetch("/api/data/board", {

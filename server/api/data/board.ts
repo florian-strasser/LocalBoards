@@ -1,9 +1,14 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
+import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 
 export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
+
+  const session = await auth.api.getSession({
+    headers: event.headers,
+  });
 
   try {
     // Initialize database
@@ -31,8 +36,13 @@ export default defineEventHandler(async (event) => {
 
       // Check if the user has access to this board
       const userId = query.userId;
+
       let writeAccess = false;
       if (board.status === "private" && (!userId || board.user !== userId)) {
+        if (!session || session.user.id !== userId) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
         // Check if the user has an invitation
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
@@ -41,14 +51,18 @@ export default defineEventHandler(async (event) => {
 
         if (invitationRows.length === 0) {
           event.res.statusCode = 403;
-          return { error: "You don't have access to this board" };
+          return { error: "Unauthorized access" };
         }
         // Determine write access based on invitation permission
         writeAccess = invitationRows[0].permission === "edit";
       } else if (board.user === userId) {
+        if (!session || session.user.id !== userId) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
         // User is the creator of the board, so they have write access
         writeAccess = true;
-      } else if (board.status === "public") {
+      } else if (board.status === "public" && session) {
         writeAccess = true;
       }
 
@@ -64,26 +78,23 @@ export default defineEventHandler(async (event) => {
 
       let board;
       if (id) {
-        // Update existing board
-        const [result] = await db.execute(
-          "UPDATE boards SET name = ?, style = ?, status = ? WHERE id = ? AND user = ?",
-          [name, style, status, id, userId],
-        );
-
-        if (result.affectedRows === 0) {
-          event.res.statusCode = 404;
-          return {
-            error: "Board not found or you do not have permission to edit it",
-          };
-        }
-
-        const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
+        const [brows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
           id,
         ]);
-        board = rows[0];
+        board = brows[0];
 
-        // Check if the user has access to this board
+        if (!board) {
+          event.res.statusCode = 404;
+          return { error: "Board not found" };
+        }
+
+        let writeAccess = false;
+
         if (board.user !== userId) {
+          if (!session || session.user.id !== userId) {
+            event.res.statusCode = 403;
+            return { error: "Unauthorized access" };
+          }
           // Check if the user has an invitation with edit permission
           const [invitationRows] = await db.execute(
             "SELECT permission FROM invitations WHERE board = ? AND user = ? AND permission = 'edit'",
@@ -92,10 +103,39 @@ export default defineEventHandler(async (event) => {
 
           if (invitationRows.length === 0) {
             event.res.statusCode = 403;
-            return { error: "You don't have access to this board" };
+            return { error: "Unauthorized access" };
           }
+          writeAccess = invitationRows[0].permission === "edit";
+        } else if (board.user === userId) {
+          writeAccess = "edit";
+        }
+        if (writeAccess) {
+          // Update existing board
+          const [result] = await db.execute(
+            "UPDATE boards SET name = ?, style = ?, status = ? WHERE id = ? AND user = ?",
+            [name, style, status, id, userId],
+          );
+
+          if (result.affectedRows === 0) {
+            event.res.statusCode = 404;
+            return {
+              error: "Board not found or you do not have permission to edit it",
+            };
+          }
+
+          const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
+            id,
+          ]);
+          board = rows[0];
+        } else {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
         }
       } else {
+        if (!session || session.user.id !== userId) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
         // Create new board
         const [result] = await db.execute(
           "INSERT INTO boards (user, name, style, status) VALUES (?, ?, ?, ?)",
@@ -122,6 +162,11 @@ export default defineEventHandler(async (event) => {
         return {
           error: "Board ID and user ID are required for DELETE requests",
         };
+      }
+
+      if (!session || session.user.id !== userId) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
       }
 
       const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
@@ -170,11 +215,54 @@ export default defineEventHandler(async (event) => {
       // Handle PATCH request to update area order
       const { boardId, areas } = await readBody(event);
 
+      if (!session) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
+
       if (!boardId || !areas || !Array.isArray(areas)) {
         event.res.statusCode = 400;
         return {
           error: "Board ID and areas array are required for PATCH requests",
         };
+      }
+
+      const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
+        boardId,
+      ]);
+      const board = rows[0];
+
+      if (!board) {
+        event.res.statusCode = 404;
+        return { error: "Board not found" };
+      }
+
+      // Check if the user has access to this board
+      const userId = session.user.id;
+
+      let writeAccess = false;
+      if (board.status === "private" && board.user !== userId) {
+        // Check if the user has an invitation
+        const [invitationRows] = await db.execute(
+          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+          [board.id, userId],
+        );
+
+        if (invitationRows.length === 0) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
+        // Determine write access based on invitation permission
+        writeAccess = invitationRows[0].permission === "edit";
+      } else if (board.user === userId) {
+        writeAccess = true;
+      } else if (board.status === "public") {
+        writeAccess = true;
+      }
+
+      if (!writeAccess) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
       }
 
       try {
