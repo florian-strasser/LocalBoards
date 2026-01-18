@@ -1,7 +1,7 @@
 <template>
     <div
         v-if="open"
-        class="fixed top-0 left-0 w-full flex flex-col justify-center h-screen"
+        class="fixed top-0 left-0 w-full flex flex-col justify-center h-screen z-40"
     >
         <div
             class="absolute top-0 left-0 w-full h-full bg-black/50"

@@ -53,6 +53,7 @@ const props = defineProps({
     id: String,
 });
 
+/*
 const { data: userData, error } = await authClient.admin.listUsers({
     query: {
         limit: 1,
@@ -61,9 +62,19 @@ const { data: userData, error } = await authClient.admin.listUsers({
         filterOperator: "eq",
     },
 });
+*/
+const { data: userData, error } = await useFetch("/api/auth/admin/list-users", {
+    method: "GET",
+    query: {
+        limit: 1,
+        filterField: "id",
+        filterValue: props.id,
+        filterOperator: "eq",
+    },
+});
 
-const name = ref(userData.users[0].name);
-const email = ref(userData.users[0].email);
+const name = ref(userData.value.users[0].name);
+const email = ref(userData.value.users[0].email);
 
 const savedUser = ref(false);
 

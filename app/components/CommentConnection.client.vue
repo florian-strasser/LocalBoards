@@ -14,8 +14,8 @@ const onConnect = () => {
             cardID: props.cardID,
         });
     }
-    socket.on("addComment", ({ comment }) => {
-        emits("comment-created", comment);
+    socket.on("addComment", ({ comment, cardID }) => {
+        if (props.cardID * 1 === cardID) emits("comment-created", comment);
     });
 };
 

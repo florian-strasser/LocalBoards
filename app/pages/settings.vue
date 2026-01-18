@@ -8,6 +8,8 @@
                 {{ $t("settingsChangePassword") }}
             </h2>
             <PasswordForm />
+
+            <ApiList />
         </ContentWrapper>
         <AppFooter />
     </div>

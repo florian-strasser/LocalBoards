@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { admin } from "better-auth/plugins";
+import { admin, apiKey } from "better-auth/plugins";
 import { setupDatabase } from "~/lib/databaseSetup";
 import { sendEmail } from "~/lib/sendEmail";
 
@@ -61,5 +61,5 @@ export const auth = betterAuth({
   socialProviders: {
     // Add social providers if needed
   },
-  plugins: [admin()],
+  plugins: [admin(), apiKey()],
 });

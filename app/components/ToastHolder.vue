@@ -2,7 +2,7 @@
     <transition name="fade">
         <div
             v-if="currentToast"
-            class="fixed bottom-8 right-8 bg-white shadow-lg px-6 py-3 rounded-xl"
+            class="fixed bottom-8 right-8 bg-white shadow-lg px-6 py-3 rounded-xl z-50"
         >
             <div class="flex gap-x-2 items-start">
                 <div class="w-3 shrink-0 grow-0 pt-1.5">

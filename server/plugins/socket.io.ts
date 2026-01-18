@@ -33,6 +33,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
       );
       io.except(`user-${socket.id}`).to(`card-${cardID}`).emit("addComment", {
         comment,
+        cardID,
       });
     });
 
@@ -71,6 +72,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
         .to(`board-${boardId}`)
         .emit("updateAreas", {
           areas,
+          boardId,
         });
     });
 
@@ -81,6 +83,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("addArea", {
         area,
+        boardId,
       });
     });
 
@@ -91,6 +94,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("updateArea", {
         area,
+        boardId,
       });
     });
 
@@ -101,6 +105,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("deleteArea", {
         area,
+        boardId,
       });
     });
 
@@ -111,6 +116,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("addCard", {
         card,
+        boardId,
       });
     });
 
@@ -121,6 +127,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("updateCard", {
         card,
+        boardId,
       });
     });
 
@@ -138,6 +145,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
             fromAreaId,
             toAreaId,
             newIndex,
+            boardId,
           });
       },
     );
@@ -151,6 +159,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
         cardId,
         areaId,
         newIndex,
+        boardId,
       });
     });
   });

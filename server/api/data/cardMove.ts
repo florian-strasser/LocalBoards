@@ -14,17 +14,17 @@ export default defineEventHandler(async (event) => {
   try {
     const db = setupDatabase();
 
-    const renumberSortValues = async (areaId) => {
+    const renumberSortValues = async (areaId: number) => {
       // Get all cards in the area ordered by their current sort value
-      const [cards] = await db.execute(
+      const [cards] = (await db.execute(
         "SELECT id FROM cards WHERE area = ? ORDER BY sort ASC",
         [areaId],
-      );
+      )) as any[];
       // Update each card with sequential sort values
-      for (let i = 0; i < cards.length; i++) {
+      for (let i = 0; i < (cards as any[]).length; i++) {
         await db.execute("UPDATE cards SET sort = ? WHERE id = ?", [
           i,
-          cards[i].id,
+          (cards as any[])[i].id,
         ]);
       }
     };
@@ -39,11 +39,11 @@ export default defineEventHandler(async (event) => {
         };
       }
 
-      const [boardRows] = await db.execute(
+      const [boardRows] = (await db.execute(
         "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
         [fromAreaId],
-      );
-      const board = boardRows[0];
+      )) as any[];
+      const board = (boardRows as any[])[0];
 
       if (!board) {
         event.res.statusCode = 404;
@@ -57,17 +57,17 @@ export default defineEventHandler(async (event) => {
           return { error: "Unauthorized access" };
         }
         // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
+        const [invitationRows] = (await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
           [board.id, userId],
-        );
+        )) as any[];
 
-        if (invitationRows.length === 0) {
+        if ((invitationRows as any[]).length === 0) {
           event.res.statusCode = 403;
           return { error: "Unauthorized access" };
         }
         // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
+        writeAccess = (invitationRows as any[])[0].permission === "edit";
       } else if (board.user === userId) {
         if (!session || session.user.id !== userId) {
           event.res.statusCode = 403;
@@ -96,6 +96,61 @@ export default defineEventHandler(async (event) => {
 
           await renumberSortValues(toAreaId);
           await renumberSortValues(fromAreaId);
+
+          // Fetch card name and area names for notification
+          const [cardRows] = (await db.execute(
+            "SELECT name FROM cards WHERE id = ?",
+            [cardId],
+          )) as any[];
+          const cardName = (cardRows as any[])[0]?.name;
+
+          // Fetch source and destination area names
+          const [fromAreaRows] = (await db.execute(
+            "SELECT name FROM areas WHERE id = ?",
+            [fromAreaId],
+          )) as any[];
+          const fromAreaName = (fromAreaRows as any[])[0]?.name;
+
+          const [toAreaRows] = (await db.execute(
+            "SELECT name FROM areas WHERE id = ?",
+            [toAreaId],
+          )) as any[];
+          const toAreaName = (toAreaRows as any[])[0]?.name;
+
+          // Fetch all users who have access to the board (owner and invited users)
+          const [boardRows] = (await db.execute(
+            "SELECT user, id AS boardId FROM boards WHERE id = (SELECT board FROM areas WHERE id = ?)",
+            [toAreaId],
+          )) as any[];
+          const boardOwner = (boardRows as any[])[0]?.user;
+          const boardId = (boardRows as any[])[0]?.boardId;
+
+          const [invitedUsers] = (await db.execute(
+            "SELECT user FROM invitations WHERE board = (SELECT board FROM areas WHERE id = ?)",
+            [toAreaId],
+          )) as any[];
+
+          // Create notifications for the board owner and invited users
+          const usersToNotify = [
+            boardOwner,
+            ...(invitedUsers as any[]).map((inv: any) => inv.user),
+          ].filter(Boolean);
+
+          for (const notifyUserId of usersToNotify) {
+            if (notifyUserId !== userId) {
+              // Don't notify the user who moved the card
+              await db.execute(
+                "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+                [
+                  notifyUserId,
+                  "card_moved",
+                  boardId,
+                  cardId,
+                  `Card "${cardName}" moved from "${fromAreaName}" to "${toAreaName}"`,
+                ],
+              );
+            }
+          }
 
           return { success: true };
         } catch (error) {

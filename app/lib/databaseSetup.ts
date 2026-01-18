@@ -31,6 +31,35 @@ export function setupDatabase() {
       \`updatedAt\` timestamp(3) NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
 
+  // Create better-auth apikey table
+  db.execute(`CREATE TABLE IF NOT EXISTS \`apikey\` (
+      \`id\` varchar(36) NOT NULL,
+      \`name\` text,
+      \`start\` text,
+      \`prefix\` text,
+      \`key\` varchar(255) NOT NULL,
+      \`userId\` varchar(36) NOT NULL,
+      \`refillInterval\` int DEFAULT NULL,
+      \`refillAmount\` int DEFAULT NULL,
+      \`lastRefillAt\` timestamp(3) NULL DEFAULT NULL,
+      \`enabled\` tinyint(1) DEFAULT NULL,
+      \`rateLimitEnabled\` tinyint(1) DEFAULT NULL,
+      \`rateLimitTimeWindow\` int DEFAULT NULL,
+      \`rateLimitMax\` int DEFAULT NULL,
+      \`requestCount\` int DEFAULT NULL,
+      \`remaining\` int DEFAULT NULL,
+      \`lastRequest\` timestamp(3) NULL DEFAULT NULL,
+      \`expiresAt\` timestamp(3) NULL DEFAULT NULL,
+      \`createdAt\` timestamp(3) NOT NULL,
+      \`updatedAt\` timestamp(3) NOT NULL,
+      \`permissions\` text,
+      \`metadata\` text,
+      PRIMARY KEY (\`id\`),
+      KEY \`apikey_key_idx\` (\`key\`),
+      KEY \`apikey_userId_idx\` (\`userId\`),
+      CONSTRAINT \`apikey_ibfk_1\` FOREIGN KEY (\`userId\`) REFERENCES \`user\` (\`id\`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
+
   // Create the session table for better-auth
   db.execute(`CREATE TABLE IF NOT EXISTS \`session\` (
       \`id\` varchar(36) NOT NULL,
@@ -50,7 +79,7 @@ export function setupDatabase() {
       \`name\` varchar(255) NOT NULL,
       \`email\` varchar(255) NOT NULL,
       \`emailVerified\` tinyint(1) NOT NULL,
-      \`image\` text,
+      \`image\` longtext,
       \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
       \`updatedAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
       \`role\` text,
@@ -135,7 +164,7 @@ export function setupDatabase() {
       CREATE TABLE IF NOT EXISTS notifications (
         id INT PRIMARY KEY AUTO_INCREMENT,
         userId VARCHAR(255) NOT NULL,
-        type ENUM('invitation', 'comment', 'card_created') NOT NULL,
+        type ENUM('invitation', 'comment', 'card_created', 'card_moved', 'card_status_changed') NOT NULL,
         boardId INT,
         cardId INT,
         message TEXT,
@@ -145,5 +174,17 @@ export function setupDatabase() {
         FOREIGN KEY (cardId) REFERENCES cards(id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `);
+
+  // Add new notification types to existing notifications table if they don't exist
+  db.execute(
+    `
+      ALTER TABLE notifications
+      MODIFY COLUMN type ENUM('invitation', 'comment', 'card_created', 'card_moved', 'card_status_changed') NOT NULL
+  `,
+  ).catch((error) => {
+    // Ignore errors for this migration as it might fail if the values already exist
+    console.log("Notification types migration:", error.message);
+  });
+  db.execute(`ALTER TABLE user MODIFY COLUMN image longtext`);
   return db;
 }

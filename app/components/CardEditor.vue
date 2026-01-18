@@ -133,7 +133,9 @@ const editor = useEditor({
         Placeholder.configure({
             placeholder: $t("writeSomething"),
         }),
-        Image,
+        Image.configure({
+            allowBase64: true,
+        }),
         FileHandler.configure({
             allowedMimeTypes: [
                 "image/png",
@@ -141,36 +143,48 @@ const editor = useEditor({
                 "image/jpeg",
                 "image/gif",
                 "image/webp",
+                "image/avif",
             ],
             onDrop: (currentEditor, files, pos) => {
                 files.forEach(async (file) => {
-                    const image = await uploadImage(file);
-                    currentEditor
-                        .chain()
-                        .insertContentAt(pos, {
-                            type: "image",
-                            attrs: {
-                                src: image.image,
-                            },
-                        })
-                        .focus()
-                        .run();
+                    const fileReader = new FileReader();
+
+                    fileReader.readAsDataURL(file);
+                    fileReader.onload = () => {
+                        currentEditor
+                            .chain()
+                            .insertContentAt(pos, {
+                                type: "image",
+                                attrs: {
+                                    src: fileReader.result,
+                                },
+                            })
+                            .focus()
+                            .run();
+                    };
                     model.value = editor.value.getHTML();
                 });
             },
             onPaste: (currentEditor, files) => {
-                files.forEach(async (file) => {
-                    const image = await uploadImage(file);
-                    currentEditor
-                        .chain()
-                        .insertContentAt(currentEditor.state.selection.anchor, {
-                            type: "image",
-                            attrs: {
-                                src: image.image,
-                            },
-                        })
-                        .focus()
-                        .run();
+                files.forEach((file) => {
+                    const fileReader = new FileReader();
+
+                    fileReader.readAsDataURL(file);
+                    fileReader.onload = () => {
+                        currentEditor
+                            .chain()
+                            .insertContentAt(
+                                currentEditor.state.selection.anchor,
+                                {
+                                    type: "image",
+                                    attrs: {
+                                        src: fileReader.result,
+                                    },
+                                },
+                            )
+                            .focus()
+                            .run();
+                    };
                     model.value = editor.value.getHTML();
                 });
             },
@@ -194,19 +208,17 @@ const uploadImage = async (file: File) => {
         const formData = new FormData();
         formData.append("image", file);
 
-        const response = await fetch("/api/upload/image", {
+        const response = await $fetch("/api/upload/image", {
             method: "POST",
             body: formData,
         });
-
-        if (!response.ok) {
+        console.log(response);
+        if (!response.success) {
             throw new Error("Failed to upload image");
         }
 
-        const result = await response.json();
-
-        if (result.success && result.imageUrl) {
-            return { image: result.imageUrl };
+        if (response.success && response.imageUrl) {
+            return { image: response.imageUrl };
         } else {
             throw new Error("Invalid response from server");
         }

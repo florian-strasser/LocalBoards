@@ -88,9 +88,5 @@ const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString();
 };
-
-// Fetch comments when the component is mounted
-onMounted(() => {
-    fetchComments();
-});
+await fetchComments();
 </script>

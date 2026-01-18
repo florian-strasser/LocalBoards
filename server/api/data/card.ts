@@ -244,6 +244,15 @@ export default defineEventHandler(async (event) => {
       }
 
       if (writeAccess) {
+        // Fetch the original card to check if status changed
+        const [originalCardRows] = await db.execute(
+          "SELECT * FROM cards WHERE id = ?",
+          [cardID],
+        );
+        const originalCard = originalCardRows[0];
+        const originalStatus = !!originalCard.status;
+        const newStatus = !!status;
+
         // Update the card
         await db.execute(
           "UPDATE cards SET name = ?, content = ?, status = ? WHERE id = ?",
@@ -263,6 +272,47 @@ export default defineEventHandler(async (event) => {
 
         // Convert status from number to boolean
         card.status = !!card.status;
+
+        // Create notification if status changed
+        if (originalStatus !== newStatus) {
+          // Fetch all users who have access to the board (owner and invited users)
+          const [boardRows] = await db.execute(
+            "SELECT user, id AS boardId FROM boards WHERE id = (SELECT board FROM areas WHERE id = ?)",
+            [card.area],
+          );
+          const boardOwner = boardRows[0]?.user;
+          const boardId = boardRows[0]?.boardId;
+
+          const [invitedUsers] = await db.execute(
+            "SELECT user FROM invitations WHERE board = (SELECT board FROM areas WHERE id = ?)",
+            [card.area],
+          );
+
+          // Create notifications for the board owner and invited users
+          const usersToNotify = [
+            boardOwner,
+            ...invitedUsers.map((inv) => inv.user),
+          ].filter(Boolean);
+
+          const statusText = newStatus ? "completed" : "reopened";
+          const notificationMessage = `Card "${card.name}" status changed to ${statusText}`;
+
+          for (const notifyUserId of usersToNotify) {
+            if (notifyUserId !== userId) {
+              // Don't notify the user who changed the status
+              await db.execute(
+                "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+                [
+                  notifyUserId,
+                  "card_status_changed",
+                  boardId,
+                  card.id,
+                  notificationMessage,
+                ],
+              );
+            }
+          }
+        }
 
         return { card };
       } else {

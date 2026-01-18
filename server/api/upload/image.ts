@@ -55,6 +55,7 @@ export default defineEventHandler(async (event) => {
       return {
         success: true,
         imageUrl: relativePath,
+        imageData: imageFile,
         message: "Image uploaded successfully",
       };
     } catch (error) {

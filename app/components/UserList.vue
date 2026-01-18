@@ -33,9 +33,9 @@ const nuxtApp = useNuxtApp();
 const deleteModal = ref(false);
 const userList = ref([]);
 
-const { data: users, error } = await authClient.admin.listUsers();
-if (users && users.users) {
-    userList.value = users.users;
+const { data: users } = await useFetch("/api/auth/admin/list-users");
+if (users && users.value.users) {
+    userList.value = users.value.users;
 }
 
 const deleteUser = async () => {

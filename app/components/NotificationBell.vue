@@ -83,7 +83,55 @@ const formatDate = (dateString) => {
 };
 
 const translateNotification = (message: string): string => {
-    // Extract the static part of the message
+    // Handle card moved notification format: Card "name" moved from "area1" to "area2"
+    if (
+        message.startsWith('Card "') &&
+        message.includes('" moved from "') &&
+        message.includes('" to "')
+    ) {
+        // Extract the card name and areas
+        const cardNameMatch = message.match(/Card "([^"]+)"/);
+        const fromAreaMatch = message.match(/from "([^"]+)"/);
+        const toAreaMatch = message.match(/to "([^"]+)"/);
+
+        const cardName = cardNameMatch ? cardNameMatch[1] : "";
+        const fromArea = fromAreaMatch ? fromAreaMatch[1] : "";
+        const toArea = toAreaMatch ? toAreaMatch[1] : "";
+
+        // Translate all static parts while preserving the format
+        const cardPrefix = $t("notificationCardMoved");
+        const movedFrom = $t("notificationCardMovedFrom");
+        const movedTo = $t("notificationCardMovedTo");
+
+        return `${cardPrefix} "${cardName}"${movedFrom}"${fromArea}"${movedTo}"${toArea}"`;
+    }
+
+    // Handle card status changed notification format: Card "name" status changed to completed/reopened
+    if (
+        message.startsWith('Card "') &&
+        message.includes('" status changed to ')
+    ) {
+        // Extract the card name and status
+        const cardNameMatch = message.match(/Card "([^"]+)"/);
+        const statusMatch = message.match(
+            /status changed to (completed|reopened)/,
+        );
+
+        const cardName = cardNameMatch ? cardNameMatch[1] : "";
+        const status = statusMatch ? statusMatch[1] : "";
+
+        // Translate all static parts while preserving the format
+        const cardPrefix = $t("notificationCardStatusChanged");
+        const statusChangedTo = $t("notificationCardStatusChangedTo");
+        const translatedStatus =
+            status === "completed"
+                ? $t("notificationCardStatusCompleted")
+                : $t("notificationCardStatusReopened");
+
+        return `${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}`;
+    }
+
+    // Extract the static part of the message for other notification types
     const staticPart = message.split(":")[0];
 
     // Map the static part to a translation key

@@ -126,25 +126,12 @@ const handleFileUpload = (event: Event) => {
 
 const uploadImage = async (file: File) => {
     try {
-        const formData = new FormData();
-        formData.append("image", file);
+        const fileReader = new FileReader();
 
-        const response = await fetch("/api/upload/image", {
-            method: "POST",
-            body: formData,
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to upload image");
-        }
-
-        const result = await response.json();
-
-        if (result.success && result.imageUrl) {
-            data.value = result.imageUrl;
-        } else {
-            throw new Error("Invalid response from server");
-        }
+        fileReader.readAsDataURL(file);
+        fileReader.onload = () => {
+            data.value = fileReader.result;
+        };
     } catch (error) {
         console.error("Error uploading image:", error);
         // You might want to show an error message to the user here

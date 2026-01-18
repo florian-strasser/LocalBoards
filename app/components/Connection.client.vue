@@ -30,49 +30,55 @@ const onConnect = () => {
     socket.on(
         "updateBoard",
         ({ boardID, boardName, boardStatus, boardStyle }) => {
-            emits("board-updated", {
-                boardID,
-                boardName,
-                boardStatus,
-                boardStyle,
-            });
+            if (props.boardID * 1 === boardID)
+                emits("board-updated", {
+                    boardID,
+                    boardName,
+                    boardStatus,
+                    boardStyle,
+                });
         },
     );
 
     socket.on("deletedBoard", ({ boardID }) => {
-        emits("board-deleted", boardID);
+        if (props.boardID * 1 === boardID) emits("board-deleted", boardID);
     });
 
-    socket.on("updateAreas", ({ areas }) => {
-        emits("areas-updated", areas);
+    socket.on("updateAreas", ({ areas, boardId }) => {
+        if (props.boardID * 1 === boardId) emits("areas-updated", areas);
     });
 
-    socket.on("addCard", ({ card }) => {
-        emits("card-created", card);
+    socket.on("addCard", ({ card, boardId }) => {
+        if (props.boardID * 1 === boardId) emits("card-created", card);
     });
 
-    socket.on("updateCard", ({ card }) => {
-        emits("card-updated", card);
+    socket.on("updateCard", ({ card, boardId }) => {
+        if (props.boardID * 1 === boardId) emits("card-updated", card);
     });
 
-    socket.on("movedCard", ({ cardId, fromAreaId, toAreaId, newIndex }) => {
-        emits("card-moved", { cardId, fromAreaId, toAreaId, newIndex });
+    socket.on(
+        "movedCard",
+        ({ cardId, fromAreaId, toAreaId, newIndex, boardId }) => {
+            if (props.boardID * 1 === boardId)
+                emits("card-moved", { cardId, fromAreaId, toAreaId, newIndex });
+        },
+    );
+
+    socket.on("orderdCard", ({ cardId, areaId, newIndex, boardId }) => {
+        if (props.boardID * 1 === boardId)
+            emits("card-orderd", { cardId, areaId, newIndex });
     });
 
-    socket.on("orderdCard", ({ cardId, areaId, newIndex }) => {
-        emits("card-orderd", { cardId, areaId, newIndex });
+    socket.on("addArea", ({ area, boardId }) => {
+        if (props.boardID * 1 === boardId) emits("area-created", area);
     });
 
-    socket.on("addArea", ({ area }) => {
-        emits("area-created", area);
+    socket.on("updateArea", ({ area, boardId }) => {
+        if (props.boardID * 1 === boardId) emits("area-updated", area);
     });
 
-    socket.on("updateArea", ({ area }) => {
-        emits("area-updated", area);
-    });
-
-    socket.on("deleteArea", ({ area }) => {
-        emits("area-deleted", area);
+    socket.on("deleteArea", ({ area, boardId }) => {
+        if (props.boardID * 1 === boardId) emits("area-deleted", area);
     });
 };
 
