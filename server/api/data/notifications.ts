@@ -17,7 +17,30 @@ export default defineEventHandler(async (event) => {
     return { error: "User ID is required" };
   }
 
-  if (session.user.id !== userId) {
+  // Extract API key from headers
+  const apiKey = event.headers.get("x-api-key");
+
+  // Validate API key if provided
+  let userIdFromApiKey = null;
+  if (apiKey) {
+    const data = await auth.api.verifyApiKey({
+      body: {
+        key: apiKey,
+      },
+    });
+
+    if (data.error) {
+      event.res.statusCode = 403;
+      return { error: "Unauthorized access" };
+    } else {
+      userIdFromApiKey = data.key.userId;
+    }
+  }
+
+  if (userIdFromApiKey && userIdFromApiKey !== userId) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  } else if (session.user.id !== userId) {
     event.res.statusCode = 403;
     return { error: "Unauthorized access" };
   }

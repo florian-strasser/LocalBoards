@@ -6,6 +6,26 @@ export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
 
+  // Extract API key from headers
+  const apiKey = event.headers.get("x-api-key");
+
+  // Validate API key if provided
+  let userIdFromApiKey = null;
+  if (apiKey) {
+    const data = await auth.api.verifyApiKey({
+      body: {
+        key: apiKey,
+      },
+    });
+
+    if (data.error) {
+      event.res.statusCode = 403;
+      return { error: "Unauthorized access" };
+    } else {
+      userIdFromApiKey = data.key.userId;
+    }
+  }
+
   const session = await auth.api.getSession({
     headers: event.headers,
   });
@@ -34,11 +54,11 @@ export default defineEventHandler(async (event) => {
         return { error: "Board not found" };
       }
 
-      const userId = session?.user.id;
+      const userId = session?.user.id || userIdFromApiKey;
 
       let readAccess = false;
       if (board.status === "private" && board.user !== userId) {
-        if (!session) {
+        if (!session && !userIdFromApiKey) {
           event.res.statusCode = 403;
           return { error: "Unauthorized access" };
         }
@@ -51,6 +71,10 @@ export default defineEventHandler(async (event) => {
           readAccess = true;
         }
       } else if (board.user === userId) {
+        if (!session && !userIdFromApiKey) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
         readAccess = true;
       } else if (board.status === "public") {
         readAccess = true;

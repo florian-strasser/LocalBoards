@@ -13,6 +13,26 @@ export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
 
+  // Extract API key from headers
+  const apiKey = event.headers.get("x-api-key");
+
+  // Validate API key if provided
+  let userIdFromApiKey = null;
+  if (apiKey) {
+    const data = await auth.api.verifyApiKey({
+      body: {
+        key: apiKey,
+      },
+    });
+
+    if (data.error) {
+      event.res.statusCode = 403;
+      return { error: "Unauthorized access" };
+    } else {
+      userIdFromApiKey = data.key.userId;
+    }
+  }
+
   const session = await auth.api.getSession({
     headers: event.headers,
   });
@@ -42,7 +62,7 @@ export default defineEventHandler(async (event) => {
         return { error: "Board not found" };
       }
 
-      if (board.user !== session.user.id) {
+      if (board.user !== userIdFromApiKey || board.user !== session.user.id) {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }
@@ -91,11 +111,9 @@ export default defineEventHandler(async (event) => {
       }
 
       // Check if the user is the creator of the board
-      if (board.user !== session.user.id || board.user !== userId) {
+      if (board.user !== userIdFromApiKey || board.user !== session.user.id) {
         event.res.statusCode = 403;
-        return {
-          error: "Unauthorized access",
-        };
+        return { error: "Unauthorized access" };
       }
 
       // Determine User ID by mail
@@ -164,11 +182,9 @@ export default defineEventHandler(async (event) => {
       }
 
       // Check if the user is the creator of the board
-      if (board.user !== session.user.id || board.user !== userId) {
+      if (board.user !== userIdFromApiKey || board.user !== session.user.id) {
         event.res.statusCode = 403;
-        return {
-          error: "Unauthorized access",
-        };
+        return { error: "Unauthorized access" };
       }
 
       // Remove the invitation

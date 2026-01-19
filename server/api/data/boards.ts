@@ -5,20 +5,39 @@ import { setupDatabase } from "../../../app/lib/databaseSetup";
 export default defineEventHandler(async (event) => {
   // Get the user ID from the request body
   const { userId, shared } = await readBody(event);
-  const sharedBoards = shared === "true";
 
   if (!userId) {
     event.res.statusCode = 400;
     return { error: "User ID is required" };
   }
 
-  const session = await auth.api.getSession({
-    headers: event.headers,
-  });
+  const apiKey = event.headers.get("x-api-key");
 
-  if (!session || session.user.id !== userId) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
+  if (apiKey) {
+    const data = await auth.api.verifyApiKey({
+      body: {
+        key: apiKey,
+      },
+    });
+
+    if (data.error) {
+      event.res.statusCode = 403;
+      return { error: "Unauthorized access" };
+    } else {
+      if (userId !== data.key.userId) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
+    }
+  } else {
+    const session = await auth.api.getSession({
+      headers: event.headers,
+    });
+
+    if (!session || session.user.id !== userId) {
+      event.res.statusCode = 403;
+      return { error: "Unauthorized access" };
+    }
   }
 
   try {

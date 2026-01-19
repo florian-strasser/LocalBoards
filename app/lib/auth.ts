@@ -61,5 +61,14 @@ export const auth = betterAuth({
   socialProviders: {
     // Add social providers if needed
   },
-  plugins: [admin(), apiKey()],
+  plugins: [
+    admin(),
+    apiKey({
+      rateLimit: {
+        enabled: true,
+        timeWindow: 1000 * 60 * 60, // 1 hour
+        maxRequests: 10, // 10 requests per hour
+      },
+    }),
+  ],
 });

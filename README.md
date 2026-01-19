@@ -1,6 +1,6 @@
 # LocalBoards
 [![Nuxt](https://img.shields.io/badge/Nuxt-4.2.2-00DC82?style=flat&logo=nuxt)](https://nuxt.com)
-[![Better Auth](https://img.shields.io/badge/Better%20Auth-1.4.9-000000?style=flat&logo=betterauth)](https://www.better-auth.com)
+[![Better Auth](https://img.shields.io/badge/Better%20Auth-1.4.14-000000?style=flat&logo=betterauth)](https://www.better-auth.com)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.3-25C2A0?style=flat&logo=socketdotio)](https://socket.io)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/florian-strasser/LocalBoards/blob/master/LICENSE)
 [![Version](https://img.shields.io/badge/version-0.5.0-orange)]()

@@ -6,6 +6,26 @@ export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
 
+  // Extract API key from headers
+  const apiKey = event.headers.get("x-api-key");
+
+  // Validate API key if provided
+  let userIdFromApiKey = null;
+  if (apiKey) {
+    const data = await auth.api.verifyApiKey({
+      body: {
+        key: apiKey,
+      },
+    });
+
+    if (data.error) {
+      event.res.statusCode = 403;
+      return { error: "Unauthorized access" };
+    } else {
+      userIdFromApiKey = data.key.userId;
+    }
+  }
+
   const session = await auth.api.getSession({
     headers: event.headers,
   });
@@ -38,8 +58,15 @@ export default defineEventHandler(async (event) => {
       const userId = query.userId;
 
       let writeAccess = false;
-      if (board.status === "private" && (!userId || board.user !== userId)) {
-        if (!session || session.user.id !== userId) {
+      if (
+        board.status === "private" &&
+        (!userIdFromApiKey || board.user !== userIdFromApiKey) &&
+        (!userId || board.user !== userId)
+      ) {
+        if (userIdFromApiKey && userId !== userIdFromApiKey) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        } else if (!session || session.user.id !== userId) {
           event.res.statusCode = 403;
           return { error: "Unauthorized access" };
         }
@@ -56,6 +83,10 @@ export default defineEventHandler(async (event) => {
         // Determine write access based on invitation permission
         writeAccess = invitationRows[0].permission === "edit";
       } else if (board.user === userId) {
+        if (userIdFromApiKey && userId !== userIdFromApiKey) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
         if (!session || session.user.id !== userId) {
           event.res.statusCode = 403;
           return { error: "Unauthorized access" };
@@ -91,7 +122,10 @@ export default defineEventHandler(async (event) => {
         let writeAccess = false;
 
         if (board.user !== userId) {
-          if (!session || session.user.id !== userId) {
+          if (userIdFromApiKey && userId !== userIdFromApiKey) {
+            event.res.statusCode = 403;
+            return { error: "Unauthorized access" };
+          } else if (!session || session.user.id !== userId) {
             event.res.statusCode = 403;
             return { error: "Unauthorized access" };
           }
@@ -107,6 +141,13 @@ export default defineEventHandler(async (event) => {
           }
           writeAccess = invitationRows[0].permission === "edit";
         } else if (board.user === userId) {
+          if (userIdFromApiKey && userId !== userIdFromApiKey) {
+            event.res.statusCode = 403;
+            return { error: "Unauthorized access" };
+          } else if (!session || session.user.id !== userId) {
+            event.res.statusCode = 403;
+            return { error: "Unauthorized access" };
+          }
           writeAccess = "edit";
         }
         if (writeAccess) {
@@ -132,7 +173,10 @@ export default defineEventHandler(async (event) => {
           return { error: "Unauthorized access" };
         }
       } else {
-        if (!session || session.user.id !== userId) {
+        if (userIdFromApiKey && userId !== userIdFromApiKey) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        } else if (!session || session.user.id !== userId) {
           event.res.statusCode = 403;
           return { error: "Unauthorized access" };
         }
@@ -164,7 +208,10 @@ export default defineEventHandler(async (event) => {
         };
       }
 
-      if (!session || session.user.id !== userId) {
+      if (userIdFromApiKey && userId !== userIdFromApiKey) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      } else if (!session || session.user.id !== userId) {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }
@@ -215,7 +262,7 @@ export default defineEventHandler(async (event) => {
       // Handle PATCH request to update area order
       const { boardId, areas } = await readBody(event);
 
-      if (!session) {
+      if (!session && !userIdFromApiKey) {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }
@@ -238,7 +285,7 @@ export default defineEventHandler(async (event) => {
       }
 
       // Check if the user has access to this board
-      const userId = session.user.id;
+      const userId = userIdFromApiKey || session?.user.id;
 
       let writeAccess = false;
       if (board.status === "private" && board.user !== userId) {

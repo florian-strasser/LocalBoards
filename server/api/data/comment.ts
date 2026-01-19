@@ -6,11 +6,31 @@ export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
 
+  // Extract API key from headers
+  const apiKey = event.headers.get("x-api-key");
+
+  // Validate API key if provided
+  let userIdFromApiKey = null;
+  if (apiKey) {
+    const data = await auth.api.verifyApiKey({
+      body: {
+        key: apiKey,
+      },
+    });
+
+    if (data.error) {
+      event.res.statusCode = 403;
+      return { error: "Unauthorized access" };
+    } else {
+      userIdFromApiKey = data.key.userId;
+    }
+  }
+
   const session = await auth.api.getSession({
     headers: event.headers,
   });
 
-  const userId = session?.user.id;
+  const userId = userIdFromApiKey || session?.user.id;
 
   try {
     // Initialize database
@@ -48,7 +68,7 @@ export default defineEventHandler(async (event) => {
 
       let readAccess = false;
       if (board.status === "private" && board.user !== userId) {
-        if (!session) {
+        if (!userIdFromApiKey && !session) {
           event.res.statusCode = 403;
           return { error: "Unauthorized access" };
         }
@@ -61,6 +81,10 @@ export default defineEventHandler(async (event) => {
           readAccess = true;
         }
       } else if (board.user === userId) {
+        if (!userIdFromApiKey && !session) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
         readAccess = true;
       } else if (board.status === "public") {
         readAccess = true;
@@ -119,7 +143,7 @@ export default defineEventHandler(async (event) => {
 
       let writeAccess = false;
       if (board.status === "private" && (!userId || board.user !== userId)) {
-        if (!session) {
+        if (!userIdFromApiKey && !session) {
           event.res.statusCode = 403;
           return { error: "Unauthorized access" };
         }
@@ -136,13 +160,13 @@ export default defineEventHandler(async (event) => {
         // Determine write access based on invitation permission
         writeAccess = invitationRows[0].permission === "edit";
       } else if (board.user === userId) {
-        if (!session || session.user.id !== userId) {
+        if (!userIdFromApiKey && !session) {
           event.res.statusCode = 403;
           return { error: "Unauthorized access" };
         }
         // User is the creator of the board, so they have write access
         writeAccess = true;
-      } else if (board.status === "public" && session) {
+      } else if (board.status === "public" && (userIdFromApiKey || session)) {
         writeAccess = true;
       }
 
