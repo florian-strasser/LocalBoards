@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
         return { error: "Board not found" };
       }
 
-      if (board.user !== userIdFromApiKey || board.user !== session.user.id) {
+      if (board.user !== userIdFromApiKey && board.user !== session.user.id) {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }
@@ -111,7 +111,7 @@ export default defineEventHandler(async (event) => {
       }
 
       // Check if the user is the creator of the board
-      if (board.user !== userIdFromApiKey || board.user !== session.user.id) {
+      if (board.user !== userIdFromApiKey && board.user !== session.user.id) {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }
@@ -182,7 +182,7 @@ export default defineEventHandler(async (event) => {
       }
 
       // Check if the user is the creator of the board
-      if (board.user !== userIdFromApiKey || board.user !== session.user.id) {
+      if (board.user !== userIdFromApiKey && board.user !== session.user.id) {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }

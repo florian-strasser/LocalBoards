@@ -5,7 +5,7 @@
         </h2>
         <div
             v-if="invitations.length > 0"
-            class="relative pb-5 mb-5 border-b border-primary/30"
+            class="relative pb-5 mb-5 border-b border-primary/30 dark:border-white/30"
         >
             <ul class="space-y-2">
                 <li
@@ -58,7 +58,7 @@
                 </li>
             </ul>
             <div
-                class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white px-2 text-sm"
+                class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white dark:bg-slate px-2 text-sm"
             >
                 {{ $t("inviteMoreUser") }}
             </div>
