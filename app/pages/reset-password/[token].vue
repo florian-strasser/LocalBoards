@@ -6,7 +6,7 @@
             <form
                 v-if="!passwordChanged"
                 @submit.prevent="handleReset"
-                class="space-y-6 w-full px-8 pb-8 pt-7 bg-white rounded-xl border border-gray/10 relative z-10"
+                class="space-y-6 w-full px-8 pb-8 pt-7 bg-white dark:bg-slate rounded-xl relative z-10"
             >
                 <ErrorMessage v-if="errorMessage">{{
                     errorMessage
@@ -26,13 +26,16 @@
                     :value="$t('changePassword')"
                 />
             </form>
-            <div v-else class="px-8 pb-8 pt-7 bg-white rounded-xl text-center">
+            <div
+                v-else
+                class="px-8 pb-8 pt-7 bg-white dark:bg-slate rounded-xl text-center"
+            >
                 <h2 class="text-4xl text-primary mb-6">
                     {{ $t("passwordChangedSuccessfully") }}
                 </h2>
                 <NuxtLink
                     to="/"
-                    class="bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
+                    class="bg-primary dark:text-gray hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
                     >{{ $t("backToLogin") }}</NuxtLink
                 >
             </div>

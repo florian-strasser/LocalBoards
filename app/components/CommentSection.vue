@@ -1,6 +1,6 @@
 <template>
     <div v-if="props.writeAccess || comments.length > 0">
-        <h3 class="text-xl font-bold text-primary">
+        <h3 class="text-xl font-bold text-primary dark:text-white">
             {{ $t("commentsAndActivity") }}
         </h3>
         <NewCommentForm
@@ -14,7 +14,7 @@
         />
         <div v-if="comments.length > 0" class="mt-4 space-y-4">
             <div v-for="comment in comments" :key="comment.id">
-                <div class="bg-primary/10 p-6 rounded-xl">
+                <div class="bg-primary/10 dark:bg-white/10 p-6 rounded-xl">
                     <div class="wysiwyg-wrapper" v-html="comment.content" />
                 </div>
                 <div class="flex mt-2 items-center gap-x-2">

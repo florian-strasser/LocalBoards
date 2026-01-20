@@ -4,21 +4,23 @@
             <div class="container mx-auto">
                 <div class="max-w-md mx-auto">
                     <div class="grid grid-cols-2 text-sm">
-                        <div class="bg-white">
+                        <div class="bg-white dark:bg-slate">
                             <NuxtLink
                                 to="/"
-                                class="text-primary hover:text-secondary text-center block py-3 px-5 rounded-br-lg bg-slate"
+                                class="text-primary dark:text-white hover:text-secondary text-center block py-3 px-5 rounded-br-lg bg-slate dark:bg-dark"
                             >
                                 {{ $t("login") }}
                             </NuxtLink>
                         </div>
                         <div
-                            class="text-center block py-3 px-5 bg-white rounded-t-lg"
+                            class="text-center block py-3 px-5 bg-white dark:bg-slate dark:text-white rounded-t-lg"
                         >
                             {{ $t("signUp") }}
                         </div>
                     </div>
-                    <div class="bg-white rounded-lg rounded-tr-none p-5">
+                    <div
+                        class="bg-white dark:bg-slate rounded-lg rounded-tr-none p-5"
+                    >
                         <form
                             @submit.prevent="handleSignUp"
                             class="relative space-y-4"

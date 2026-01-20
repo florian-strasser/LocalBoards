@@ -11,7 +11,7 @@
             class="relative w-full max-h-full p-8 overflow-auto pointer-events-none"
         >
             <div
-                class="relative w-full max-w-lg mx-auto bg-white px-8 py-7 pointer-events-auto rounded-lg text-gray text-center"
+                class="relative w-full max-w-lg mx-auto bg-white dark:bg-slate px-8 py-7 pointer-events-auto rounded-lg text-gray text-center"
             >
                 <button
                     @click="open = false"

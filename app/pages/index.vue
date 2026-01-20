@@ -5,20 +5,22 @@
                 <div class="max-w-md mx-auto">
                     <div class="grid grid-cols-2 text-sm">
                         <div
-                            class="text-center block py-3 px-5 bg-white rounded-t-lg"
+                            class="text-center block py-3 px-5 bg-white dark:bg-slate dark:text-white rounded-t-lg"
                         >
                             {{ $t("login") }}
                         </div>
-                        <div class="bg-white">
+                        <div class="bg-white dark:bg-slate">
                             <NuxtLink
                                 to="/sign-up/"
-                                class="text-primary hover:text-secondary text-center block py-3 px-5 rounded-bl-lg bg-slate"
+                                class="text-primary dark:text-white hover:text-secondary text-center block py-3 px-5 rounded-bl-lg bg-slate dark:bg-dark"
                             >
                                 {{ $t("signUp") }}
                             </NuxtLink>
                         </div>
                     </div>
-                    <div class="bg-white rounded-lg rounded-tl-none p-5">
+                    <div
+                        class="bg-white dark:bg-slate rounded-lg rounded-tl-none p-5"
+                    >
                         <form
                             @submit.prevent="handleLogin"
                             class="relative space-y-4"
@@ -44,7 +46,7 @@
                     </div>
                     <div class="text-center mt-4 text-sm">
                         <NuxtLink
-                            class="text-primary hover:text-secondary"
+                            class="text-primary dark:text-gray hover:text-secondary"
                             to="/lost-password/"
                         >
                             {{ $t("lostPasswordQuestion") }}

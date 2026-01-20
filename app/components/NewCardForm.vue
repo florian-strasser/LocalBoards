@@ -15,7 +15,7 @@
                 rows="2"
                 ref="newCardInput"
                 :placeholder="$t('enterAnCardName')"
-                class="font-bold text-primary resize-none focus:outline-none w-full p-2 rounded-md bg-primary/10"
+                class="font-bold text-primary dark:text-white resize-none focus:outline-none w-full p-2 rounded-md bg-primary/10 dark:bg-white/10"
             />
             <div class="flex gap-x-1 mt-2">
                 <input
@@ -26,7 +26,7 @@
                 <button
                     type="button"
                     @click="newCardCreation = false"
-                    class="px-4 bg-primary/10 text-primary hover:bg-secondary hover:text-white rounded-lg"
+                    class="px-4 bg-primary/10 text-primary dark:bg-white/10 dark:text-white hover:bg-secondary hover:text-white rounded-lg"
                 >
                     <X class="size-5" />
                 </button>

@@ -3,14 +3,14 @@
         :key="card.id"
         :data-card-id="card.id"
         type="button"
-        class="bg-primary/10 text-primary text-left p-2 rounded-md w-full"
+        class="bg-primary/10 dark:bg-white/10 text-dark dark:text-white text-left p-2 rounded-md w-full"
         @click="cardModal = card.id"
     >
         <div class="flex gap-x-2">
             <div
                 class="w-6 h-6 rounded-full flex justify-center items-center shrink-0 grow-0"
                 :class="{
-                    'bg-gray/20 text-primary': card.status,
+                    'bg-primary text-white': card.status,
                     'border border-gray/30': !card.status,
                 }"
             >

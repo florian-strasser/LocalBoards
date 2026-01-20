@@ -1,7 +1,7 @@
 <template>
     <form
         @submit.prevent="handlePassword"
-        class="relative space-y-4 bg-white rounded-xl p-5"
+        class="relative space-y-4 bg-white dark:bg-slate rounded-xl p-5"
     >
         <InputField
             type="password"

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="bg-white p-5 rounded-xl flex items-center">
+        <div class="bg-white dark:bg-slate p-5 rounded-xl flex items-center">
             <div class="grow shrink">
                 <p class="text-primary">
                     <span class="inline-block mr-2">{{ props.name }}</span>

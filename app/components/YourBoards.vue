@@ -10,7 +10,7 @@
         />
         <button
             type="button"
-            class="bg-white cursor-pointer text-primary hover:bg-secondary hover:text-white min-h-48 flex flex-col justify-center items-center rounded-lg"
+            class="bg-white dark:bg-slate cursor-pointer text-primary hover:bg-secondary hover:text-white min-h-48 flex flex-col justify-center items-center rounded-lg"
             @click="handleClick"
         >
             <Plus class="size-10" />

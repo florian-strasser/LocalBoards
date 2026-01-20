@@ -1,23 +1,25 @@
 <template>
     <div class="relative">
+        <div
+            :class="{ 'opacity-0': unreadCount === 0 }"
+            class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 rounded-full bg-secondary pointer-events-none z-20"
+        ></div>
+        <div
+            :class="{ 'opacity-0': unreadCount === 0 }"
+            class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-secondary pointer-events-none z-20"
+        ></div>
         <button
             @click="toggleNotifications"
-            class="relative text-gray hover:text-secondary cursor-pointer block"
+            class="relative text-gray hover:text-secondary cursor-pointer block z-10"
             v-tooltip="$t('headerNotifications')"
         >
             <Bell class="size-5" />
-            <span
-                v-if="unreadCount > 0"
-                class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full size-4 flex items-center justify-center"
-            >
-                {{ unreadCount }}
-            </span>
         </button>
         <div
             v-if="showNotifications"
-            class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50"
+            class="absolute -right-33 mt-8 w-78 bg-white dark:bg-slate rounded-lg shadow-lg z-50"
         >
-            <div class="p-4 border-b">
+            <div class="p-4 border-b dark:border-gray/30">
                 <h3 class="text-lg font-semibold">
                     {{ $t("headerNotifications") }}
                 </h3>
@@ -26,7 +28,7 @@
                 <div
                     v-for="notification in notifications"
                     :key="notification.id"
-                    class="p-4 border-b hover:bg-gray-50"
+                    class="p-4 border-b dark:border-gray/30"
                     :class="{ 'bg-gray-100': !notification.isRead }"
                 >
                     <p class="text-sm">
@@ -52,11 +54,11 @@ const showNotifications = ref(false);
 const notifications = ref([]);
 const unreadCount = ref(0);
 
-const toggleNotifications = () => {
-    showNotifications.value = !showNotifications.value;
-    if (showNotifications.value) {
-        fetchNotifications();
+const toggleNotifications = async () => {
+    if (!showNotifications.value) {
+        await fetchNotifications();
     }
+    showNotifications.value = !showNotifications.value;
 };
 
 const fetchNotifications = async () => {
@@ -154,7 +156,5 @@ const translateNotification = (message: string): string => {
     }
 };
 
-onMounted(() => {
-    fetchNotifications();
-});
+await fetchNotifications();
 </script>

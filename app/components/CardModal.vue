@@ -4,13 +4,14 @@
             <button
                 type="button"
                 :disabled="!props.writeAccess"
-                class="flex items-center justify-center size-7 rounded-full shrink-0 grow-0 text-white"
+                class="flex items-center justify-center size-7 rounded-full shrink-0 grow-0"
                 @click="toggleStatus"
                 :class="{
-                    'bg-secondary': currentStatus,
-                    'border-2 border-gray/30 hover:border-secondary':
+                    'bg-secondary text-white': currentStatus,
+                    'border-2 border-gray/30 hover:border-secondary text-white dark:text-slate':
                         !currentStatus && writeAccess,
-                    'border-2 border-gray/30': !currentStatus && !writeAccess,
+                    'border-2 border-gray/30 text-white dark:text-slate':
+                        !currentStatus && !writeAccess,
                 }"
             >
                 <Check class="size-4" />
@@ -20,7 +21,7 @@
                     type="text"
                     v-model="name"
                     @blur="saveCard"
-                    class="text-2xl font-bold text-primary w-full"
+                    class="text-2xl font-bold text-primary dark:text-white w-full"
                 />
             </div>
         </div>

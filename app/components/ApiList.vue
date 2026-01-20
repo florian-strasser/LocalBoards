@@ -17,7 +17,7 @@
                 @key-deleted="handleKeyDeleted"
             />
         </div>
-        <div v-else class="bg-white rounded-xl p-5">
+        <div v-else class="bg-white dark:bg-slate rounded-xl p-5">
             {{ $t("settingsKeyListEmpty") }}
         </div>
         <ModalWindow v-model="createKey">

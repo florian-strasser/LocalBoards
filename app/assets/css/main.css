@@ -8,11 +8,24 @@
     --color-gray: #3d5e59;
     --color-slate: #e8f2e7;
     --color-black: #000000;
+    --color-dark: #101514;
 }
 html,
 body {
     background: var(--color-slate);
     color: var(--color-gray);
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --color-primary: #0a846e;
+        --color-secondary: #e04a05;
+        --color-gray: #b6c8c8;
+        --color-slate: #1f2524;
+    }
+    body {
+        background: var(--color-dark);
+        color: var(--color-gray);
+    }
 }
 .container {
     padding-left: 2rem;

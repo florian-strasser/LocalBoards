@@ -10,7 +10,9 @@
                     {{ accessError }}
                 </div>
                 <div v-else class="flex justify-between flex-wrap gap-y-4">
-                    <h1 class="text-5xl text-primary transform -translate-y-1">
+                    <h1
+                        class="text-5xl text-primary dark:text-white transform -translate-y-1"
+                    >
                         {{ boardName }}
                     </h1>
 
@@ -57,7 +59,7 @@
                     <div
                         v-for="area in areas"
                         :key="area.id"
-                        class="bg-white p-4 space-y-2 rounded-lg"
+                        class="bg-white dark:bg-slate p-4 space-y-2 rounded-lg"
                         :class="{
                             'max-w-full w-92 shrink-0 grow-0':
                                 boardStyle == 'kanban',
@@ -69,7 +71,7 @@
                                 v-model="area.name"
                                 @blur="updateAreaName(area)"
                                 :disabled="!writeAccess"
-                                class="font-bold bg-transparent text-primary focus:outline-none shrink grow"
+                                class="font-bold bg-transparent text-dark dark:text-white focus:outline-none shrink grow"
                             />
                             <button
                                 v-if="writeAccess"
@@ -110,7 +112,7 @@
                         <button
                             v-if="!newAreaCreation"
                             @click="createNewArea"
-                            class="bg-white text-primary hover:bg-secondary hover:text-white p-4 rounded-lg flex w-full items-center gap-x-1"
+                            class="bg-white dark:bg-slate text-dark dark:text-white hover:bg-secondary hover:text-white p-4 rounded-lg flex w-full items-center gap-x-1"
                         >
                             <Plus :stroke-width="1.5" class="size-5" /><span>{{
                                 $t("createNewArea")
@@ -119,13 +121,13 @@
                         <form
                             v-else
                             @submit.prevent="createArea"
-                            class="bg-white p-4 rounded-lg"
+                            class="bg-white dark:bg-slate p-4 rounded-lg"
                         >
                             <input
                                 v-model="newAreaName"
                                 ref="newAreaInput"
                                 :placeholder="$t('enterAnAreaName')"
-                                class="font-bold bg-transparent text-primary focus:outline-none w-full"
+                                class="font-bold bg-transparent text-dark dark:text-white focus:outline-none w-full"
                             />
                             <div class="flex gap-x-1 mt-2">
                                 <input
@@ -136,7 +138,7 @@
                                 <button
                                     type="button"
                                     @click="newAreaCreation = false"
-                                    class="px-4 bg-primary/10 text-primary hover:bg-secondary hover:text-white rounded-lg"
+                                    class="px-4 bg-primary/10 dark:bg-white/10 text-primary dark:text-white hover:bg-secondary hover:text-white rounded-lg"
                                 >
                                     <X class="size-5" />
                                 </button>

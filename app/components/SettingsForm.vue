@@ -1,7 +1,7 @@
 <template>
     <form
         @submit.prevent="handleSettings"
-        class="relative space-y-4 bg-white rounded-xl p-5"
+        class="relative space-y-4 bg-white dark:bg-slate rounded-xl p-5"
     >
         <div class="flex flex-col md:flex-row gap-y-4 gap-x-5">
             <InputImage

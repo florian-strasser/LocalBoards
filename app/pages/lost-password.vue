@@ -4,7 +4,7 @@
             <form
                 v-if="!requestNew"
                 @submit.prevent="handleReset"
-                class="max-w-md mx-auto space-y-6 w-full px-8 pb-8 pt-7 bg-white rounded-xl border border-gray/10 mb-5 relative z-10"
+                class="max-w-md mx-auto space-y-6 w-full px-8 pb-8 pt-7 bg-white dark:bg-slate rounded-xl mb-5 relative z-10"
             >
                 <ErrorMessage v-if="errorMessage">{{
                     errorMessage
@@ -26,14 +26,17 @@
             </form>
             <div
                 v-else
-                class="max-w-md mx-auto px-8 pb-8 pt-7 bg-white rounded-xl text-center"
+                class="max-w-md mx-auto px-8 pb-8 pt-7 bg-white dark:bg-slate rounded-xl text-center"
             >
                 <h2 class="text-4xl text-primary mb-6">
                     {{ $t("requestedNewPasswordCheckYourInbox") }}
                 </h2>
             </div>
             <div class="text-center mt-4 text-sm">
-                <NuxtLink class="text-primary hover:text-secondary" to="/">
+                <NuxtLink
+                    class="text-primary dark:text-gray hover:text-secondary"
+                    to="/"
+                >
                     {{ $t("backToLogin") }}
                 </NuxtLink>
             </div>
