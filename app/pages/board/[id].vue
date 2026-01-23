@@ -9,7 +9,7 @@
                 >
                     {{ accessError }}
                 </div>
-                <div v-else class="flex justify-between flex-wrap gap-y-4">
+                <div v-else class="flex justify-between flex-wrap gap-4">
                     <h1
                         class="text-5xl text-primary dark:text-white transform -translate-y-1"
                     >
@@ -159,6 +159,7 @@
                 @card-updated="handleCardUpdated"
                 @card-moved="handleCardMoved"
                 @card-orderd="handleCardOrderd"
+                @card-deleted="handleCardDeleted"
                 @area-created="handleNewArea"
                 @area-updated="handleAreaUpdated"
                 @area-deleted="handleDeleteArea"
@@ -242,13 +243,14 @@
                 {{ $t("deleteAreaButton") }}
             </button>
         </ModalWindow>
-        <ModalWindow v-model="cardModal">
+        <ModalWindow v-model="cardModal" :hideClose="true">
             <CardModal
                 :cardID="cardModal"
                 :boardID="boardID * 1"
                 :writeAccess="writeAccess"
-                v-if="cardModal"
+                v-model="cardModal"
                 @card-updated="handleCardUpdated"
+                @card-deleted="handleCardDeleted"
             />
         </ModalWindow>
         <AppFooter />
@@ -354,6 +356,15 @@ const handleCardOrderd = (orderdCard) => {
             1,
         );
         cards.value[orderdCard.areaId].splice(newIndex, 0, itemToMove);
+    }
+};
+
+const handleCardDeleted = (card) => {
+    const currentIndex = cards.value[card.area].findIndex(
+        (item) => item.id === card.id,
+    );
+    if (currentIndex !== -1) {
+        cards.value[card.area].splice(currentIndex, 1);
     }
 };
 

@@ -1,23 +1,25 @@
 <template>
-    <div class="relative">
-        <div
-            :class="{ 'opacity-0': unreadCount === 0 }"
-            class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 rounded-full bg-secondary pointer-events-none z-20"
-        ></div>
-        <div
-            :class="{ 'opacity-0': unreadCount === 0 }"
-            class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-secondary pointer-events-none z-20"
-        ></div>
-        <button
-            @click="toggleNotifications"
-            class="relative text-gray hover:text-secondary cursor-pointer block z-10"
-            v-tooltip="$t('headerNotifications')"
-        >
-            <Bell class="size-5" />
-        </button>
+    <div>
+        <div class="relative">
+            <div
+                :class="{ 'opacity-0': unreadCount === 0 }"
+                class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 rounded-full bg-secondary pointer-events-none z-20"
+            ></div>
+            <div
+                :class="{ 'opacity-0': unreadCount === 0 }"
+                class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-secondary pointer-events-none z-20"
+            ></div>
+            <button
+                @click="toggleNotifications"
+                class="relative text-gray hover:text-secondary cursor-pointer block z-10"
+                v-tooltip="$t('headerNotifications')"
+            >
+                <Bell class="size-5" />
+            </button>
+        </div>
         <div
             v-if="showNotifications"
-            class="absolute -right-33 mt-8 w-78 bg-white dark:bg-slate rounded-lg shadow-lg z-50"
+            class="absolute right-0 mt-8 w-78 bg-white dark:bg-slate rounded-lg shadow-lg z-30"
         >
             <div class="p-4 border-b dark:border-gray/30">
                 <h3 class="text-lg font-semibold">

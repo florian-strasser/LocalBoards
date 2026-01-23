@@ -14,7 +14,7 @@
         />
         <div v-if="comments.length > 0" class="mt-4 space-y-4">
             <div v-for="comment in comments" :key="comment.id">
-                <div class="bg-primary/10 dark:bg-white/10 p-6 rounded-xl">
+                <div class="bg-dark/10 dark:bg-white/10 p-6 rounded-xl">
                     <div class="wysiwyg-wrapper" v-html="comment.content" />
                 </div>
                 <div class="flex mt-2 items-center gap-x-2">
@@ -63,20 +63,17 @@ interface Comment {
 
 const comments = ref<Comment[]>([]);
 
-// Fetch comments for the card
-const fetchComments = async () => {
-    try {
-        const response = await $fetch<{ comments: Comment[] }>(
-            `/api/data/comment/?cardID=${props.cardID}`,
-            {
-                method: "GET",
-            },
-        );
-        comments.value = response.comments || [];
-    } catch (err) {
-        console.error("Error fetching comments:", err);
-    }
-};
+try {
+    const response = await $fetch<{ comments: Comment[] }>(
+        `/api/data/comment/?cardID=${props.cardID}`,
+        {
+            method: "GET",
+        },
+    );
+    comments.value = response.comments || [];
+} catch (err) {
+    console.error("Error fetching comments:", err);
+}
 
 // Handle the creation of a new comment
 const handleCommentCreated = (newComment: Comment) => {
@@ -88,5 +85,4 @@ const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString();
 };
-await fetchComments();
 </script>

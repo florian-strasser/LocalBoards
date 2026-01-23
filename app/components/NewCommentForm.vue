@@ -20,7 +20,7 @@
                 <button
                     type="button"
                     @click="newCommentCreation = false"
-                    class="px-4 bg-primary/10 text-primary hover:bg-secondary hover:text-white rounded-lg"
+                    class="px-4 bg-primary/10 text-primary dark:bg-white/10 dark:text-white hover:bg-secondary hover:text-white rounded-lg"
                 >
                     <X class="size-5" />
                 </button>

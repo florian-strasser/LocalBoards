@@ -154,5 +154,8 @@
   "changePassword": "Wachtwoord wijzigen",
   "newPassword": "Nieuw wachtwoord",
   "generatePassword": "Wachtwoord genereren",
-  "newPasswordMessage": "Hier kun je het wachtwoord kopiëren om op te slaan of te versturen naar de persoon die dit account gebruikt:"
+  "newPasswordMessage": "Hier kun je het wachtwoord kopiëren om op te slaan of te versturen naar de persoon die dit account gebruikt:",
+  "deleteCardHeadline": "Wil je deze kaart verwijderen?",
+  "deleteCardBtn": "Kaart verwijderen",
+  "cardDeleted": "Kaart verwijderd"
 }

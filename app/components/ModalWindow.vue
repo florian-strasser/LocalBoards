@@ -8,17 +8,22 @@
             @click="open = false"
         />
         <div
-            class="relative w-full max-h-full p-8 overflow-auto pointer-events-none"
+            class="relative w-full max-h-full py-8 overflow-auto pointer-events-none"
         >
             <div
-                class="relative w-full max-w-lg mx-auto bg-white dark:bg-slate px-8 py-7 pointer-events-auto rounded-lg text-gray text-center"
+                class="relative w-full max-w-lg mx-auto bg-white dark:bg-slate p-8 pointer-events-auto rounded-lg text-gray text-center"
             >
-                <button
-                    @click="open = false"
-                    class="absolute top-0 right-0 size-10 flex justify-center items-center rounded-full bg-primary text-white hover:bg-secondary transform translate-x-1/2 -translate-y-1/2"
+                <div
+                    class="absolute top-0 right-0 w-12 transform sm:translate-x-1/2 -translate-y-1/2"
                 >
-                    <X class="size-5" />
-                </button>
+                    <button
+                        type="button"
+                        @click="open = false"
+                        class="flex justify-center items-center bg-primary text-white hover:bg-secondary size-12 rounded-full"
+                    >
+                        <X class="size-5" stroke-width="2" />
+                    </button>
+                </div>
                 <slot />
             </div>
         </div>
@@ -26,6 +31,11 @@
 </template>
 <script setup lang="ts">
 import { X } from "lucide-vue-next";
+
+const props = defineProps({
+    hideClose: Boolean,
+});
+
 const open = defineModel();
 
 const handleEscKey = (event) => {

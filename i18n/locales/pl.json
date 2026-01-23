@@ -151,5 +151,8 @@
   "changePassword": "Zmień hasło",
   "newPassword": "Nowe hasło",
   "generatePassword": "Wygeneruj hasło",
-  "newPasswordMessage": "Tutaj możesz skopiować hasło, aby je zapisać lub przesłać osobie korzystającej z tego konta:"
+  "newPasswordMessage": "Tutaj możesz skopiować hasło, aby je zapisać lub przesłać osobie korzystającej z tego konta:",
+  "deleteCardHeadline": "Czy chcesz usunąć tę kartę?",
+  "deleteCardBtn": "Usuń kartę",
+  "cardDeleted": "Karta usunięta"
 }

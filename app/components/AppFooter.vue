@@ -1,5 +1,5 @@
 <template>
-    <footer class="w-full pb-8">
+    <footer class="w-full pb-7">
         <div class="container text-gray">
             Made with ♥ by
             <a

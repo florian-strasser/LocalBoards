@@ -25,7 +25,7 @@ const handleLogout = async () => {
                 <Logo />
             </NuxtLinkLocale>
             <ul
-                class="flex gap-x-4 menu app-nav px-6 py-4 rounded-full bg-white dark:bg-slate"
+                class="relative flex gap-x-4 menu app-nav px-6 py-4 rounded-full bg-white dark:bg-slate"
             >
                 <li>
                     <NotificationBell :userID="session.user.id" />

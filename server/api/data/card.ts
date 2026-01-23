@@ -344,6 +344,90 @@ export default defineEventHandler(async (event) => {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }
+    } else if (method === "DELETE") {
+      // Hier sollte der Deleteprozess laufen
+      const { cardID } = await readBody(event);
+
+      if (!cardID) {
+        event.res.statusCode = 400;
+        return { error: "Card ID is required" };
+      }
+
+      // Fetch card details
+      const [rows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
+        cardID,
+      ]);
+      const card = rows[0];
+
+      if (!card) {
+        event.res.statusCode = 404;
+        return { error: "Card not found" };
+      }
+
+      const [boardRows] = await db.execute(
+        "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
+        [card.area],
+      );
+      const board = boardRows[0];
+
+      if (!board) {
+        event.res.statusCode = 404;
+        return { error: "Board not found" };
+      }
+
+      let writeAccess = false;
+      if (board.status === "private" && (!userId || board.user !== userId)) {
+        if (!userIdFromApiKey && !session) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
+        // Check if the user has an invitation
+        const [invitationRows] = await db.execute(
+          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+          [board.id, userId],
+        );
+
+        if (invitationRows.length === 0) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
+        // Determine write access based on invitation permission
+        writeAccess = invitationRows[0].permission === "edit";
+      } else if (board.user === userId) {
+        if (!userIdFromApiKey && !session) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
+        // User is the creator of the board, so they have write access
+        writeAccess = true;
+      } else if (board.status === "public" && (userIdFromApiKey || session)) {
+        writeAccess = true;
+      }
+
+      if (writeAccess) {
+        // Delete notifications
+        await db.execute("DELETE FROM comments WHERE card = ?", [cardID]);
+
+        // Delete notifications related to cards in the area
+        await db.execute("DELETE FROM notifications WHERE cardId = ?", [
+          cardID,
+        ]);
+
+        // Delete Card
+        const [result] = await db.execute("DELETE FROM cards WHERE id = ?", [
+          cardID,
+        ]);
+
+        if (result.affectedRows === 0) {
+          event.res.statusCode = 404;
+          return { error: "Card not found or already deleted" };
+        }
+
+        return { message: "Card deleted successfully", card: card };
+      } else {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
     } else {
       event.res.statusCode = 405;
       return { error: "Method not allowed" };

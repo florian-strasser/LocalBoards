@@ -154,5 +154,8 @@
   "changePassword": "Changer le mot de passe",
   "newPassword": "Nouveau mot de passe",
   "generatePassword": "Générer un mot de passe",
-  "newPasswordMessage": "Ici, vous pouvez copier le mot de passe pour l'enregistrer ou l'envoyer à la personne utilisant ce compte :"
+  "newPasswordMessage": "Ici, vous pouvez copier le mot de passe pour l'enregistrer ou l'envoyer à la personne utilisant ce compte :",
+  "deleteCardTitle": "Voulez-vous supprimer cette carte ?",
+  "deleteCardBtn": "Supprimer la carte",
+  "cardDeleted": "Carte supprimée"
 }

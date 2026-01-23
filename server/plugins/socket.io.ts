@@ -162,6 +162,19 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
         boardId,
       });
     });
+
+    // CardDeleted
+    socket.on("cardDeleted", async ({ boardId, card }) => {
+      console.log(
+        `Card ${card.id} wurde auf Board ${boardId} gelöscht (user-${socket.id})`,
+      );
+      io.except(`user-${socket.id}`)
+        .to(`board-${boardId}`)
+        .emit("deletedCard", {
+          boardId,
+          card,
+        });
+    });
   });
 
   nitroApp.router.use(

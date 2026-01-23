@@ -156,5 +156,8 @@
   "changePassword": "Passwort ändern",
   "newPassword": "Neues Passwort",
   "generatePassword": "Passwort generieren",
-  "newPasswordMessage": "Hier können Sie das Passwort kopieren, um es zu speichern oder an die Person zu senden, die dieses Konto nutzt:"
+  "newPasswordMessage": "Hier können Sie das Passwort kopieren, um es zu speichern oder an die Person zu senden, die dieses Konto nutzt:",
+  "deleteCardTitle": "Möchtest du diese Karte löschen?",
+  "deleteCardBtn": "Karte löschen",
+  "cardDeleted": "Karte gelöscht"
 }

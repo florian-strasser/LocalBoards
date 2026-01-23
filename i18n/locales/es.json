@@ -154,5 +154,8 @@
   "changePassword": "Cambiar contraseña",
   "newPassword": "Nueva contraseña",
   "generatePassword": "Generar contraseña",
-  "newPasswordMessage": "Aquí puedes copiar la contraseña para guardarla o enviársela a la persona que utiliza esta cuenta:"
+  "newPasswordMessage": "Aquí puedes copiar la contraseña para guardarla o enviársela a la persona que utiliza esta cuenta:",
+  "deleteCardHeadline": "¿Quieres eliminar esta tarjeta?",
+  "deleteCardBtn": "Eliminar tarjeta",
+  "cardDeleted": "Tarjeta eliminada"
 }
