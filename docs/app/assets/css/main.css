@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+@theme {
+  --color-*: initial;
+  --color-primary: #004632;
+  --color-secondary: #b33e04;
+  --color-white: #ffffff;
+  --color-gray: #3d5e59;
+  --color-slate: #eef5ee;
+  --color-black: #000000;
+  --color-dark: #101514;
+}
+html,
+body {
+  background: var(--color-slate);
+  color: var(--color-gray);
+}
+.container {
+  padding-left: 2rem;
+  padding-right: 2rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition:
+    opacity 1s ease,
+    transform 1s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(2rem);
+}
+
+.wysiwyg-wrapper :first-child {
+  margin-top: 0 !important;
+}
+.wysiwyg-wrapper > h1 {
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--color-primary);
+}
+.wysiwyg-wrapper > h2 {
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--color-primary);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px color-mix(in oklab, var(--color-gray) 30%, transparent)
+    solid;
+}
+.wysiwyg-wrapper > h3 {
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-primary);
+}
+.wysiwyg-wrapper > h4 {
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--color-primary);
+}
+.wysiwyg-wrapper > p,
+.wysiwyg-wrapper > h1,
+.wysiwyg-wrapper > h2,
+.wysiwyg-wrapper > h3,
+.wysiwyg-wrapper > h4,
+.wysiwyg-wrapper > h5,
+.wysiwyg-wrapper > h6 {
+  margin-top: 1rem;
+}
+.wysiwyg-wrapper > ul,
+.wysiwyg-wrapper > ol {
+  margin-top: 1rem;
+  padding-left: 1.25rem;
+}
+.wysiwyg-wrapper > ul {
+  list-style: disc;
+}
+.wysiwyg-wrapper > ol {
+  list-style: decimal;
+}
+.wysiwyg-wrapper > ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0rem;
+}
+.wysiwyg-wrapper > ul[data-type="taskList"] > li {
+  display: flex;
+}
+.wysiwyg-wrapper > p + h2,
+.wysiwyg-wrapper > ul + h2,
+.wysiwyg-wrapper > ol + h2,
+.wysiwyg-wrapper > pre + h2,
+.wysiwyg-wrapper > p + h3,
+.wysiwyg-wrapper > ul + h3,
+.wysiwyg-wrapper > ol + h3,
+.wysiwyg-wrapper > pre + h3 {
+  margin-top: 1.5rem;
+}
+.wysiwyg-wrapper > ul[data-type="taskList"] > li label {
+  flex-grow: 0;
+  flex-shrink: 0;
+  margin-right: 0.5em;
+}
+.wysiwyg-wrapper > pre {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-white);
+  border-radius: var(--radius-xl);
+  white-space: pre-line;
+  word-wrap: break-word;
+  text-align: justify;
+}
+.wysiwyg-wrapper img {
+  display: block;
+  height: auto;
+  margin-top: 1rem;
+  max-width: 100%;
+}
+.has-triangle-bottom::before,
+.has-triangle-top::before {
+  position: absolute;
+  display: block;
+  content: "";
+  left: 50%;
+}
+.has-triangle-bottom::before {
+  bottom: 0;
+  transform: translate(-50%, 100%);
+  border-left: 0.5rem transparent solid;
+  border-right: 0.5rem transparent solid;
+  border-top: 0.5rem var(--color-primary) solid;
+}
+.has-triangle-top::before {
+  top: 0;
+  transform: translate(-50%, -100%);
+  border-left: 0.5rem transparent solid;
+  border-right: 0.5rem transparent solid;
+  border-bottom: 0.5rem var(--color-primary) solid;
+}

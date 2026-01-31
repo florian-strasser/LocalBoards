@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen flex flex-col justify-between">
+    <div class="min-h-svh flex flex-col justify-between">
         <AppHeader />
         <div class="w-full pt-12 pb-7 grow-0 shrink-0">
             <div class="container">

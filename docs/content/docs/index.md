@@ -1,9 +1,4 @@
-# LocalBoards
-[![Nuxt](https://img.shields.io/badge/Nuxt-4.3.0-00DC82?style=flat&logo=nuxt)](https://nuxt.com)
-[![Better Auth](https://img.shields.io/badge/Better%20Auth-1.4.14-000000?style=flat&logo=betterauth)](https://www.better-auth.com)
-[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.3-25C2A0?style=flat&logo=socketdotio)](https://socket.io)
-[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/florian-strasser/LocalBoards/blob/master/LICENSE)
-[![Version](https://img.shields.io/badge/version-0.5.4-orange)]()
+# Getting started
 
 LocalBoards is an open-source (MIT License), self-hosted Kanban board system. It allows users to create boards, invite collaborators, and manage Kanban cards. It also includes admin features for user management. All data is stored in your own database, with no reliance on external services.
 
@@ -29,7 +24,7 @@ npm install
 ```
 
 ### Configure Environment Variables
-Create a `.env` file (and optionally a `.env.local` file for local development) with the following settings. Adjust the values to match your database and email configuration. Ensure that `NUXT_BOARDS_URL` and `BETTER_AUTH_URL` are set to the same URL.
+Create a `.env` file (and optionally a `.env.local` file for local development) with the following settings. Adjust the values to match your database and email configuration. Ensure that `NUXT_BOARDS_URL` and `BETTER_AUTH_URL` are set to the same URL. Additionally you can define the used language with `NUXT_LANGUAGE` and one of these properties: `en, de, fr, es, it, nl, pl`
 
 ```dotenv
 # App Name
@@ -69,29 +64,4 @@ Move the builded app from /.output to your favorite hosting solution, that is ab
 
 ```bash
 node ./server/index.mjs
-```
-
-## Contribute
-
-LocalBoards is maintained as a solo project without any monetary incentives. Contributions are highly encouraged! If you encounter any issues or have suggestions for improvements, feel free to open a pull request. There is currently no formal contribution guide, but your help is always welcome.
-
-### Running Locally for Development
-
-To run the application locally for development:
-
-```bash
-npm run dev
-```
-
-Or, if you have a custom `.env.local` file:
-```bash
-npx nuxt dev --dotenv .env.local
-```
-
-### Building Locally
-
-To build the application locally:
-
-```bash
-npx nuxt build --dotenv .env.local
 ```

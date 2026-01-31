@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen flex flex-col justify-between overflow-clip">
+    <div class="min-h-svh flex flex-col justify-between overflow-clip">
         <AppHeader />
         <ContentWrapper>
             <SectionHeader

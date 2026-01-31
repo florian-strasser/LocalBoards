@@ -6,7 +6,7 @@
     --color-secondary: #b33e04;
     --color-white: #ffffff;
     --color-gray: #3d5e59;
-    --color-slate: #e8f2e7;
+    --color-slate: #eef5ee;
     --color-black: #000000;
     --color-dark: #101514;
 }
@@ -22,6 +22,7 @@ body {
         --color-gray: #b6c8c8;
         --color-slate: #1f2524;
     }
+    html,
     body {
         background: var(--color-dark);
         color: var(--color-gray);

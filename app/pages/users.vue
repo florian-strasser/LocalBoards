@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen flex flex-col justify-between">
+    <div class="min-h-svh flex flex-col justify-between">
         <AppHeader />
         <ContentWrapper>
             <SectionHeader url="/new-user/" :tooltip="$t('newUser')">{{

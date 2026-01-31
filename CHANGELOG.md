@@ -1,8 +1,15 @@
+## v0.5.4
+
+- Created a first version of documentation with nuxt/content in docs folder.
+- Removed `pointer-events-auto` class from ModalWindow Component
+- Adjusted slate color in bright theme
+
 ## v0.5.3
 
 - Added an delete button for cards
 - Changed the color of the status checkbox to primary color
 - Minimal updates to the color schemes
+- Removed relict api route: api/upload/image.ts
 - Added a new touchicon
 - Introduced a CHANGELOG.md file
 - Updated dependencies

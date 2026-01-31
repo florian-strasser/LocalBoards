@@ -1,5 +1,5 @@
 <template>
-    <div class="relative min-h-screen flex flex-col">
+    <div class="relative min-h-svh flex flex-col">
         <main class="flex flex-col justify-center py-8 grow shrink-0">
             <div class="container mx-auto">
                 <div class="max-w-md mx-auto">

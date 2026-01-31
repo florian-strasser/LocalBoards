@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen flex flex-col justify-center items-center w-full">
+    <div class="min-h-svh flex flex-col justify-center items-center w-full">
         <div class="container">
             <form
                 v-if="!requestNew"

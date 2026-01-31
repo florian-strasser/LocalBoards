@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen flex flex-col justify-between">
+    <div class="min-h-svh flex flex-col justify-between">
         <AppHeader />
         <ContentWrapper>
             <h1 class="text-5xl text-primary dark:text-white mb-8">
