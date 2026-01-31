@@ -1,7 +1,8 @@
 ## v0.5.4
 
-- Created a first version of documentation with nuxt/content in docs folder.
-- Removed `pointer-events-auto` class from ModalWindow Component
+- Created a first version of documentation with nuxt/content in docs folder
+- Removed `pointer-events-auto` class from ModalWindow Component due to mobile problems
+- Adjusted minimum screen size to `min-h-svh` instead of `min-h-screen` due to mobile problems
 - Adjusted slate color in bright theme
 
 ## v0.5.3
