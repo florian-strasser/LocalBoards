@@ -538,7 +538,7 @@ const saveBoard = async () => {
                 userId: userID,
                 name: newName,
                 style: newBoardStyle.value,
-                image: newBoardImage.value,
+                image: newBoardImage.value ? newBoardImage.value : null,
                 status: newBoardStatus.value,
             },
         });

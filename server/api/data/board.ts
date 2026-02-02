@@ -102,10 +102,10 @@ export default defineEventHandler(async (event) => {
       // Get the board data from the request body
       const { id, userId, name, style, image, status } = await readBody(event);
 
-      if (!userId || !name || !style || !image || !status) {
+      if (!userId || !name || !style || !status) {
         event.res.statusCode = 400;
         return {
-          error: "User ID, name, style, image and status are required",
+          error: "User ID, name, style and status are required",
         };
       }
 
