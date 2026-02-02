@@ -1,3 +1,10 @@
+## v0.5.5
+
+- Allows the upload or selection of an thumbnail for a board
+- Added 6 board placeholder images to the public folder
+- Add a screenshot to the landingpage
+- Add a screenshot to the README.md file
+
 ## v0.5.4
 
 - Created a first version of documentation with nuxt/content in docs folder

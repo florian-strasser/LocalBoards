@@ -178,6 +178,20 @@
                         />
                     </div>
                     <div>
+                        <InputImage
+                            :label="$t('boardThumbnail')"
+                            :images="[
+                                '/images/board_placeholder_01.png',
+                                '/images/board_placeholder_02.png',
+                                '/images/board_placeholder_03.png',
+                                '/images/board_placeholder_04.png',
+                                '/images/board_placeholder_05.png',
+                                '/images/board_placeholder_06.png',
+                            ]"
+                            v-model="newBoardImage"
+                        />
+                    </div>
+                    <div>
                         <label class="block text-sm/6 font-medium text-gray">{{
                             $t("boardStyle")
                         }}</label>
@@ -283,10 +297,12 @@ const boardName = ref($t("untitledBoard"));
 const boardUser = ref(false);
 const boardStyle = ref("kanban");
 const boardStatus = ref("private");
+const boardImage = ref(null);
 
 const newBoardName = ref(boardName.value);
 const newBoardStyle = ref(boardStyle.value);
 const newBoardStatus = ref(boardStatus.value);
+const newBoardImage = ref(boardImage.value);
 
 const accessError = ref("");
 const optionsActive = ref(false);
@@ -505,6 +521,7 @@ const openModal = () => {
     newBoardName.value = boardName.value;
     newBoardStyle.value = boardStyle.value;
     newBoardStatus.value = boardStatus.value;
+    newBoardImage.value = boardImage.value;
     optionsActive.value = true;
 };
 
@@ -521,6 +538,7 @@ const saveBoard = async () => {
                 userId: userID,
                 name: newName,
                 style: newBoardStyle.value,
+                image: newBoardImage.value,
                 status: newBoardStatus.value,
             },
         });
@@ -530,6 +548,7 @@ const saveBoard = async () => {
             boardName.value = newBoardName.value;
             boardStyle.value = newBoardStyle.value;
             boardStatus.value = newBoardStatus.value;
+            boardImage.value = newBoardImage.value;
             optionsActive.value = false;
 
             socket.emit("boardUpdated", {
@@ -739,9 +758,11 @@ try {
         boardUser.value = data.value.board.user;
         boardStyle.value = data.value.board.style || "kanban";
         boardStatus.value = data.value.board.status || "private";
+        boardImage.value = data.value.board.image || null;
         newBoardName.value = boardName.value;
         newBoardStyle.value = boardStyle.value;
         newBoardStatus.value = boardStatus.value;
+        newBoardImage.value = boardImage.value;
         writeAccess.value = data.value.writeAccess;
     }
 } catch (err) {

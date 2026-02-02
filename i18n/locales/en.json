@@ -41,6 +41,7 @@
   "deleteBoardText": "Every card will be deleted too.",
   "deleteBoardBtn": "Delete board",
   "boardName": "Board name",
+  "boardThumbnail": "Thumbnail",
   "boardStyle": "Style",
   "boardStatus": "Status",
   "kanBan": "KanBan",

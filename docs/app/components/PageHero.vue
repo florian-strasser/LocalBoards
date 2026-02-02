@@ -1,9 +1,7 @@
 <template>
   <section>
     <div class="container">
-      <div
-        class="relative bg-white rounded-3xl px-8 sm:px-12 py-10 sm:py-16 overflow-clip"
-      >
+      <div class="">
         <div class="max-w-2xl mx-auto text-center">
           <p class="text-secondary sm:text-lg">
             Self-hosted Kanban boards for teams
@@ -21,6 +19,15 @@
             class="inline-block bg-secondary text-white px-5 sm:px-6 py-2 sm:py-3 sm:text-lg rounded-full"
             >Get started</NuxtLink
           >
+        </div>
+        <div
+          class="aspect aspect-16/9 relative rounded-3xl overflow-clip mt-10"
+        >
+          <img
+            src="/images/localboards-screen.webp"
+            alt="A user that is using LocalBoards in production"
+            class="absolute top-0 left-0 w-full h-full object-cover"
+          />
         </div>
       </div>
     </div>

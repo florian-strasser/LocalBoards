@@ -41,6 +41,7 @@
   "deleteBoardText": "Alle kaarten worden ook verwijderd.",
   "deleteBoardBtn": "Bord verwijderen",
   "boardName": "Bordnaam",
+  "boardThumbnail": "Voorvertoning",
   "boardStyle": "Stijl",
   "boardStatus": "Status",
   "kanBan": "Kanban",

@@ -41,6 +41,7 @@
   "deleteBoardText": "Anche tutte le carte verranno eliminate.",
   "deleteBoardBtn": "Elimina bacheca",
   "boardName": "Nome della bacheca",
+  "boardThumbnail": "Anteprima",
   "boardStyle": "Stile",
   "boardStatus": "Stato",
   "kanBan": "Kanban",

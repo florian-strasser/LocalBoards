@@ -100,11 +100,13 @@ export default defineEventHandler(async (event) => {
       return { board, writeAccess };
     } else if (method === "POST") {
       // Get the board data from the request body
-      const { id, userId, name, style, status } = await readBody(event);
+      const { id, userId, name, style, image, status } = await readBody(event);
 
-      if (!userId || !name || !style || !status) {
+      if (!userId || !name || !style || !image || !status) {
         event.res.statusCode = 400;
-        return { error: "User ID, name, style, and status are required" };
+        return {
+          error: "User ID, name, style, image and status are required",
+        };
       }
 
       let board;
@@ -153,8 +155,8 @@ export default defineEventHandler(async (event) => {
         if (writeAccess) {
           // Update existing board
           const [result] = await db.execute(
-            "UPDATE boards SET name = ?, style = ?, status = ? WHERE id = ? AND user = ?",
-            [name, style, status, id, userId],
+            "UPDATE boards SET name = ?, style = ?, image = ?, status = ? WHERE id = ? AND user = ?",
+            [name, style, image, status, id, userId],
           );
 
           if (result.affectedRows === 0) {
@@ -182,8 +184,8 @@ export default defineEventHandler(async (event) => {
         }
         // Create new board
         const [result] = await db.execute(
-          "INSERT INTO boards (user, name, style, status) VALUES (?, ?, ?, ?)",
-          [userId, name, style, status],
+          "INSERT INTO boards (user, name, style, image, status) VALUES (?, ?, ?, ?, ?)",
+          [userId, name, style, image, status],
         );
 
         const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [

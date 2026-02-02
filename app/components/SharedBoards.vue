@@ -11,6 +11,7 @@
                 :id="item.id"
                 :name="item.name"
                 :style="item.style"
+                :image="item.image"
             />
         </div>
     </div>

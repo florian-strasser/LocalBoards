@@ -6,7 +6,7 @@
         <div class="flex gap-2">
             <div class="w-34">
                 <div
-                    class="aspect-square relative rounded-lg bg-slate"
+                    class="aspect-square relative rounded-lg bg-slate dark:bg-white/10"
                     @click="triggerFileInput"
                     @dragover.prevent="handleDragOver"
                     @dragleave.prevent="handleDragLeave"
@@ -25,13 +25,7 @@
                         v-else
                         class="absolute inset-0 flex flex-col justify-center items-center text-center p-2"
                     >
-                        <p class="text-sm text-gray-500">
-                            {{
-                                isDragging
-                                    ? "Drop image here"
-                                    : $t("settingsClickToUpload")
-                            }}
-                        </p>
+                        <Plus class="size-6" />
                     </div>
                     <div v-if="data" class="absolute top-1 right-1">
                         <button
@@ -74,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { Trash2 } from "lucide-vue-next";
+import { Plus, Trash2 } from "lucide-vue-next";
 
 const props = defineProps({
     label: String,

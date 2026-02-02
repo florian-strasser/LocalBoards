@@ -41,6 +41,7 @@
   "deleteBoardText": "Todas las tarjetas también se eliminarán.",
   "deleteBoardBtn": "Eliminar tablero",
   "boardName": "Nombre del tablero",
+  "boardThumbnail": "Imagen en miniatura",
   "boardStyle": "Estilo",
   "boardStatus": "Estado",
   "kanBan": "Kanban",

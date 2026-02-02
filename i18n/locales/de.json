@@ -42,6 +42,7 @@
   "deleteBoardText": "Alle Karten werden ebenfalls gelöscht.",
   "deleteBoardBtn": "Board löschen",
   "boardName": "Name des Board",
+  "boardThumbnail": "Vorschaubild",
   "boardStyle": "Darstellung",
   "boardStatus": "Status",
   "kanBan": "KanBan",

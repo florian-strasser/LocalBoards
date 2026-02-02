@@ -41,6 +41,7 @@
   "deleteBoardText": "Toutes les cartes seront également supprimées.",
   "deleteBoardBtn": "Supprimer le tableau",
   "boardName": "Nom du tableau",
+  "boardThumbnail": "Image miniature",
   "boardStyle": "Style",
   "boardStatus": "Statut",
   "kanBan": "Kanban",

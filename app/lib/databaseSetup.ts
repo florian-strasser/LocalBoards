@@ -107,8 +107,9 @@ export function setupDatabase() {
       id INT PRIMARY KEY AUTO_INCREMENT,
       user VARCHAR(255) NOT NULL,
       name VARCHAR(255) NOT NULL,
-      style ENUM('kanban', 'todo') DEFAULT 'kanban',
-      status ENUM('private', 'public') DEFAULT 'private'
+      style ENUM('kanban', 'todo', 'notices') DEFAULT 'kanban',
+      status ENUM('private', 'public') DEFAULT 'private',
+      image LONGTEXT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `);
 
@@ -186,5 +187,17 @@ export function setupDatabase() {
     console.log("Notification types migration:", error.message);
   });
   db.execute(`ALTER TABLE user MODIFY COLUMN image longtext`);
+
+  db.execute(
+    `
+    ALTER TABLE boards
+    ADD COLUMN image LONGTEXT,
+    MODIFY COLUMN style ENUM('kanban', 'todo', 'notices') DEFAULT 'kanban'
+  `,
+  ).catch((error) => {
+    // Ignore errors for this migration as it might fail if the columns already exist
+    console.log("Boards columns migration:", error.message);
+  });
+
   return db;
 }

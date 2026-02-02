@@ -28,6 +28,20 @@
                         />
                     </div>
                     <div>
+                        <InputImage
+                            :label="$t('boardThumbnail')"
+                            :images="[
+                                '/images/board_placeholder_01.png',
+                                '/images/board_placeholder_02.png',
+                                '/images/board_placeholder_03.png',
+                                '/images/board_placeholder_04.png',
+                                '/images/board_placeholder_05.png',
+                                '/images/board_placeholder_06.png',
+                            ]"
+                            v-model="newBoardImage"
+                        />
+                    </div>
+                    <div>
                         <label class="block text-sm/6 font-medium text-gray">{{
                             $t("boardStyle")
                         }}</label>
@@ -92,6 +106,7 @@ const createBoard = ref(false);
 const newBoardName = ref($t("untitledBoard"));
 const newBoardStyle = ref("kanban");
 const newBoardStatus = ref("private");
+const newBoardImage = ref(null);
 
 const saveBoard = async () => {
     const newName = newBoardName.value.trim();
@@ -105,6 +120,7 @@ const saveBoard = async () => {
                 userId: userID,
                 name: newName,
                 style: newBoardStyle.value,
+                image: newBoardImage.value,
                 status: newBoardStatus.value,
             },
         });
