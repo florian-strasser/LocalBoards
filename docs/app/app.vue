@@ -2,7 +2,9 @@
   <div>
     <NuxtRouteAnnouncer />
     <AppHeader />
-    <NuxtPage />
+    <main role="main">
+      <NuxtPage />
+    </main>
     <AppFooter />
   </div>
 </template>

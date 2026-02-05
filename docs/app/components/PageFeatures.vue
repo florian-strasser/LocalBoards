@@ -9,7 +9,7 @@
         <div
           class="flex gap-x-2"
           v-for="feature in features"
-          :class="{ 'opacity-50': feature.soon }"
+          :class="{ 'opacity-75': feature.soon }"
         >
           <CircleCheck
             class="text-secondary size-7 sm:size-8 shrink-0 grow-0"

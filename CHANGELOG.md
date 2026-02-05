@@ -1,3 +1,15 @@
+## v0.5.7
+
+- Adjusted query keys for docs to prevent issues when built static
+- Fixed mobile issues for docs
+- Optimized accessibility for docs
+- Optimized SEO for docs
+
+## v0.5.6
+
+- Fixed a issue that prevented to save a board when no image was
+provided
+
 ## v0.5.5
 
 - Allows the upload or selection of an thumbnail for a board

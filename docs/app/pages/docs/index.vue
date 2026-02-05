@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <div class="flex gap-12 items-start">
+    <div class="flex flex-col-reverse lg:flex-row gap-12 items-start">
       <DocsNav :menuItems="menu" />
       <ContentWrapper>
         <ContentRenderer

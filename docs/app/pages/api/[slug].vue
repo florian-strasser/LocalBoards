@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <div class="flex gap-12 items-start">
+    <div class="flex flex-col-reverse lg:flex-row gap-12 items-start">
       <DocsNav :menuItems="menuApi" />
       <ContentWrapper>
         <ContentRenderer v-if="page" :value="page" class="wysiwyg-wrapper" />
@@ -14,7 +14,7 @@ const url_slug = route.params.slug;
 const { data: menuApi } = await useAsyncData("navigationApi", () => {
   return queryCollectionNavigation("api").order("title", "ASC");
 });
-const { data: page } = await useAsyncData("page_" + url_slug, () =>
+const { data: page } = await useAsyncData("api_" + url_slug, () =>
   queryCollection("api")
     .path("/api/" + url_slug)
     .first(),
