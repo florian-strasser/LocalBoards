@@ -31,11 +31,11 @@
                     v-for="notification in notifications"
                     :key="notification.id"
                     class="p-4 border-b dark:border-gray/30"
-                    :class="{ 'bg-gray-100': !notification.isRead }"
                 >
-                    <p class="text-sm">
-                        {{ translateNotification(notification.message) }}
-                    </p>
+                    <div
+                        class="text-sm"
+                        v-html="translateNotification(notification.message)"
+                    />
                     <p class="text-xs text-gray-500 mt-1">
                         {{ formatDate(notification.createdAt) }}
                     </p>
@@ -134,9 +134,24 @@ const translateNotification = (message: string): string => {
 
         return `${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}`;
     }
+    // console.log(message);
+    // Handle new comment notification format: New comment by "username" on card "cardname"
+    if (message.startsWith('New comment by "')) {
+        // Extract the username and card name
+        const usernameMatch = message.match(/New comment by "([^"]+)"/);
+        const cardNameMatch = message.match(/on card "([^"]+)"/);
+        const commentMatch = message.match(/":([^"]+)/);
 
-    // Extract the static part of the message for other notification types
-    const staticPart = message.split(":")[0];
+        const username = usernameMatch ? usernameMatch[1] : "";
+        const cardName = cardNameMatch ? cardNameMatch[1] : "";
+        const comment = commentMatch ? commentMatch[1] : "";
+
+        // Translate the static parts while preserving the format
+        const translatedMessage = $t("notificationNewComment", {
+            username: username,
+        });
+        return `${translatedMessage} "${cardName}":<div class='mt-2 rounded-md bg-dark/10 dark:bg-white/10 wysiwyg-wrapper px-4 py-3'>${comment}</div>`;
+    }
 
     // Map the static part to a translation key
     const translationKeyMap = {
@@ -145,13 +160,18 @@ const translateNotification = (message: string): string => {
         "New card created": "notificationNewCard",
     };
 
+    // Extract the static part of the message for other notification types
+    const staticPart = Object.keys(translationKeyMap).find((key) =>
+        message.startsWith(key),
+    );
+
     // Get the translation key
     const translationKey = translationKeyMap[staticPart];
 
     if (translationKey) {
         // Replace the static part with the translated text
-        const dynamicPart = message.split(":").slice(1);
-        return `${$t(translationKey)}: ${dynamicPart}`;
+        const dynamicPart = message.slice(staticPart.length).trim();
+        return `${$t(translationKey)} ${dynamicPart}`;
     } else {
         // Fallback to the original message if no translation is found
         return message;

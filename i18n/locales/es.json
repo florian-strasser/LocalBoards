@@ -46,6 +46,7 @@
   "boardStatus": "Estado",
   "kanBan": "Kanban",
   "toDo": "Por hacer",
+  "notices": "Avisos",
   "statusPrivate": "Privado",
   "statusPublic": "Público",
   "createBoard": "Crear tablero",
@@ -119,7 +120,7 @@
   "settingsNewPassword": "Nueva contraseña",
   "settingsSaveNewPassword": "Guardar nueva contraseña",
   "notificationInvitedToBoard": "Has sido invitado al tablero:",
-  "notificationNewComment": "Nuevo comentario en la tarjeta:",
+  "notificationNewComment": "Nuevo comentario de \"{username}\" en la tarjeta:",
   "notificationNewCard": "Nueva tarjeta creada:",
   "notificationCardMoved": "Tarjeta",
   "notificationCardMovedFrom": " movida de ",
@@ -158,5 +159,7 @@
   "newPasswordMessage": "Aquí puedes copiar la contraseña para guardarla o enviársela a la persona que utiliza esta cuenta:",
   "deleteCardHeadline": "¿Quieres eliminar esta tarjeta?",
   "deleteCardBtn": "Eliminar tarjeta",
-  "cardDeleted": "Tarjeta eliminada"
+  "cardDeleted": "Tarjeta eliminada",
+  "areas": "Áreas",
+  "hideAreas": "Ocultar áreas"
 }

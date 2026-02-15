@@ -45,11 +45,16 @@ export const auth = betterAuth({
         to: user.email,
         subject: buildTitle(translateText("resetYourPassword")),
         text:
+          "<p>" +
           translateText("resetYourPasswordText") +
-          ": " +
+          ":</p><p><a href='" +
           baseURL +
           "/reset-password/" +
-          token,
+          "'>" +
+          baseURL +
+          "/reset-password/" +
+          "</a></p>",
+        token,
       });
     },
     onPasswordReset: async ({ user }, request) => {
@@ -65,9 +70,7 @@ export const auth = betterAuth({
     admin(),
     apiKey({
       rateLimit: {
-        enabled: true,
-        timeWindow: 1000 * 60 * 60, // 1 hour
-        maxRequests: 10, // 10 requests per hour
+        enabled: false,
       },
     }),
   ],

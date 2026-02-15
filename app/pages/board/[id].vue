@@ -52,14 +52,14 @@
                     ref="areasWrapper"
                     class="mt-4"
                     :class="{
-                        'flex items-start gap-x-5': boardStyle == 'kanban',
-                        'space-y-5': boardStyle == 'todo',
+                        'flex items-start gap-x-5': boardStyle === 'kanban',
+                        'space-y-5': boardStyle === 'todo',
                     }"
                 >
                     <div
                         v-for="area in areas"
                         :key="area.id"
-                        class="bg-white dark:bg-slate p-4 space-y-2 rounded-lg"
+                        class="p-4 space-y-2 rounded-lg bg-white dark:bg-slate"
                         :class="{
                             'max-w-full w-92 shrink-0 grow-0':
                                 boardStyle == 'kanban',
@@ -275,7 +275,7 @@ import { socket } from "~/lib/socket";
 import { authClient } from "@/lib/auth-client";
 import Sortable from "sortablejs";
 import { Pencil, UserRoundPlus, Trash2, X } from "lucide-vue-next";
-import { Plus } from "lucide-vue-next";
+import { Plus, FolderPlus } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
 

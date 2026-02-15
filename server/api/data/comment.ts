@@ -228,7 +228,7 @@ export default defineEventHandler(async (event) => {
                 "comment",
                 boardId,
                 card,
-                `New comment on card: ${cRows[0]?.name || "a card"}`,
+                `New comment by "${rows[0].userName}" on card "${cRows[0]?.name || "a card"}": ${rows[0].content}`,
               ],
             );
           }

@@ -46,6 +46,7 @@
   "boardStatus": "Statut",
   "kanBan": "Kanban",
   "toDo": "À faire",
+  "notices": "Avis",
   "statusPrivate": "Privé",
   "statusPublic": "Public",
   "createBoard": "Créer un tableau",
@@ -119,7 +120,7 @@
   "settingsNewPassword": "Nouveau mot de passe",
   "settingsSaveNewPassword": "Enregistrer le nouveau mot de passe",
   "notificationInvitedToBoard": "Vous avez été invité au tableau :",
-  "notificationNewComment": "Nouveau commentaire sur la carte :",
+  "notificationNewComment": "Nouveau commentaire de \"{username}\" sur la carte :",
   "notificationNewCard": "Nouvelle carte créée :",
   "notificationCardMoved": "Carte",
   "notificationCardMovedFrom": " déplacée de ",
@@ -158,5 +159,7 @@
   "newPasswordMessage": "Ici, vous pouvez copier le mot de passe pour l'enregistrer ou l'envoyer à la personne utilisant ce compte :",
   "deleteCardTitle": "Voulez-vous supprimer cette carte ?",
   "deleteCardBtn": "Supprimer la carte",
-  "cardDeleted": "Carte supprimée"
+  "cardDeleted": "Carte supprimée",
+  "areas": "Zones",
+  "hideAreas": "Masquer les zones"
 }

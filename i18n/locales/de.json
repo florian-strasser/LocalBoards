@@ -47,6 +47,7 @@
   "boardStatus": "Status",
   "kanBan": "KanBan",
   "toDo": "ToDo",
+  "notices": "Notizen",
   "statusPrivate": "Privat",
   "statusPublic": "Öffentlich",
   "createBoard": "Board anlegen",
@@ -120,7 +121,7 @@
   "settingsNewPassword": "Neues Passwort",
   "settingsSaveNewPassword": "Speichere neues Passwort",
   "notificationInvitedToBoard": "Du wurdest zum Board eingeladen",
-  "notificationNewComment": "Neuer Kommentar auf Karte",
+  "notificationNewComment": "Neuer Kommentar von \"{username}\" auf Karte",
   "notificationNewCard": "Neue Karte erstellt",
   "notificationCardMoved": "Karte",
   "notificationCardMovedFrom": " bewegt von ",
@@ -160,5 +161,7 @@
   "newPasswordMessage": "Hier können Sie das Passwort kopieren, um es zu speichern oder an die Person zu senden, die dieses Konto nutzt:",
   "deleteCardTitle": "Möchtest du diese Karte löschen?",
   "deleteCardBtn": "Karte löschen",
-  "cardDeleted": "Karte gelöscht"
+  "cardDeleted": "Karte gelöscht",
+  "areas": "Bereiche",
+  "hideAreas": "Bereiche ausblenden"
 }

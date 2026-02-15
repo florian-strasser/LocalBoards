@@ -46,6 +46,7 @@
   "boardStatus": "Status",
   "kanBan": "Kanban",
   "toDo": "Taken",
+  "notices": "Mededelingen",
   "statusPrivate": "Privé",
   "statusPublic": "Openbaar",
   "createBoard": "Bord aanmaken",
@@ -119,7 +120,7 @@
   "settingsNewPassword": "Nieuw wachtwoord",
   "settingsSaveNewPassword": "Nieuw wachtwoord opslaan",
   "notificationInvitedToBoard": "Je bent uitgenodigd voor het bord:",
-  "notificationNewComment": "Nieuwe reactie op kaart:",
+  "notificationNewComment": "Nieuwe reactie van \"{username}\" op kaart:",
   "notificationNewCard": "Nieuwe kaart gemaakt:",
   "notificationCardMoved": "Kaart",
   "notificationCardMovedFrom": " verplaatst van ",
@@ -158,5 +159,7 @@
   "newPasswordMessage": "Hier kun je het wachtwoord kopiëren om op te slaan of te versturen naar de persoon die dit account gebruikt:",
   "deleteCardHeadline": "Wil je deze kaart verwijderen?",
   "deleteCardBtn": "Kaart verwijderen",
-  "cardDeleted": "Kaart verwijderd"
+  "cardDeleted": "Kaart verwijderd",
+  "areas": "Gebieden",
+  "hideAreas": "Gebieden verbergen"
 }

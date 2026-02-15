@@ -46,6 +46,7 @@
   "boardStatus": "Stato",
   "kanBan": "Kanban",
   "toDo": "Da fare",
+  "notices": "Avvisi",
   "statusPrivate": "Privato",
   "statusPublic": "Pubblico",
   "createBoard": "Crea bacheca",
@@ -119,7 +120,7 @@
   "settingsNewPassword": "Nuova password",
   "settingsSaveNewPassword": "Salva nuova password",
   "notificationInvitedToBoard": "Sei stato invitato alla bacheca:",
-  "notificationNewComment": "Nuovo commento sulla carta:",
+  "notificationNewComment": "Nuovo commento di \"{username}\" sulla carta:",
   "notificationNewCard": "Nuova carta creata:",
   "notificationCardMoved": "Carta",
   "notificationCardMovedFrom": " spostata da ",
@@ -158,5 +159,7 @@
   "newPasswordMessage": "Qui puoi copiare la password per salvarla o inviarla alla persona che utilizza questo account:",
   "deleteCardHeadline": "Vuoi eliminare questa carta?",
   "deleteCardBtn": "Elimina carta",
-  "cardDeleted": "Carta eliminata"
+  "cardDeleted": "Carta eliminata",
+  "areas": "Aree",
+  "hideAreas": "Nascondi aree"
 }

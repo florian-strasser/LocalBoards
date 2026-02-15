@@ -1,3 +1,32 @@
+## v0.6.0
+
+- Installed MCP-Toolkit
+- Introduced a `NUXT_MCP` flag to disable the MCP Server entirely
+- Added a `createArea` tool for the MCP Server, to create a new area on an existing board
+- Added a `createBoard` tool for the MCP Server, to create a new board
+- Added a `createCard` tool for the MCP Server, to create a new card in an existing area
+- Added a `deleteArea` tool for the MCP Server, to delete an area
+- Added a `deleteBoard` tool for the MCP Server, to delete a board
+- Added a `deleteCard` tool for the MCP Server, to delete a card
+- Added a `getArea` tool for the MCP Server, to fetch a specific area
+- Added a `getBoard` tool for the MCP Server, to fetch a specific board
+- Added a `getCard` tool for the MCP Server, to fetch a specific card
+- Added a `listAreas` tool for the MCP Server, to expose all available areas on an existing board
+- Added a `listBoards` tool for the MCP Server, to expose all available boards of the user
+- Added a `listCards` tool for the MCP Server, to expose all available cards in an area
+- Added a `listComments` tool for the MCP Server, to expose all available comments on a card
+- Added a `moveAreas` tool for the MCP Server, to update the order of areas in a board
+- Added a `moveCard` tool for the MCP Server, to move a card from one area to another
+- Added a `orderCard` tool for the MCP Server, to update the order of cards in an area
+- Added a `updateArea` tool for the MCP Server, to update an existing area
+- Added a `updateBoard` tool for the MCP Server, to update an existing board
+- Added a `updateCard` tool for the MCP Server, to update an existing card
+- Added a `writeComment` tool for the MCP Server, to create a new comment on a card
+- Added a MCP-Server page to the docs
+- Improved comment notification, includes the content and name of the content creator
+- Switched to a HTML from plain text for mails
+- Fixed an issue with the dark background of a card modal window. Users have not been able to close the card by clicking on this backgrond.
+
 ## v0.5.7
 
 - Adjusted query keys for docs to prevent issues when built static

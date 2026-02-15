@@ -46,6 +46,7 @@
   "boardStatus": "Status",
   "kanBan": "Kanban",
   "toDo": "Do zrobienia",
+  "notices": "Ogłoszenia",
   "statusPrivate": "Prywatna",
   "statusPublic": "Publiczna",
   "createBoard": "Utwórz tablicę",
@@ -116,7 +117,7 @@
   "settingsNewPassword": "Nowe hasło",
   "settingsSaveNewPassword": "Zapisz nowe hasło",
   "notificationInvitedToBoard": "Zostałeś zaproszony do tablicy:",
-  "notificationNewComment": "Nowy komentarz do karty:",
+  "notificationNewComment": "Nowy komentarz od \"{username}\" do karty:",
   "notificationNewCard": "Nowa karta utworzona:",
   "notificationCardMoved": "Karta",
   "notificationCardMovedFrom": " przeniesiona z ",
@@ -155,5 +156,7 @@
   "newPasswordMessage": "Tutaj możesz skopiować hasło, aby je zapisać lub przesłać osobie korzystającej z tego konta:",
   "deleteCardHeadline": "Czy chcesz usunąć tę kartę?",
   "deleteCardBtn": "Usuń kartę",
-  "cardDeleted": "Karta usunięta"
+  "cardDeleted": "Karta usunięta",
+  "areas": "Obszary",
+  "hideAreas": "Ukryj obszary"
 }

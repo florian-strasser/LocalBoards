@@ -9,6 +9,10 @@
         />
         <div class="relative w-full max-h-full py-8 overflow-auto">
             <div
+                class="absolute top-0 left-0 w-full h-full"
+                @click="open = false"
+            />
+            <div
                 class="relative w-full max-w-lg mx-auto bg-white dark:bg-slate p-8 rounded-lg text-gray text-center"
             >
                 <div

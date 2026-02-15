@@ -1,0 +1,111 @@
+import { z } from "zod";
+import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
+import { setupDatabase } from "../../../app/lib/databaseSetup";
+
+const db = setupDatabase();
+
+export default defineMcpTool({
+  name: "deleteArea",
+  description: "Delete an area and all its associated data",
+  annotations: {
+    readOnlyHint: false,
+  },
+  inputSchema: {
+    areaId: z.number().describe("The id of the area to delete"),
+    boardId: z.number().describe("The id of the board the area belongs to"),
+  },
+  handler: async ({ areaId, boardId }) => {
+    const event = useEvent();
+    const userId = event.context.userId as string;
+
+    if (!areaId || !boardId) {
+      return textResult("areaId and boardId are required.");
+    }
+
+    if (!userId) {
+      return textResult(
+        "Authentication required. Please provide a valid API key.",
+      );
+    }
+
+    try {
+      // Check if the board exists
+      const [boardRows] = await db.execute(
+        "SELECT * FROM boards WHERE id = ?",
+        [boardId],
+      );
+      const board = boardRows[0];
+
+      if (!board) {
+        return textResult("Board not found.");
+      }
+
+      // Check if the user has write access to the board
+      let writeAccess = false;
+      if (board.status === "private" && board.user !== userId) {
+        // Check if the user has an invitation
+        const [invitationRows] = await db.execute(
+          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+          [boardId, userId],
+        );
+
+        if (invitationRows.length > 0) {
+          writeAccess = invitationRows[0].permission === "edit";
+        }
+      } else if (board.user === userId) {
+        // User is the creator of the board, so they have write access
+        writeAccess = true;
+      } else if (board.status === "public") {
+        writeAccess = true;
+      }
+
+      if (!writeAccess) {
+        return textResult("Unauthorized access.");
+      }
+
+      // Check if the area exists
+      const [areaRows] = await db.execute("SELECT * FROM areas WHERE id = ?", [
+        areaId,
+      ]);
+      const area = areaRows[0];
+
+      if (!area) {
+        return textResult("Area not found.");
+      }
+
+      // Check if the area belongs to the board
+      if (area.board != boardId) {
+        return textResult("You don't have permission to delete this area.");
+      }
+
+      // Delete comments related to cards in the area
+      await db.execute(
+        "DELETE FROM comments WHERE card IN (SELECT id FROM cards WHERE area = ?)",
+        [areaId],
+      );
+
+      // Delete notifications related to cards in the area
+      await db.execute(
+        "DELETE FROM notifications WHERE cardId IN (SELECT id FROM cards WHERE area = ?)",
+        [areaId],
+      );
+
+      // Delete cards from area
+      await db.execute("DELETE FROM cards WHERE area = ?", [areaId]);
+
+      // Delete the area
+      const [result] = await db.execute("DELETE FROM areas WHERE id = ?", [
+        areaId,
+      ]);
+
+      if (result.affectedRows === 0) {
+        return textResult("Area not found or already deleted.");
+      }
+
+      return jsonResult({ message: "Area deleted successfully" });
+    } catch (error) {
+      console.error("Database error:", error);
+      return textResult("Internal server error.");
+    }
+  },
+});

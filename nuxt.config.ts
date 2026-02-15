@@ -3,7 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  modules: ["@nuxtjs/i18n"],
+  modules: ["@nuxtjs/i18n", "@nuxtjs/mcp-toolkit"],
   app: {
     head: {
       title: process.env.NUXT_APP_NAME || "LocalBoards",
@@ -41,6 +41,11 @@ export default defineNuxtConfig({
     trailingSlash: true,
     defaultLocale: process.env.NUXT_LANGUAGE || "en",
   },
+  mcp: {
+    name: process.env.NUXT_APP_NAME || "LocalBoards",
+    version: "0.6.0",
+    enabled: process.env.NUXT_MCP || true,
+  },
   runtimeConfig: {
     public: {
       privacyUrl: process.env.NUXT_PUBLIC_PRIVACY_URL || "/privacy-policy/",
@@ -74,6 +79,7 @@ export default defineNuxtConfig({
     experimental: {
       tasks: true,
       websocket: true,
+      asyncContext: true,
     },
     scheduledTasks: {
       // Run `notification` task every hour

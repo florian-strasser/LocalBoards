@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@nuxtjs/i18n": "^10.2.1",
+    "@nuxtjs/mcp-toolkit": "^0.6.4",
     "@tailwindcss/vite": "^4.1.18",
     "@tiptap/extension-file-handler": "^3.13.0",
     "@tiptap/extension-image": "^3.13.0",

@@ -16,7 +16,7 @@ const textList = {
       "You have the following unread notifications",
     clickHereToViewYourNotifications: "Click here to view your notifications",
     notificationInvitedToBoard: "You have been invited to the board:",
-    notificationNewComment: "New comment on card:",
+    notificationNewComment: 'New comment by "{username}" on card:',
     notificationNewCard: "New card created:",
     notificationCardMoved: "Card",
     notificationCardMovedFrom: " moved from ",
@@ -33,7 +33,7 @@ const textList = {
     clickHereToViewYourNotifications:
       "Klicke hier, um deine Benachrichtigungen anzuzeigen",
     notificationInvitedToBoard: "Du wurdest zum Board eingeladen",
-    notificationNewComment: "Neuer Kommentar auf Karte",
+    notificationNewComment: 'Neuer Kommentar von "{username}" auf Karte',
     notificationNewCard: "Neue Karte erstellt",
     notificationCardMoved: "Karte",
     notificationCardMovedFrom: " bewegt von ",
@@ -49,7 +49,8 @@ const textList = {
       "Vous avez les notifications non lues suivantes",
     clickHereToViewYourNotifications: "Cliquez ici pour voir vos notifications",
     notificationInvitedToBoard: "Vous avez été invité au tableau :",
-    notificationNewComment: "Nouveau commentaire sur la carte :",
+    notificationNewComment:
+      'Nouveau commentaire de "{username}" sur la carte :',
     notificationNewCard: "Nouvelle carte créée :",
     notificationCardMoved: "Carte",
     notificationCardMovedFrom: " déplacée de ",
@@ -66,7 +67,7 @@ const textList = {
     clickHereToViewYourNotifications:
       "Haz clic aquí para ver tus notificaciones",
     notificationInvitedToBoard: "Has sido invitado al tablero:",
-    notificationNewComment: "Nuevo comentario en la tarjeta:",
+    notificationNewComment: 'Nuevo comentario de "{username}" en la tarjeta:',
     notificationNewCard: "Nueva tarjeta creada:",
     notificationCardMoved: "Tarjeta",
     notificationCardMovedFrom: " movida de ",
@@ -82,7 +83,7 @@ const textList = {
       "Hai le seguenti notifiche non lette",
     clickHereToViewYourNotifications: "Clicca qui per vedere le tue notifiche",
     notificationInvitedToBoard: "Sei stato invitato alla bacheca:",
-    notificationNewComment: "Nuovo commento sulla carta:",
+    notificationNewComment: 'Nuovo commento di "{username}" sulla carta:',
     notificationNewCard: "Nuova carta creata:",
     notificationCardMoved: "Carta",
     notificationCardMovedFrom: " spostata da ",
@@ -98,7 +99,7 @@ const textList = {
       "Je hebt de volgende ongelezen meldingen",
     clickHereToViewYourNotifications: "Klik hier om je meldingen te bekijken",
     notificationInvitedToBoard: "Je bent uitgenodigd voor het bord:",
-    notificationNewComment: "Nieuwe reactie op kaart:",
+    notificationNewComment: 'Nieuwe reactie van "{username}" op kaart:',
     notificationNewCard: "Nieuwe kaart gemaakt:",
     notificationCardMoved: "Kaart",
     notificationCardMovedFrom: " verplaatst van ",
@@ -115,7 +116,7 @@ const textList = {
     clickHereToViewYourNotifications:
       "Kliknij tutaj, aby zobaczyć swoje powiadomienia",
     notificationInvitedToBoard: "Zostałeś zaproszony do tablicy:",
-    notificationNewComment: "Nowy komentarz do karty:",
+    notificationNewComment: 'Nowy komentarz od "{username}" do karty:',
     notificationNewCard: "Nowa karta utworzona:",
     notificationCardMoved: "Karta",
     notificationCardMovedFrom: " przeniesiona z ",
@@ -186,23 +187,41 @@ const translateNotification = (message: string): string => {
     return `${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}`;
   }
 
-  // Extract the static part of the message for other notification types
-  const staticPart = message.split(":")[0];
-
   // Map the static part to a translation key
   const translationKeyMap = {
     "You have been invited to the board": "notificationInvitedToBoard",
-    "New comment on card": "notificationNewComment",
+    'New comment by "': "notificationNewComment",
     "New card created": "notificationNewCard",
   };
+
+  // Extract the static part of the message for other notification types
+  const staticPart = Object.keys(translationKeyMap).find((key) =>
+    message.startsWith(key),
+  );
 
   // Get the translation key
   const translationKey = translationKeyMap[staticPart];
 
   if (translationKey) {
-    // Replace the static part with the translated text
-    const dynamicPart = message.split(":").slice(1);
-    return `${translateText(translationKey)}: ${dynamicPart}`;
+    // Handle new comment notification format: New comment by "username" on card "cardname"
+    if (translationKey === "notificationNewComment") {
+      // Extract the username and card name
+      const usernameMatch = message.match(/New comment by "([^"]+)"/);
+      const cardNameMatch = message.match(/on card "([^"]+)"/);
+      const commentMatch = message.match(/":([^"]+)/);
+
+      const username = usernameMatch ? usernameMatch[1] : "";
+      const cardName = cardNameMatch ? cardNameMatch[1] : "";
+      const comment = commentMatch ? commentMatch[1] : "";
+
+      // Translate the static parts while preserving the format
+      const translatedMessage = translateText("notificationNewComment");
+      return `${translatedMessage.replace("{username}", username)} "${cardName}":<div class='comment'>${comment}</div>`;
+    } else {
+      // Replace the static part with the translated text
+      const dynamicPart = message.slice(staticPart.length).trim();
+      return `${translateText(translationKey)}: ${dynamicPart}`;
+    }
   } else {
     // Fallback to the original message if no translation is found
     return message;
@@ -243,11 +262,9 @@ const sendNotification = async () => {
     // Send an email for each user with unread notifications
     for (const userId of Object.keys(notificationsByUser)) {
       const userNotifications = notificationsByUser[userId];
-      const notificationMessages = userNotifications
-        .map((notification) => {
-          return `- ${translateNotification(notification.message)}`;
-        })
-        .join("\n");
+      const notificationMessages = userNotifications.map((notification) => {
+        return `<li style='margin-bottom:0.125em; padding:1em 1.5em 0.33em 1.5em; background:rgba(0,0,0,0.1); border-radius:0.5em;'>${translateNotification(notification.message)}</li>`;
+      });
 
       // Fetch the user's email address from the user table
       const [userRows] = await db.execute(
@@ -261,14 +278,19 @@ const sendNotification = async () => {
           to: userEmail,
           subject: buildTitle(translateText("youHaveUnreadNotifications")),
           text:
+            "<p>" +
             translateText("youHaveTheFollowingUnreadNotifications") +
-            ":\n\n" +
+            ":</p><ul style='list-style:none; padding-left:0;'>" +
             notificationMessages +
-            "\n\n" +
+            "</ul><p>" +
             translateText("clickHereToViewYourNotifications") +
-            ": " +
+            ":</p><p><a href='" +
             baseURL +
-            "/dashboard/",
+            "/dashboard/" +
+            "'>" +
+            baseURL +
+            "/dashboard/" +
+            "</a></p>",
         });
 
         // Mark notifications as read after sending the email
@@ -295,7 +317,7 @@ export default defineTask({
     name: "notification",
     description: "Send Email for notifications if necessary",
   },
-  run({ payload, context }) {
+  run({ payload }) {
     console.log("Check if a mail should be sent for an unread notification");
     sendNotification();
   },

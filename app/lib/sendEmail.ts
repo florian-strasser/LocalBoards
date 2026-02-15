@@ -25,7 +25,7 @@ export const sendEmail = async ({ to, subject, text }) => {
     from: emailUser,
     to,
     subject,
-    text,
+    html: text,
   };
 
   try {
