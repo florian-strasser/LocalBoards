@@ -161,5 +161,7 @@
   "deleteCardBtn": "Delete card",
   "cardDeleted": "Card deleted",
   "areas": "Areas",
-  "hideAreas": "Hide areas"
+  "hideAreas": "Hide areas",
+  "back": "Back",
+  "editorEmojis": "Emojis"
 }

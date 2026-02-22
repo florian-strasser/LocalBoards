@@ -163,5 +163,7 @@
   "deleteCardBtn": "Karte löschen",
   "cardDeleted": "Karte gelöscht",
   "areas": "Bereiche",
-  "hideAreas": "Bereiche ausblenden"
+  "hideAreas": "Bereiche ausblenden",
+  "back": "Zurück",
+  "editorEmojis": "Emojis"
 }

@@ -161,5 +161,7 @@
   "deleteCardBtn": "Eliminar tarjeta",
   "cardDeleted": "Tarjeta eliminada",
   "areas": "Áreas",
-  "hideAreas": "Ocultar áreas"
+  "hideAreas": "Ocultar áreas",
+  "back": "Atrás",
+  "editorEmojis": "Emojis"
 }

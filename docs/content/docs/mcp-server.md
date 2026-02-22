@@ -21,3 +21,4 @@ To integrate the LocalBoards MCP Server with your LLM, add the following configu
     }
   }
 }
+```

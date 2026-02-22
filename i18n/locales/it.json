@@ -161,5 +161,7 @@
   "deleteCardBtn": "Elimina carta",
   "cardDeleted": "Carta eliminata",
   "areas": "Aree",
-  "hideAreas": "Nascondi aree"
+  "hideAreas": "Nascondi aree",
+  "back": "Indietro",
+  "editorEmojis": "Emoji"
 }

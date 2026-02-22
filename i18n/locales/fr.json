@@ -161,5 +161,7 @@
   "deleteCardBtn": "Supprimer la carte",
   "cardDeleted": "Carte supprimée",
   "areas": "Zones",
-  "hideAreas": "Masquer les zones"
+  "hideAreas": "Masquer les zones",
+  "back": "Retour",
+  "editorEmojis": "Émojis"
 }

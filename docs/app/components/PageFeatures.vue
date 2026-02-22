@@ -37,6 +37,6 @@ const features = [
   { title: "Runs on your own hardware" },
   { title: "Does not rely on external services" },
   { title: "Automate processes with our API" },
-  { title: "Use our integrated MCP Server", soon: true },
+  { title: "Use our integrated MCP Server" },
 ];
 </script>

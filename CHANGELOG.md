@@ -1,3 +1,10 @@
+## v0.6.1
+
+- Added Emoji-Support (@tiptap/extension-emoji)
+- Completed the documentation for API
+- Slightly adjusted the featurelist on docs landingpage
+- Updated dependencies (nuxt, better-auth, @nuxtjs/i18n)
+
 ## v0.6.0
 
 - Installed MCP-Toolkit

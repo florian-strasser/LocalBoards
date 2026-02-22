@@ -2,18 +2,7 @@
 
 To authenticate at an API endpoint you will need to send an `x-api-key` header parameter with your request. You can generate an key within the user settings.
 
-```js
-const data = await $fetch("/api/data/board", {
-    method: "POST",
-    headers: {
-      'x-api-key': 'YOURKEY'
-    },
-    body: {
-        id: null,
-        userId: userID,
-        name: newName,
-        style: newBoardStyle.value,
-        status: newBoardStatus.value,
-    },
-});
+```http
+GET /api/data/board?id=123&userId=101
+X-API-Key: your_api_key_here
 ```

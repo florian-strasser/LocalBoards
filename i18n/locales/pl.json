@@ -158,5 +158,7 @@
   "deleteCardBtn": "Usuń kartę",
   "cardDeleted": "Karta usunięta",
   "areas": "Obszary",
-  "hideAreas": "Ukryj obszary"
+  "hideAreas": "Ukryj obszary",
+  "back": "Wstecz",
+  "editorEmojis": "Emotikony"
 }

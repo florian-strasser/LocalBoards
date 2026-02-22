@@ -161,5 +161,7 @@
   "deleteCardBtn": "Kaart verwijderen",
   "cardDeleted": "Kaart verwijderd",
   "areas": "Gebieden",
-  "hideAreas": "Gebieden verbergen"
+  "hideAreas": "Gebieden verbergen",
+  "back": "Terug",
+  "editorEmojis": "Emoji's"
 }

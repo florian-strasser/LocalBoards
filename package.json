@@ -10,22 +10,27 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxtjs/i18n": "^10.2.1",
+    "@floating-ui/dom": "^1.7.5",
+    "@nuxtjs/i18n": "^10.2.3",
     "@nuxtjs/mcp-toolkit": "^0.6.4",
     "@tailwindcss/vite": "^4.1.18",
+    "@tiptap/extension-emoji": "^3.20.0",
     "@tiptap/extension-file-handler": "^3.13.0",
     "@tiptap/extension-image": "^3.13.0",
     "@tiptap/pm": "^3.6.6",
     "@tiptap/starter-kit": "^3.6.6",
     "@tiptap/vue-3": "^3.6.6",
-    "better-auth": "^1.4.14",
+    "better-auth": "^1.4.18",
     "lucide-vue-next": "^0.561.0",
     "mysql2": "^3.15.3",
     "nodemailer": "^7.0.9",
-    "nuxt": "^4.3.0",
+    "nuxt": "^4.3.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "sortablejs": "^1.15.6",
     "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "sass-embedded": "^1.97.3"
   }
 }

@@ -1,37 +1,75 @@
 # Boards
 
-The `api/data/boards` endpoint is used to get a list of all available boards for the authenticated user. You can get your own boards or the boards that are shared with you.
+The `api/data/boards` endpoint is used to retrieve a list of all available boards for the authenticated user. You can fetch your own boards or the boards that are shared with you.
 
-## Parameters
+## POST Method
 
-### userId (required)
-The ID of the user whose boards are being fetched.
+Fetches a list of boards for the specified user.
 
-### shared
-If `true`, fetches boards shared with the user. Default is false.
+### Parameters
+- `userId` (required): The ID of the user whose boards are being fetched.
+- `shared` (optional): If `true`, fetches boards shared with the user. Default is `false`.
 
-## Examples
+### Example Request (Own Boards)
+```json
+POST /api/data/boards
+Content-Type: application/json
+X-API-Key: your_api_key_here
 
-### Get a list of your boards
-
-```js
-const { data, error } = await useFetch("/api/data/boards", {
-    method: "POST",
-    headers: {
-      'x-api-key': 'YOURKEY'
-    },
-    body: { userId: userID },
-});
+{
+  "userId": 123
+}
 ```
 
-### Get a list of shared boards
+### Example Request (Shared Boards)
+```json
+POST /api/data/boards
+Content-Type: application/json
+X-API-Key: your_api_key_here
 
-```js
-const { data, error } = await useFetch("/api/data/boards", {
-    method: "POST",
-    headers: {
-      'x-api-key': 'YOURKEY'
-    },
-    body: { userId: userID, shared: true },
-});
+{
+  "userId": 123,
+  "shared": true
+}
 ```
+
+### Example Response (Success)
+```json
+{
+  "boards": [
+    {
+      "id": 456,
+      "user": 123,
+      "name": "Board 1",
+      "style": "kanban",
+      "image": "board_image_url",
+      "status": "public"
+    },
+    {
+      "id": 789,
+      "user": 123,
+      "name": "Board 2",
+      "style": "todo",
+      "image": "board_image_url",
+      "status": "private"
+    }
+  ]
+}
+```
+
+### Example Response (Error)
+```json
+{
+  "error": "User ID is required"
+}
+```
+
+## Authentication
+
+The endpoint requires authentication via an API key or session. Unauthorized requests will receive a `403 Forbidden` error.
+
+## Error Handling
+
+- `400 Bad Request`: Missing required parameters.
+- `403 Forbidden`: Unauthorized access.
+- `500 Internal Server Error`: Database or server error.
