@@ -13,10 +13,10 @@
                 @click="open = false"
             />
             <div
-                class="relative w-full max-w-lg mx-auto bg-white dark:bg-slate p-8 rounded-lg text-gray text-center"
+                class="relative w-full max-w-lg mx-auto bg-white dark:bg-slate shadow-xl p-8 rounded-lg text-gray text-center"
             >
                 <div
-                    class="absolute top-0 right-0 w-12 transform sm:translate-x-1/2 -translate-y-1/2"
+                    class="absolute top-0 right-0 w-12 transform sm:translate-x-1/2 -translate-y-1/2 z-30"
                 >
                     <button
                         type="button"

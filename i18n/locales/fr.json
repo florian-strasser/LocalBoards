@@ -1,4 +1,8 @@
 {
+  "dragAndDropFilesHere": "Glissez-déposez les fichiers ici pour les télécharger",
+  "addAttachments": "Ajouter des pièces jointes",
+  "attachments": "Pièces jointes",
+  "download": "Télécharger",
   "login": "Connexion",
   "loginBtn": "Se connecter maintenant",
   "name": "Nom",

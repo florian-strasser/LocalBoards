@@ -1,4 +1,8 @@
 {
+  "dragAndDropFilesHere": "Arrastra y suelta los archivos aquí para subir",
+  "addAttachments": "Añadir adjuntos",
+  "attachments": "Adjuntos",
+  "download": "Descargar",
   "login": "Iniciar sesión",
   "loginBtn": "Iniciar sesión ahora",
   "name": "Nombre",

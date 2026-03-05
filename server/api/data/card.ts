@@ -2,6 +2,19 @@ import { defineEventHandler, readBody, getQuery } from "h3";
 import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 
+// Function to handle file uploads
+async function handleFileUpload(db, cardID, file) {
+  const { filename, filetype, filesize, filedata } = file;
+
+  // Insert the file into the attachments table
+  const [result] = await db.execute(
+    "INSERT INTO attachments (card, filename, filetype, filesize, filedata) VALUES (?, ?, ?, ?, ?)",
+    [cardID, filename, filetype, filesize, filedata],
+  );
+
+  return result.insertId;
+}
+
 export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
@@ -96,7 +109,20 @@ export default defineEventHandler(async (event) => {
         // Convert status from number to boolean
         card.status = !!card.status;
 
-        return { card };
+        // Fetch attachments for the card
+        const [attachmentRows] = await db.execute(
+          "SELECT id, filename, filetype, filesize, filedata FROM attachments WHERE card = ?",
+          [cardId],
+        );
+        const attachments = attachmentRows.map((row) => ({
+          id: row.id,
+          filename: row.filename,
+          filetype: row.filetype,
+          filesize: row.filesize,
+          filedata: row.filedata,
+        }));
+
+        return { card, attachments };
       } else {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
@@ -210,7 +236,7 @@ export default defineEventHandler(async (event) => {
       }
     } else if (method === "PUT") {
       // Handle PUT request to update an existing card
-      const { cardID, name, content, status } = await readBody(event);
+      const { cardID, name, content, status, files } = await readBody(event);
 
       if (!cardID || !name) {
         event.res.statusCode = 400;
@@ -283,6 +309,13 @@ export default defineEventHandler(async (event) => {
           "UPDATE cards SET name = ?, content = ?, status = ? WHERE id = ?",
           [name, content || "", status ? 1 : 0, cardID],
         );
+
+        // Handle file uploads if present
+        if (files && Array.isArray(files)) {
+          for (const file of files) {
+            await handleFileUpload(db, cardID, file);
+          }
+        }
 
         // Fetch the updated card
         const [rows] = await db.execute("SELECT * FROM cards WHERE id = ?", [

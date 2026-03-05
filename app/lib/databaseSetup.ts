@@ -160,6 +160,20 @@ export function setupDatabase() {
       FOREIGN KEY (board) REFERENCES boards(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `);
+
+  // 6. Attachments (depends on cards)
+  db.execute(`
+    CREATE TABLE IF NOT EXISTS attachments (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      card INT NOT NULL,
+      filename VARCHAR(255) NOT NULL,
+      filetype VARCHAR(100) NOT NULL,
+      filesize INT NOT NULL,
+      filedata LONGTEXT NOT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (card) REFERENCES cards(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `);
   // 6. Notifications (depends on boards and cards)
   db.execute(`
       CREATE TABLE IF NOT EXISTS notifications (

@@ -1,3 +1,9 @@
+## v0.7.0
+
+- Introduced non image attachments to cards. You can now add PDF, DOCX, PPTX, CSV etc. to a card.
+- Long titles have been cut off on card modal window, fixed by switch from input "text" to an editable div
+- Updated  dependencies (better-auth)
+
 ## v0.6.1
 
 - Added Emoji-Support (@tiptap/extension-emoji)

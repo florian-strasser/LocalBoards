@@ -1,4 +1,8 @@
 {
+  "dragAndDropFilesHere": "Drag & drop files here to upload",
+  "addAttachments": "Add attachment(s)",
+  "attachments": "Attachments",
+  "download": "Download",
   "login": "Login",
   "loginBtn": "Sign in now",
   "name": "Name",

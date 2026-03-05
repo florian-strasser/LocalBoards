@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
-import { admin, apiKey } from "better-auth/plugins";
+import { admin } from "better-auth/plugins";
+import { apiKey } from "@better-auth/api-key";
 import { setupDatabase } from "~/lib/databaseSetup";
 import { sendEmail } from "~/lib/sendEmail";
 

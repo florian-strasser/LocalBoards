@@ -13,11 +13,33 @@
             </button>
         </div>
         <div v-else>
-            <div class="flex items-center gap-3 mb-4">
+            <div
+                v-if="addAttachments"
+                class="absolute top-0 left-0 w-full h-full flex flex-col bg-black/50 z-10 p-8"
+            >
+                <div
+                    class="absolute top-0 left-0 w-full h-full"
+                    @click="addAttachments = false"
+                />
+                <div
+                    class="grow shrink-0 bg-white dark:bg-slate rounded-lg p-8 relative flex flex-col"
+                >
+                    <div
+                        @dragover.prevent="handleDragOver"
+                        @drop.prevent="handleDrop"
+                        class="border-2 grow flex justify-center items-center border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-primary"
+                    >
+                        <p class="text-gray">
+                            {{ $t("dragAndDropFilesHere") }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3 mb-4">
                 <button
                     type="button"
                     :disabled="!props.writeAccess"
-                    class="flex items-center justify-center size-7 rounded-full shrink-0 grow-0"
+                    class="flex items-center justify-center size-8 rounded-full shrink-0 grow-0"
                     @click="toggleStatus"
                     :class="{
                         'bg-primary border-2 border-primary text-white':
@@ -31,14 +53,16 @@
                     <Check class="size-4" />
                 </button>
                 <div class="grow shrink">
-                    <input
-                        type="text"
-                        v-model="name"
+                    <div
+                        ref="cardTitle"
+                        contenteditable="plaintext-only"
                         @blur="saveCard"
                         class="text-2xl font-bold text-primary dark:text-white w-full"
-                    />
+                    >
+                        {{ name }}
+                    </div>
                 </div>
-                <div class="grow-0 shrink-0">
+                <div class="grow-0 shrink-0 pt-1.5">
                     <button
                         v-if="writeAccess"
                         type="button"
@@ -53,6 +77,34 @@
                 <CardEditor v-if="writeAccess" v-model="content" />
                 <div v-else class="wysiwyg-wrapper" v-html="content" />
             </div>
+            <div v-if="writeAccess" class="mb-4">
+                <button
+                    type="button"
+                    class="flex gap-x-2 items-center hover:text-secondary"
+                    @click="addAttachments = true"
+                >
+                    <Paperclip class="size-5 shrink-0 grow-0" />
+                    <div class="shrink grow">{{ $t("addAttachments") }}</div>
+                </button>
+            </div>
+            <div v-if="attachments.length > 0" class="mb-4">
+                <h3 class="text-xl font-bold text-primary dark:text-white mb-2">
+                    {{ $t("attachments") }}
+                </h3>
+                <ul class="space-y-2">
+                    <li v-for="attachment in attachments" :key="attachment.id">
+                        <button
+                            @click="downloadAttachment(attachment)"
+                            class="flex w-full items-center justify-between bg-dark/10 dark:bg-white/10 hover:bg-secondary hover:text-white px-6 py-4 rounded-xl text-left"
+                        >
+                            <div class="shrink grow">
+                                <span>{{ attachment.filename }}</span>
+                            </div>
+                            <Download class="size-5 shrink-0" />
+                        </button>
+                    </li>
+                </ul>
+            </div>
             <CommentSection
                 :cardID="props.cardID"
                 :writeAccess="props.writeAccess"
@@ -64,7 +116,7 @@
 </template>
 <script setup lang="ts">
 import { socket } from "~/lib/socket";
-import { Check, Trash2, X } from "lucide-vue-next";
+import { Check, Trash2, Paperclip, Download, X } from "lucide-vue-next";
 const props = defineProps({
     cardID: Number,
     boardID: Number,
@@ -82,15 +134,77 @@ const name = ref(data.value.card.name);
 const content = ref(data.value.card.content);
 const currentStatus = ref(data.value.card.status);
 
+const cardTitle = ref(null);
 const deleteModal = ref(false);
+const addAttachments = ref(false);
+const attachments = ref(data.value.attachments || []);
 
 const toggleStatus = () => {
     currentStatus.value = !currentStatus.value;
     saveCard();
 };
 
+// Function to handle drag over event
+const handleDragOver = (event) => {
+    event.dataTransfer.dropEffect = "copy";
+};
+
+// Function to handle drop event
+const handleDrop = async (event) => {
+    const files = event.dataTransfer.files;
+    const allowedTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "text/csv",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ];
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (allowedTypes.includes(file.type)) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const fileData = e.target.result;
+                const base64Data = fileData.split(",")[1];
+
+                const attachment = {
+                    filename: file.name,
+                    filetype: file.type,
+                    filesize: file.size,
+                    filedata: base64Data,
+                };
+
+                attachments.value.push(attachment);
+                await saveCard();
+            };
+            reader.readAsDataURL(file);
+        } else {
+            console.error("File type not allowed:", file.type);
+        }
+    }
+    addAttachments.value = false;
+};
+
+// Function to download an attachment
+const downloadAttachment = (attachment) => {
+    const link = document.createElement("a");
+    link.href = `data:${attachment.filetype};base64,${attachment.filedata}`;
+    link.download = attachment.filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 // Function to save the card data
 const saveCard = async () => {
+    if (cardTitle.value) {
+        name.value = cardTitle.value.textContent || name.value;
+    }
+
     try {
         const response = await $fetch(`/api/data/card`, {
             method: "PUT",
@@ -99,6 +213,7 @@ const saveCard = async () => {
                 name: name.value,
                 content: content.value,
                 status: currentStatus.value,
+                files: attachments.value,
             },
         });
         emits("card-updated", response.card);
