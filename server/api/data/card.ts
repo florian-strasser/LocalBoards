@@ -311,9 +311,11 @@ export default defineEventHandler(async (event) => {
         );
 
         // Handle file uploads if present
+        let newAttachments = [];
         if (files && Array.isArray(files)) {
           for (const file of files) {
-            await handleFileUpload(db, cardID, file);
+            const attachmentId = await handleFileUpload(db, cardID, file);
+            newAttachments.push(attachmentId);
           }
         }
 
@@ -372,7 +374,24 @@ export default defineEventHandler(async (event) => {
           }
         }
 
-        return { card };
+        // Fetch the new attachments if any were added
+        let attachments = [];
+        console.log(newAttachments);
+        if (newAttachments.length > 0) {
+          const [attachmentRows] = await db.execute(
+            "SELECT id, filename, filetype, filesize, filedata FROM attachments WHERE id IN (?)",
+            [newAttachments.join(",")],
+          );
+          attachments = attachmentRows.map((row) => ({
+            id: row.id,
+            filename: row.filename,
+            filetype: row.filetype,
+            filesize: row.filesize,
+            filedata: row.filedata,
+          }));
+        }
+
+        return { card, attachments };
       } else {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };

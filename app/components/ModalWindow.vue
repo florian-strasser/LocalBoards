@@ -9,7 +9,7 @@
         />
         <div class="relative w-full max-h-full py-8 overflow-auto">
             <div
-                class="absolute top-0 left-0 w-full h-full"
+                class="fixed top-0 left-0 w-full h-full"
                 @click="open = false"
             />
             <div

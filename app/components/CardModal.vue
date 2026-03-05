@@ -15,7 +15,7 @@
         <div v-else>
             <div
                 v-if="addAttachments"
-                class="absolute top-0 left-0 w-full h-full flex flex-col bg-black/50 z-10 p-8"
+                class="absolute top-0 left-0 w-full h-full flex flex-col bg-black/50 z-10 p-8 rounded-lg"
             >
                 <div
                     class="absolute top-0 left-0 w-full h-full"
@@ -138,6 +138,7 @@ const cardTitle = ref(null);
 const deleteModal = ref(false);
 const addAttachments = ref(false);
 const attachments = ref(data.value.attachments || []);
+const newAttachments = ref([]);
 
 const toggleStatus = () => {
     currentStatus.value = !currentStatus.value;
@@ -178,7 +179,7 @@ const handleDrop = async (event) => {
                     filedata: base64Data,
                 };
 
-                attachments.value.push(attachment);
+                newAttachments.value.push(attachment);
                 await saveCard();
             };
             reader.readAsDataURL(file);
@@ -213,9 +214,15 @@ const saveCard = async () => {
                 name: name.value,
                 content: content.value,
                 status: currentStatus.value,
-                files: attachments.value,
+                files: newAttachments.value,
             },
         });
+        // Update the attachments list with the new attachments
+        if (response.attachments) {
+            attachments.value = [...attachments.value, ...response.attachments];
+            newAttachments.value = []; // Clear new attachments after saving
+        }
+
         emits("card-updated", response.card);
         socket.emit("cardUpdated", {
             boardId: props.boardID,

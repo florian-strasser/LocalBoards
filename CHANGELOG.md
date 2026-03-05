@@ -1,3 +1,9 @@
+## v0.7.1
+
+- Fix: Changing a cards description after uploading an attachment caused duplicates
+- Fix: Set modal window background to position fixed
+- Fix: Dark background of "adding an attachment" option on the card modal window was overlapping with the modal box rounded corners
+
 ## v0.7.0
 
 - Introduced non image attachments to cards. You can now add PDF, DOCX, PPTX, CSV etc. to a card.
