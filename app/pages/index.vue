@@ -10,7 +10,6 @@
                             {{ $t("login") }}
                         </div>
                         <div class="bg-white dark:bg-slate">
-                            {{ allowSignup }}
                             <NuxtLink
                                 v-if="allowSignup"
                                 to="/sign-up/"
