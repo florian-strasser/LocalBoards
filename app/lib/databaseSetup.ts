@@ -182,7 +182,7 @@ export function setupDatabase() {
         type ENUM('invitation', 'comment', 'card_created', 'card_moved', 'card_status_changed') NOT NULL,
         boardId INT,
         cardId INT,
-        message TEXT,
+        message LONGTEXT,
         isRead BOOLEAN DEFAULT FALSE,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (boardId) REFERENCES boards(id),
@@ -199,6 +199,17 @@ export function setupDatabase() {
   ).catch((error) => {
     // Ignore errors for this migration as it might fail if the values already exist
     console.log("Notification types migration:", error.message);
+  });
+
+  // Change message column to LONGTEXT to support longer content
+  db.execute(
+    `
+      ALTER TABLE notifications
+      MODIFY COLUMN message LONGTEXT
+  `,
+  ).catch((error) => {
+    // Ignore errors for this migration as it might fail if the column already exists
+    console.log("Message column migration:", error.message);
   });
   db.execute(`ALTER TABLE user MODIFY COLUMN image longtext`);
 

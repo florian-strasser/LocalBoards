@@ -140,16 +140,20 @@ const translateNotification = (message: string): string => {
         // Extract the username and card name
         const usernameMatch = message.match(/New comment by "([^"]+)"/);
         const cardNameMatch = message.match(/on card "([^"]+)"/);
-        const commentMatch = message.match(/":([^"]+)/);
 
         const username = usernameMatch ? usernameMatch[1] : "";
         const cardName = cardNameMatch ? cardNameMatch[1] : "";
-        const comment = commentMatch ? commentMatch[1] : "";
+
+        // Extract everything after the card name as the comment
+        const commentStartIndex =
+            message.indexOf(`"${cardName}":`) + `"${cardName}":`.length;
+        const comment = message.substring(commentStartIndex).trim();
 
         // Translate the static parts while preserving the format
         const translatedMessage = $t("notificationNewComment", {
             username: username,
         });
+
         return `${translatedMessage} "${cardName}":<div class='mt-2 rounded-md bg-dark/10 dark:bg-white/10 wysiwyg-wrapper px-4 py-3'>${comment}</div>`;
     }
 

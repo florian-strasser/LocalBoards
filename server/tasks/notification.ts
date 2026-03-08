@@ -208,15 +208,18 @@ const translateNotification = (message: string): string => {
       // Extract the username and card name
       const usernameMatch = message.match(/New comment by "([^"]+)"/);
       const cardNameMatch = message.match(/on card "([^"]+)"/);
-      const commentMatch = message.match(/":([^"]+)/);
 
       const username = usernameMatch ? usernameMatch[1] : "";
       const cardName = cardNameMatch ? cardNameMatch[1] : "";
-      const comment = commentMatch ? commentMatch[1] : "";
+
+      // Extract everything after the card name as the comment
+      const commentStartIndex =
+        message.indexOf(`"${cardName}":`) + `"${cardName}":`.length;
+      const comment = message.substring(commentStartIndex).trim();
 
       // Translate the static parts while preserving the format
       const translatedMessage = translateText("notificationNewComment");
-      return `${translatedMessage.replace("{username}", username)} "${cardName}":<div class='comment'>${comment}</div>`;
+      return `<p>${translatedMessage.replace("{username}", username)} "${cardName}":</p><div class="comment">${comment.replace(/<img/g, '<img style="max-width:100%; display:block;"')}</div>`;
     } else {
       // Replace the static part with the translated text
       const dynamicPart = message.slice(staticPart.length).trim();

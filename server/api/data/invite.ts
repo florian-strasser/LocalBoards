@@ -157,7 +157,22 @@ export default defineEventHandler(async (event) => {
         ],
       );
 
-      return { message: "Invitation created successfully" };
+      // Fetch the newly created invitation with user details
+      const [invitationRows] = await db.query(
+        `SELECT
+          invitations.*,
+          user.name AS userName,
+          user.image AS userImage
+        FROM invitations
+        LEFT JOIN user ON invitations.user = user.id
+        WHERE invitations.id = ?`,
+        [result.insertId],
+      );
+
+      return {
+        message: "Invitation created successfully",
+        invitation: invitationRows[0],
+      };
     } else if (method === "DELETE") {
       // Handle DELETE request to remove an invitation
       const query = getQuery(event);

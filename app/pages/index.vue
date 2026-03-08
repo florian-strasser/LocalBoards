@@ -3,7 +3,7 @@
         <main class="flex flex-col justify-center py-8 grow shrink-0">
             <div class="container mx-auto">
                 <div class="max-w-md mx-auto">
-                    <div class="grid grid-cols-2 text-sm">
+                    <div class="grid grid-cols-2 text-sm relative">
                         <div
                             class="text-center block py-3 px-5 bg-white dark:bg-slate dark:text-white rounded-t-lg"
                         >
@@ -11,11 +11,15 @@
                         </div>
                         <div class="bg-white dark:bg-slate">
                             <NuxtLink
+                                v-if="allowSignup"
                                 to="/sign-up/"
                                 class="text-primary dark:text-white hover:text-secondary text-center block py-3 px-5 rounded-bl-lg bg-slate dark:bg-dark"
                             >
                                 {{ $t("signUp") }}
                             </NuxtLink>
+                            <div
+                                class="relative min-h-full rounded-bl-lg bg-slate dark:bg-dark"
+                            />
                         </div>
                     </div>
                     <div
@@ -60,7 +64,9 @@
 <script setup lang="ts">
 import { authClient } from "@/lib/auth-client";
 import * as z from "zod";
+
 const nuxtApp = useNuxtApp();
+const allowSignup = nuxtApp.$config.public.signup;
 
 useHead({
     title: $t("login"),

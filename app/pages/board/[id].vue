@@ -242,7 +242,7 @@
             </button>
         </ModalWindow>
         <ModalWindow v-if="userID === boardUser" v-model="inviteModal">
-            <InviteModal :boardID="boardID" />
+            <InviteModal :boardID="boardID" :invitations="invitations" />
         </ModalWindow>
         <ModalWindow v-model="deleteAreaModal">
             <h2 class="text-4xl text-primary mb-3">
@@ -259,6 +259,7 @@
         </ModalWindow>
         <ModalWindow v-model="cardModal" :hideClose="true">
             <CardModal
+                v-if="cardModal"
                 :cardID="cardModal"
                 :boardID="boardID * 1"
                 :writeAccess="writeAccess"
@@ -310,6 +311,27 @@ const optionsActive = ref(false);
 const deleteModal = ref(false);
 const deleteAreaModal = ref(false);
 const inviteModal = ref(false);
+const invitations = ref([]);
+
+// Add fetchInvitations function
+const fetchInvitations = async () => {
+    try {
+        const { data, error } = await useFetch(
+            `/api/data/invite?boardId=${boardID.value}&userId=${userID}`,
+            {
+                method: "GET",
+            },
+        );
+
+        if (error.value) {
+            console.error("Error fetching invitations:", error.value);
+        } else if (data.value?.invitations) {
+            invitations.value = data.value.invitations;
+        }
+    } catch (err) {
+        console.error("Error:", err);
+    }
+};
 
 const areasWrapper = ref(null);
 const areas = ref([]);
@@ -764,6 +786,7 @@ try {
         newBoardStatus.value = boardStatus.value;
         newBoardImage.value = boardImage.value;
         writeAccess.value = data.value.writeAccess;
+        if (data.value.board.user === userID) await fetchInvitations();
     }
 } catch (err) {
     useHead({

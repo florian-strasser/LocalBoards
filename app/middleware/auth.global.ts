@@ -1,4 +1,6 @@
 export default defineNuxtRouteMiddleware(async (to) => {
+  const runtimeConfig = useRuntimeConfig();
+  const allowSignup = runtimeConfig.public.signup;
   // Pattern to match reset-password URLs with a token
   const resetPasswordPattern = /^\/reset-password\/[a-zA-Z0-9]+$/;
   // Check if the path matches the pattern /edit-user/:id
@@ -22,6 +24,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return navigateTo("/dashboard/");
       }
     }
+  } else if (to.path.startsWith("/sign-up") && !allowSignup) {
+    return navigateTo("/");
   } else {
     // Redirect to dashboard
     const result = await useFetch("/api/auth/get-session");

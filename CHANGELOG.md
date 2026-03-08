@@ -1,3 +1,17 @@
+## v0.7.2
+
+### Improvements
+- Introduced an enviroment variable `NUXT_PUBLIC_SIGNUP` to enable or disable the signup functionality
+
+### Fixes
+- Solved problems with the comment notifications when they contained an image
+- API Endpoint returned an error when trying to create a notification with too long text, especially in the case of comments with screenshots, since it was defined as `TEXT` column instead of `LONGTEXT`
+- Fetching invites when opening a board, instead of when opening the inviteModal. Removes an unnecessary layout shift.
+
+### Docs
+
+- Introduced new page disable-signup
+
 ## v0.7.1
 
 - Fix: Changing a cards description after uploading an attachment caused duplicates

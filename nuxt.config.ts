@@ -49,11 +49,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       privacyUrl: process.env.NUXT_PUBLIC_PRIVACY_URL || "/privacy-policy/",
+      signup: process.env.NUXT_PUBLIC_SIGNUP || true,
     },
     appName: process.env.NUXT_APP_NAME || "LocalBoards",
     language: process.env.NUXT_LANGUAGE || "en",
     boardsUrl: process.env.NUXT_BOARDS_URL || "http://localhost:3000",
-    signup: process.env.NUXT_SIGNUP || true,
     mysqlHost: process.env.NUXT_MYSQL_HOST || "localhost",
     mysqlDatabase: process.env.NUXT_MYSQL_DATABASE || "root",
     mysqlUser: process.env.NUXT_MYSQL_USER || "root",

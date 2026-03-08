@@ -1,6 +1,6 @@
 <template>
     <div
-        v-if="open"
+        :class="{ 'transform translate-x-full': !open }"
         class="fixed top-0 left-0 w-full flex flex-col justify-center h-screen z-40"
     >
         <div

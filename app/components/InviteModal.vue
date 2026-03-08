@@ -99,13 +99,16 @@ import { authClient } from "@/lib/auth-client";
 import { Trash, Eye, EyeOff, Pencil, PencilOff } from "lucide-vue-next";
 const props = defineProps({
     boardID: String,
+    invitations: Array,
 });
+
+// Convert the invitations prop to a ref
+const invitations = ref(props.invitations || []);
 
 const nuxtApp = useNuxtApp();
 
 const inviteEmail = ref("");
 const invitePermission = ref("read");
-const invitations = ref([]);
 
 const relativeFetch = ((url: string, opts?: any) => {
     try {
@@ -118,23 +121,6 @@ const { data: session } = await authClient.useSession(relativeFetch);
 
 const userID = session.value.user.id;
 
-try {
-    const { data, error } = await useFetch(
-        `/api/data/invite?boardId=${props.boardID}&userId=${userID}`,
-        {
-            method: "GET",
-        },
-    );
-
-    if (error.value) {
-        console.error("Error fetching invitations:", error.value);
-    } else if (data.value?.invitations) {
-        invitations.value = data.value.invitations;
-    }
-} catch (err) {
-    console.error("Error:", err);
-}
-
 const createInvitation = async () => {
     try {
         const data = await $fetch("/api/data/invite", {
@@ -146,7 +132,7 @@ const createInvitation = async () => {
                 permission: invitePermission.value,
             },
         });
-        console.log(data);
+
         if (data.error) {
             await nuxtApp.callHook("app:toast", {
                 message: data.error,
@@ -157,8 +143,10 @@ const createInvitation = async () => {
             });
             inviteEmail.value = "";
             invitePermission.value = "read";
-            // Refetch invitations to update the list
-            fetchData();
+            // Add the new invitation to the local ref
+            if (data.invitation) {
+                invitations.value.push(data.invitation);
+            }
         }
     } catch (err) {
         console.log(err);
@@ -181,24 +169,13 @@ const removeInvitation = async (userId) => {
             await nuxtApp.callHook("app:toast", {
                 message: $t("invitationRemoved"),
             });
-            // Refetch invitations to update the list
-            fetchData();
+            // Remove the invitation from the local ref
+            invitations.value = invitations.value.filter(
+                (invitation) => invitation.user !== userId,
+            );
         }
     } catch (err) {
         console.error("Error removing invitation:", err);
-    }
-};
-
-const fetchData = async () => {
-    const data = await $fetch(
-        `/api/data/invite?boardId=${props.boardID}&userId=${userID}`,
-        {
-            method: "GET",
-        },
-    );
-
-    if (data.invitations) {
-        invitations.value = data.invitations;
     }
 };
 </script>
