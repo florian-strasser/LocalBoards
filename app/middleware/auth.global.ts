@@ -1,6 +1,7 @@
 export default defineNuxtRouteMiddleware(async (to) => {
+  const nuxtApp = useNuxtApp();
   const runtimeConfig = useRuntimeConfig();
-  const allowSignup = runtimeConfig.public.signup;
+  const allowSignup = runtimeConfig.public.signup === "true" ? true : false;
   // Pattern to match reset-password URLs with a token
   const resetPasswordPattern = /^\/reset-password\/[a-zA-Z0-9]+$/;
   // Check if the path matches the pattern /edit-user/:id

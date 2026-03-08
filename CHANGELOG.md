@@ -1,3 +1,7 @@
+## v0.7.3
+
+Quick-Hotfix: Disabling the signup functionality with flag `NUXT_PUBLIC_SIGNUP` caused some issues
+
 ## v0.7.2
 
 ### Improvements

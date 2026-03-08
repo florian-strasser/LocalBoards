@@ -10,6 +10,7 @@
                             {{ $t("login") }}
                         </div>
                         <div class="bg-white dark:bg-slate">
+                            {{ allowSignup }}
                             <NuxtLink
                                 v-if="allowSignup"
                                 to="/sign-up/"
@@ -18,6 +19,7 @@
                                 {{ $t("signUp") }}
                             </NuxtLink>
                             <div
+                                v-else
                                 class="relative min-h-full rounded-bl-lg bg-slate dark:bg-dark"
                             />
                         </div>
@@ -65,8 +67,10 @@
 import { authClient } from "@/lib/auth-client";
 import * as z from "zod";
 
+const runtimeConfig = useRuntimeConfig();
 const nuxtApp = useNuxtApp();
-const allowSignup = nuxtApp.$config.public.signup;
+
+const allowSignup = runtimeConfig.public.signup === "true" ? true : false;
 
 useHead({
     title: $t("login"),
