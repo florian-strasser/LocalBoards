@@ -142,6 +142,7 @@
   "error_EMAIL_TAKEN": "Email is already taken",
   "error_PASSWORD_TOO_SHORT": "Password is too short",
   "error_copyFailed": "Failed to copy",
+  "wrongFileType": "Wrong file type. Only the following file types are allowed: PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP, HTML",
   "edit": "Edit",
   "newUser": "New user",
   "createANewUser": "Create a new User",

@@ -1,3 +1,33 @@
+## v0.8.0
+
+### 🚀 Major Architecture Changes
+
+**🔧 Storage System Overhaul**
+- **Migrated from base64 to file-based storage**: Images and attachments are now uploaded to the server and stored as files rather than base64-encoded data in the database
+- **Performance improvements**: Significantly reduces database size and improves API response times
+- **Backward compatibility**: Existing base64-encoded attachments continue to function normally
+- **Migration recommendation**: Consider recreating cards with new attachments to optimize database performance
+
+### ✨ Enhancements
+
+**📁 Expanded Attachment Support**
+- Added support for **image files (JPG, PNG)** and **ZIP archives** as card attachments
+- Images can now be attached directly to cards (previously only available in rich text content)
+
+**🔄 Improved User Experience**
+- Added **back button** to card delete confirmation dialog for easier navigation
+- Added **back button** to attachments upload interface for better user flow
+
+### 🐛 Bug Fixes
+
+**🎨 Layout Improvements**
+- **Fixed layout shift** in card modal caused by asynchronous comment section loading
+- Comments now load before modal rendering to prevent visual jumping
+
+**📧 Email Notifications**
+- **Fixed notification email formatting**: Properly joins notification messages array into readable text
+- Resolved issue where notification messages were output as raw array
+
 ## v0.7.3
 
 Quick-Hotfix: Disabling the signup functionality with flag `NUXT_PUBLIC_SIGNUP` caused some issues

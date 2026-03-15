@@ -1,29 +1,20 @@
 <template>
-    <div v-if="data" class="card-modal text-left">
-        <div v-if="deleteModal" class="w-full">
-            <h2 class="text-4xl text-primary text-center mb-4">
-                {{ $t("deleteCardTitle") }}
-            </h2>
-            <button
-                @click="deleteCard"
-                type="button"
-                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
-            >
-                {{ $t("deleteCardBtn") }}
-            </button>
-        </div>
-        <div v-else>
-            <div
-                v-if="addAttachments"
-                class="absolute top-0 left-0 w-full h-full flex flex-col bg-black/50 z-10 p-8 rounded-lg"
-            >
-                <div
-                    class="absolute top-0 left-0 w-full h-full"
-                    @click="addAttachments = false"
-                />
-                <div
-                    class="grow shrink-0 bg-white dark:bg-slate rounded-lg p-8 relative flex flex-col"
+    <div>
+        <div v-if="cardData" class="card-modal text-left">
+            <div v-if="deleteModal" class="w-full">
+                <h2 class="text-4xl text-primary text-center mb-4">
+                    {{ $t("deleteCardTitle") }}
+                </h2>
+                <button
+                    @click="deleteCard"
+                    type="button"
+                    class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
                 >
+                    {{ $t("deleteCardBtn") }}
+                </button>
+            </div>
+            <div v-else-if="addAttachments" class="w-full">
+                <div class="relative space-y-4 text-center">
                     <div
                         @dragover.prevent="handleDragOver"
                         @drop.prevent="handleDrop"
@@ -33,86 +24,104 @@
                             {{ $t("dragAndDropFilesHere") }}
                         </p>
                     </div>
-                </div>
-            </div>
-            <div class="flex gap-3 mb-4">
-                <button
-                    type="button"
-                    :disabled="!props.writeAccess"
-                    class="flex items-center justify-center size-8 rounded-full shrink-0 grow-0"
-                    @click="toggleStatus"
-                    :class="{
-                        'bg-primary border-2 border-primary text-white':
-                            currentStatus,
-                        'border-2 border-gray hover:border-primary text-white dark:text-slate':
-                            !currentStatus && writeAccess,
-                        'border-2 border-gray text-white dark:text-slate':
-                            !currentStatus && !writeAccess,
-                    }"
-                >
-                    <Check class="size-4" />
-                </button>
-                <div class="grow shrink">
-                    <div
-                        ref="cardTitle"
-                        contenteditable="plaintext-only"
-                        @blur="saveCard"
-                        class="text-2xl font-bold text-primary dark:text-white w-full"
-                    >
-                        {{ name }}
-                    </div>
-                </div>
-                <div class="grow-0 shrink-0 pt-1.5">
                     <button
-                        v-if="writeAccess"
                         type="button"
-                        class="block hover:text-secondary"
-                        @click="deleteModal = true"
+                        @click="addAttachments = false"
+                        class="hover:text-secondary"
                     >
-                        <Trash2 class="size-5" />
+                        {{ $t("back") }}
                     </button>
                 </div>
             </div>
-            <div class="mb-4">
-                <CardEditor v-if="writeAccess" v-model="content" />
-                <div v-else class="wysiwyg-wrapper" v-html="content" />
-            </div>
-            <div v-if="writeAccess" class="mb-4">
-                <button
-                    type="button"
-                    class="flex gap-x-2 items-center hover:text-secondary"
-                    @click="addAttachments = true"
-                >
-                    <Paperclip class="size-5 shrink-0 grow-0" />
-                    <div class="shrink grow">{{ $t("addAttachments") }}</div>
-                </button>
-            </div>
-            <div v-if="attachments.length > 0" class="mb-4">
-                <h3 class="text-xl font-bold text-primary dark:text-white mb-2">
-                    {{ $t("attachments") }}
-                </h3>
-                <ul class="space-y-2">
-                    <li v-for="attachment in attachments" :key="attachment.id">
-                        <button
-                            @click="downloadAttachment(attachment)"
-                            class="flex w-full items-center justify-between bg-dark/10 dark:bg-white/10 hover:bg-secondary hover:text-white px-6 py-4 rounded-xl text-left"
+            <div v-else>
+                <div class="flex gap-3 mb-4">
+                    <button
+                        type="button"
+                        :disabled="!props.writeAccess"
+                        class="flex items-center justify-center size-8 rounded-full shrink-0 grow-0"
+                        @click="toggleStatus"
+                        :class="{
+                            'bg-primary border-2 border-primary text-white':
+                                currentStatus,
+                            'border-2 border-gray hover:border-primary text-white dark:text-slate':
+                                !currentStatus && writeAccess,
+                            'border-2 border-gray text-white dark:text-slate':
+                                !currentStatus && !writeAccess,
+                        }"
+                    >
+                        <Check class="size-4" />
+                    </button>
+                    <div class="grow shrink">
+                        <div
+                            ref="cardTitle"
+                            contenteditable="plaintext-only"
+                            @blur="saveCard"
+                            class="text-2xl font-bold text-primary dark:text-white w-full"
                         >
-                            <div class="shrink grow">
-                                <span>{{ attachment.filename }}</span>
-                            </div>
-                            <Download class="size-5 shrink-0" />
+                            {{ name }}
+                        </div>
+                    </div>
+                    <div class="grow-0 shrink-0 pt-1.5">
+                        <button
+                            v-if="writeAccess"
+                            type="button"
+                            class="block hover:text-secondary"
+                            @click="deleteModal = true"
+                        >
+                            <Trash2 class="size-5" />
                         </button>
-                    </li>
-                </ul>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <CardEditor v-if="writeAccess" v-model="content" />
+                    <div v-else class="wysiwyg-wrapper" v-html="content" />
+                </div>
+                <div v-if="writeAccess" class="mb-4">
+                    <button
+                        type="button"
+                        class="flex gap-x-2 items-center hover:text-secondary"
+                        @click="addAttachments = true"
+                    >
+                        <Paperclip class="size-5 shrink-0 grow-0" />
+                        <div class="shrink grow">
+                            {{ $t("addAttachments") }}
+                        </div>
+                    </button>
+                </div>
+                <div v-if="attachments.length > 0" class="mb-4">
+                    <h3
+                        class="text-xl font-bold text-primary dark:text-white mb-2"
+                    >
+                        {{ $t("attachments") }}
+                    </h3>
+                    <ul class="space-y-2">
+                        <li
+                            v-for="attachment in attachments"
+                            :key="attachment.id"
+                        >
+                            <a
+                                @click="downloadAttachment(attachment)"
+                                class="flex w-full items-center justify-between bg-dark/10 dark:bg-white/10 hover:bg-secondary hover:text-white px-6 py-4 rounded-xl text-left"
+                            >
+                                <div class="shrink grow">
+                                    <span>{{ attachment.filename }}</span>
+                                </div>
+                                <Download class="size-5 shrink-0" />
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <CommentSection
+                    :cardID="props.cardID"
+                    :writeAccess="props.writeAccess"
+                    :initialComments="comments"
+                    @comment-created="handleCommentCreated"
+                />
             </div>
-            <CommentSection
-                :cardID="props.cardID"
-                :writeAccess="props.writeAccess"
-            />
         </div>
+        <div v-else-if="cardError">Error loading card: {{ cardError }}</div>
+        <div v-else-if="!cardData">Loading...</div>
     </div>
-    <div v-else-if="error">Error loading card: {{ error }}</div>
-    <div v-else>Loading...</div>
 </template>
 <script setup lang="ts">
 import { socket } from "~/lib/socket";
@@ -128,17 +137,36 @@ const emits = defineEmits(["card-updated", "card-deleted"]);
 
 const boxOpen = defineModel();
 
-const { data, error } = await useFetch(`/api/data/card?cardID=${props.cardID}`);
+const { data: cardData, error: cardError } = await useFetch(
+    `/api/data/card?cardID=${props.cardID}`,
+);
+const { data: commentsData, error: commentsError } = await useFetch(
+    `/api/data/comment/?cardID=${props.cardID}`,
+);
 
-const name = ref(data.value.card.name);
-const content = ref(data.value.card.content);
-const currentStatus = ref(data.value.card.status);
+const name = ref(cardData.value.card.name);
+const content = ref(cardData.value.card.content);
+const currentStatus = ref(cardData.value.card.status);
 
 const cardTitle = ref(null);
 const deleteModal = ref(false);
 const addAttachments = ref(false);
-const attachments = ref(data.value.attachments || []);
+const attachments = ref(
+    (cardData.value.attachments || []).map((attachment) => ({
+        ...attachment,
+        isUrl:
+            attachment.isUrl ||
+            (attachment.filedata &&
+                (attachment.filedata.startsWith("http") ||
+                    attachment.filedata.startsWith("/"))),
+    })),
+);
 const newAttachments = ref([]);
+const comments = ref(commentsData.value?.comments || []);
+
+const handleCommentCreated = (newComment) => {
+    comments.value.unshift(newComment);
+};
 
 const toggleStatus = () => {
     currentStatus.value = !currentStatus.value;
@@ -148,6 +176,32 @@ const toggleStatus = () => {
 // Function to handle drag over event
 const handleDragOver = (event) => {
     event.dataTransfer.dropEffect = "copy";
+};
+
+// Function to upload file to server
+const uploadFileToServer = async (file) => {
+    try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await $fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+        });
+
+        return response.url;
+    } catch (error) {
+        console.error("File upload failed:", error);
+        // Fallback to base64 for backward compatibility
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64Data = e.target.result.split(",")[1];
+                resolve(base64Data);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 };
 
 // Function to handle drop event
@@ -162,29 +216,33 @@ const handleDrop = async (event) => {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.ms-powerpoint",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "image/jpg",
+        "image/jpeg",
+        "image/png",
+        "application/zip",
     ];
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (allowedTypes.includes(file.type)) {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const fileData = e.target.result;
-                const base64Data = fileData.split(",")[1];
+            const fileData = await uploadFileToServer(file);
 
-                const attachment = {
-                    filename: file.name,
-                    filetype: file.type,
-                    filesize: file.size,
-                    filedata: base64Data,
-                };
-
-                newAttachments.value.push(attachment);
-                await saveCard();
+            const attachment = {
+                filename: file.name,
+                filetype: file.type,
+                filesize: file.size,
+                filedata: fileData,
+                isUrl:
+                    typeof fileData === "string" &&
+                    (fileData.startsWith("http") || fileData.startsWith("/")),
             };
-            reader.readAsDataURL(file);
+
+            newAttachments.value.push(attachment);
+            await saveCard();
         } else {
-            console.error("File type not allowed:", file.type);
+            await nuxtApp.callHook("app:toast", {
+                message: $t("wrongFileType"),
+            });
         }
     }
     addAttachments.value = false;
@@ -192,12 +250,24 @@ const handleDrop = async (event) => {
 
 // Function to download an attachment
 const downloadAttachment = (attachment) => {
-    const link = document.createElement("a");
-    link.href = `data:${attachment.filetype};base64,${attachment.filedata}`;
-    link.download = attachment.filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Handle both URL-based and base64-based attachments
+    if (
+        attachment.isUrl ||
+        (attachment.filedata &&
+            (attachment.filedata.startsWith("http") ||
+                attachment.filedata.startsWith("/")))
+    ) {
+        // If it's a URL, open it in a new tab for download
+        window.open(attachment.filedata, "_blank");
+    } else {
+        // If it's base64, use the data URL approach
+        const link = document.createElement("a");
+        link.href = `data:${attachment.filetype};base64,${attachment.filedata}`;
+        link.download = attachment.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 };
 
 // Function to save the card data
@@ -249,10 +319,10 @@ const deleteCard = async () => {
             message: $t("cardDeleted"),
         });
         boxOpen.value = false;
-        emits("card-deleted", data.value.card);
+        emits("card-deleted", cardData.value.card);
         socket.emit("cardDeleted", {
             boardId: props.boardID,
-            card: response.card,
+            card: cardData.value.card,
         });
     } catch (err) {
         console.error("Failed to deleted card:", err);

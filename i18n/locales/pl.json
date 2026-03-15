@@ -139,6 +139,7 @@
   "error_EMAIL_TAKEN": "Ten adres e-mail jest już zajęty",
   "error_PASSWORD_TOO_SHORT": "Hasło jest zbyt krótkie",
   "error_copyFailed": "Kopiowanie nie powiodło się",
+  "wrongFileType": "Zły typ pliku. Dozwolone są tylko następujące typy plików: PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP, HTML",
   "edit": "Edytuj",
   "newUser": "Nowy użytkownik",
   "createANewUser": "Utwórz nowego użytkownika",

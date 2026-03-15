@@ -1,5 +1,5 @@
 <template>
-    <div v-if="props.writeAccess || comments.length > 0">
+    <div v-if="props.writeAccess || props.initialComments.length > 0">
         <h3 class="text-xl font-bold text-primary dark:text-white">
             {{ $t("commentsAndActivity") }}
         </h3>
@@ -12,8 +12,8 @@
             :cardID="props.cardID"
             @comment-created="handleCommentCreated"
         />
-        <div v-if="comments.length > 0" class="mt-4 space-y-4">
-            <div v-for="comment in comments" :key="comment.id">
+        <div v-if="props.initialComments.length > 0" class="mt-4 space-y-4">
+            <div v-for="comment in props.initialComments" :key="comment.id">
                 <div class="bg-dark/10 dark:bg-white/10 p-6 rounded-xl">
                     <div class="wysiwyg-wrapper" v-html="comment.content" />
                 </div>
@@ -49,7 +49,13 @@
 const props = defineProps({
     cardID: Number,
     writeAccess: Boolean,
+    initialComments: {
+        type: Array as PropType<Comment[]>,
+        default: () => [],
+    },
 });
+
+const emits = defineEmits(["comment-created"]);
 
 interface Comment {
     id: number;
@@ -61,23 +67,9 @@ interface Comment {
     date: string;
 }
 
-const comments = ref<Comment[]>([]);
-
-try {
-    const response = await $fetch<{ comments: Comment[] }>(
-        `/api/data/comment/?cardID=${props.cardID}`,
-        {
-            method: "GET",
-        },
-    );
-    comments.value = response.comments || [];
-} catch (err) {
-    console.error("Error fetching comments:", err);
-}
-
 // Handle the creation of a new comment
 const handleCommentCreated = (newComment: Comment) => {
-    comments.value.unshift(newComment);
+    emits("comment-created", newComment);
 };
 
 // Format the date for display

@@ -182,7 +182,7 @@ const editor = useEditor({
             placeholder: $t("writeSomething"),
         }),
         Image.configure({
-            allowBase64: true,
+            allowBase64: false, // Disable base64, we'll use URLs
         }),
         Emoji.configure({
             emojis: emojis,
@@ -197,48 +197,85 @@ const editor = useEditor({
                 "image/webp",
                 "image/avif",
             ],
-            onDrop: (currentEditor, files, pos) => {
-                files.forEach(async (file) => {
-                    const fileReader = new FileReader();
-
-                    fileReader.readAsDataURL(file);
-                    fileReader.onload = () => {
-                        currentEditor
-                            .chain()
-                            .insertContentAt(pos, {
-                                type: "image",
-                                attrs: {
-                                    src: fileReader.result,
-                                },
-                            })
-                            .focus()
-                            .run();
-                    };
-                    model.value = editor.value.getHTML();
-                });
-            },
-            onPaste: (currentEditor, files) => {
-                files.forEach((file) => {
-                    const fileReader = new FileReader();
-
-                    fileReader.readAsDataURL(file);
-                    fileReader.onload = () => {
-                        currentEditor
-                            .chain()
-                            .insertContentAt(
-                                currentEditor.state.selection.anchor,
-                                {
+            onDrop: async (currentEditor, files, pos) => {
+                for (const file of files) {
+                    try {
+                        const response = await uploadImage(file);
+                        if (response.image) {
+                            currentEditor
+                                .chain()
+                                .insertContentAt(pos, {
+                                    type: "image",
+                                    attrs: {
+                                        src: response.image,
+                                    },
+                                })
+                                .focus()
+                                .run();
+                        }
+                    } catch (error) {
+                        console.error("Failed to upload image:", error);
+                        // Fallback to base64 if upload fails
+                        const fileReader = new FileReader();
+                        fileReader.readAsDataURL(file);
+                        fileReader.onload = () => {
+                            currentEditor
+                                .chain()
+                                .insertContentAt(pos, {
                                     type: "image",
                                     attrs: {
                                         src: fileReader.result,
                                     },
-                                },
-                            )
-                            .focus()
-                            .run();
-                    };
-                    model.value = editor.value.getHTML();
-                });
+                                })
+                                .focus()
+                                .run();
+                        };
+                    }
+                }
+                model.value = editor.value.getHTML();
+            },
+            onPaste: async (currentEditor, files) => {
+                for (const file of files) {
+                    try {
+                        const response = await uploadImage(file);
+                        if (response.image) {
+                            currentEditor
+                                .chain()
+                                .insertContentAt(
+                                    currentEditor.state.selection.anchor,
+                                    {
+                                        type: "image",
+                                        attrs: {
+                                            src: response.image,
+                                        },
+                                    },
+                                )
+                                .focus()
+                                .run();
+                        }
+                    } catch (error) {
+                        console.error("Failed to upload image:", error);
+                        // Fallback to base64 if upload fails
+                        const fileReader = new FileReader();
+                        fileReader.readAsDataURL(file);
+                        fileReader.onload = () => {
+                            currentEditor
+                                .chain()
+                                .insertContentAt(
+                                    currentEditor.state.selection.anchor,
+                                    {
+                                        type: "image",
+                                        attrs: {
+                                            src: fileReader.result,
+                                        },
+                                    },
+                                )
+                                .focus()
+                                .run();
+                        };
+                    }
+                }
+                model.value = editor.value.getHTML();
             },
         }),
         TaskList,
@@ -249,12 +286,39 @@ const editor = useEditor({
     },
     injectCSS: false,
 });
-const addImage = () => {
+const addImage = async () => {
     const url = window.prompt("URL");
     if (url) {
-        editor.value.chain().focus().setImage({ src: url }).run();
+        if (url.startsWith("http") || url.startsWith("/")) {
+            // If it's already a URL, use it directly
+            editor.value.chain().focus().setImage({ src: url }).run();
+        } else {
+            // If it's a local file path, upload it first
+            try {
+                const fileInput = document.createElement("input");
+                fileInput.type = "file";
+                fileInput.accept = "image/*";
+                fileInput.onchange = async (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                        const response = await uploadImage(file);
+                        if (response.image) {
+                            editor.value
+                                .chain()
+                                .focus()
+                                .setImage({ src: response.image })
+                                .run();
+                        }
+                    }
+                };
+                fileInput.click();
+            } catch (error) {
+                console.error("Failed to upload image:", error);
+            }
+        }
     }
 };
+
 const uploadImage = async (file: File) => {
     try {
         const formData = new FormData();
@@ -264,7 +328,7 @@ const uploadImage = async (file: File) => {
             method: "POST",
             body: formData,
         });
-        console.log(response);
+
         if (!response.success) {
             throw new Error("Failed to upload image");
         }
@@ -275,8 +339,8 @@ const uploadImage = async (file: File) => {
             throw new Error("Invalid response from server");
         }
     } catch (error) {
-        return { error: `Error uploading image: {$error}` };
-        // You might want to show an error message to the user here
+        console.error("Image upload failed:", error);
+        return { error: `Error uploading image: ${error.message}` };
     }
 };
 

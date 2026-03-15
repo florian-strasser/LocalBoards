@@ -142,6 +142,7 @@
   "error_EMAIL_TAKEN": "Dit e-mailadres is al in gebruik",
   "error_PASSWORD_TOO_SHORT": "Het wachtwoord is te kort",
   "error_copyFailed": "Kopiëren mislukt",
+  "wrongFileType": "Verkeerd bestandstype. Alleen de volgende bestandstypen zijn toegestaan: PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP, HTML",
   "edit": "Bewerken",
   "newUser": "Nieuwe gebruiker",
   "createANewUser": "Maak een nieuwe gebruiker aan",

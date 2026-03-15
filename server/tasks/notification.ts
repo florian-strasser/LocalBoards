@@ -284,7 +284,7 @@ const sendNotification = async () => {
             "<p>" +
             translateText("youHaveTheFollowingUnreadNotifications") +
             ":</p><ul style='list-style:none; padding-left:0;'>" +
-            notificationMessages +
+            notificationMessages.join() +
             "</ul><p>" +
             translateText("clickHereToViewYourNotifications") +
             ":</p><p><a href='" +

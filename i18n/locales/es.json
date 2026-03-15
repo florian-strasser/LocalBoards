@@ -142,6 +142,7 @@
   "error_EMAIL_TAKEN": "Esta dirección de correo electrónico ya está en uso",
   "error_PASSWORD_TOO_SHORT": "La contraseña es demasiado corta",
   "error_copyFailed": "Error al copiar",
+  "wrongFileType": "Tipo de archivo incorrecto. Solo se permiten los siguientes tipos de archivo: PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP, HTML",
   "edit": "Editar",
   "newUser": "Nuevo usuario",
   "createANewUser": "Crear un nuevo usuario",
