@@ -219,7 +219,7 @@ const translateNotification = (message: string): string => {
 
       // Translate the static parts while preserving the format
       const translatedMessage = translateText("notificationNewComment");
-      return `<p>${translatedMessage.replace("{username}", username)} "${cardName}":</p><div class="comment">${comment.replace(/<img/g, '<img style="max-width:100%; display:block;"')}</div>`;
+      return `<p>${translatedMessage.replace("{username}", username)} "${cardName}":</p><div class="comment">${comment.replace(/<img src="/g, '<img src="' + baseURL).replace(/<img/g, '<img style="max-width:100%; display:block;"')}</div>`;
     } else {
       // Replace the static part with the translated text
       const dynamicPart = message.slice(staticPart.length).trim();
@@ -284,7 +284,7 @@ const sendNotification = async () => {
             "<p>" +
             translateText("youHaveTheFollowingUnreadNotifications") +
             ":</p><ul style='list-style:none; padding-left:0;'>" +
-            notificationMessages.join() +
+            notificationMessages.join("") +
             "</ul><p>" +
             translateText("clickHereToViewYourNotifications") +
             ":</p><p><a href='" +

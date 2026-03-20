@@ -1,3 +1,10 @@
+## v0.8.1
+
+### Bug Fixes
+
+- Fixed an error with images in comments on the email notification. It was missing the baseURL.
+- Resolved issue where notification messages were output as a by comma seperated string
+
 ## v0.8.0
 
 ### 🚀 Major Architecture Changes
