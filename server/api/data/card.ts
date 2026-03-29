@@ -319,10 +319,11 @@ export default defineEventHandler(async (event) => {
           }
         }
 
-        // Fetch the updated card
-        const [rows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
-          cardID,
-        ]);
+        // Fetch the updated card with comment and attachment counts
+        const [rows] = await db.execute(
+          "SELECT c.*, (SELECT COUNT(*) FROM comments co WHERE co.card = c.id) as commentCount, (SELECT COUNT(*) FROM attachments a WHERE a.card = c.id) as attachmentCount FROM cards c WHERE c.id = ?",
+          [cardID],
+        );
         const card = rows[0];
 
         if (!card) {
@@ -376,7 +377,6 @@ export default defineEventHandler(async (event) => {
 
         // Fetch the new attachments if any were added
         let attachments = [];
-        console.log(newAttachments);
         if (newAttachments.length > 0) {
           const [attachmentRows] = await db.execute(
             "SELECT id, filename, filetype, filesize, filedata FROM attachments WHERE id IN (?)",

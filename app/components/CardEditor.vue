@@ -348,4 +348,20 @@ const setEmoji = (emojiCode) => {
     editor.value.chain().focus().setEmoji(emojiCode).run();
     emojiSelect.value = false;
 };
+
+// Watch for external changes to modelValue
+watch(
+    () => model.value,
+    (value) => {
+        if (!editor.value) return;
+
+        const isSame = editor.value.getHTML() === value;
+        if (isSame) {
+            return;
+        }
+
+        editor.value.commands.setContent(value);
+    },
+    { immediate: false },
+);
 </script>

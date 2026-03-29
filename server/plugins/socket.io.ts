@@ -121,12 +121,13 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
     });
 
     // CardUpdated
-    socket.on("cardUpdated", async ({ boardId, card }) => {
+    socket.on("cardUpdated", async ({ boardId, attachments, card }) => {
       console.log(
         `Karte ${card.id} wurde auf Board ${boardId} aktualisiert (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("updateCard", {
         card,
+        attachments,
         boardId,
       });
     });
@@ -175,6 +176,23 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
           card,
         });
     });
+
+    // CommentCountUpdated
+    socket.on(
+      "commentCountUpdated",
+      async ({ boardId, cardId, commentCount }) => {
+        console.log(
+          `Comment count updated for card ${cardId} on board ${boardId} (user-${socket.id})`,
+        );
+        io.except(`user-${socket.id}`)
+          .to(`board-${boardId}`)
+          .emit("commentCountUpdated", {
+            cardId,
+            commentCount,
+            boardId,
+          });
+      },
+    );
   });
 
   nitroApp.router.use(

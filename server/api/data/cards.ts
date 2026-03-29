@@ -83,7 +83,7 @@ export default defineEventHandler(async (event) => {
 
       if (readAccess) {
         const [cards] = await db.execute(
-          "SELECT id, area, name, content, status, sort FROM cards WHERE area = ? ORDER BY sort ASC",
+          "SELECT c.id, c.area, c.name, c.content, c.status, c.sort, (SELECT COUNT(*) FROM comments co WHERE co.card = c.id) as commentCount, (SELECT COUNT(*) FROM attachments a WHERE a.card = c.id) as attachmentCount FROM cards c WHERE c.area = ? ORDER BY c.sort ASC",
           [areaId],
         );
 

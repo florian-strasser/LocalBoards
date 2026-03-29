@@ -1,3 +1,14 @@
+## 0.9.0
+
+- /api/data/card.ts: Returns additionally commentCount and attachmentCount
+- /api/data/cards.ts: Returns additionally commentCount and attachmentCount
+- Multiplayer updates for title, content and attachments on opened cards
+- Added comment and attachment count below the title on cards
+- Update commentCount when a new comment is created
+- Update attachmentCount when a new attachment is uploaded
+- Updated all dependencies
+
+
 ## v0.8.1
 
 ### Bug Fixes

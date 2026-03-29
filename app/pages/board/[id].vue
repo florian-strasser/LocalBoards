@@ -163,6 +163,7 @@
                 @area-created="handleNewArea"
                 @area-updated="handleAreaUpdated"
                 @area-deleted="handleDeleteArea"
+                @comment-count-updated="handleCommentCountUpdated"
             />
         </div>
         <ModalWindow v-model="optionsActive">
@@ -266,6 +267,7 @@
                 v-model="cardModal"
                 @card-updated="handleCardUpdated"
                 @card-deleted="handleCardDeleted"
+                @comment-count-updated="handleCommentCountUpdated"
             />
         </ModalWindow>
         <AppFooter />
@@ -616,6 +618,19 @@ const handleBoardDeleted = async () => {
         message: $t("boardHasBeenDeleted"),
     });
     await navigateTo("/dashboard/");
+};
+
+const handleCommentCountUpdated = ({ cardId, commentCount }) => {
+    // Find the card and update its comment count
+    for (const areaId in cards.value) {
+        const cardIndex = cards.value[areaId].findIndex(
+            (card) => card.id === cardId,
+        );
+        if (cardIndex !== -1) {
+            cards.value[areaId][cardIndex].commentCount = commentCount;
+            break;
+        }
+    }
 };
 
 const deleteBoard = async () => {

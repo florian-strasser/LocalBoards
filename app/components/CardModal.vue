@@ -133,7 +133,11 @@ const props = defineProps({
 });
 
 const nuxtApp = useNuxtApp();
-const emits = defineEmits(["card-updated", "card-deleted"]);
+const emits = defineEmits([
+    "card-updated",
+    "card-deleted",
+    "comment-count-updated",
+]);
 
 const boxOpen = defineModel();
 
@@ -166,6 +170,15 @@ const comments = ref(commentsData.value?.comments || []);
 
 const handleCommentCreated = (newComment) => {
     comments.value.unshift(newComment);
+    emits("comment-count-updated", {
+        cardId: props.cardID,
+        commentCount: comments.value.length,
+    });
+    socket.emit("commentCountUpdated", {
+        boardId: props.boardID,
+        cardId: props.cardID,
+        commentCount: comments.value.length,
+    });
 };
 
 const toggleStatus = () => {
@@ -296,6 +309,7 @@ const saveCard = async () => {
         emits("card-updated", response.card);
         socket.emit("cardUpdated", {
             boardId: props.boardID,
+            attachments: attachments.value,
             card: response.card,
         });
     } catch (err) {
@@ -328,6 +342,32 @@ const deleteCard = async () => {
         console.error("Failed to deleted card:", err);
     }
 };
+
+// Handle card updates from other users
+const handleCardUpdated = (updatedCard, updatedAttachments) => {
+    if (updatedCard.id === props.cardID) {
+        name.value = updatedCard.name;
+        content.value = updatedCard.content;
+        currentStatus.value = updatedCard.status;
+        // Update attachments if they exist in the updated card
+        if (updatedAttachments) {
+            attachments.value = updatedAttachments;
+        }
+    }
+};
+
+// Set up socket event listener for card updates
+onMounted(() => {
+    socket.on("updateCard", ({ card, attachments, boardId }) => {
+        if (props.boardID === boardId && card.id === props.cardID) {
+            handleCardUpdated(card, attachments);
+        }
+    });
+});
+
+onBeforeUnmount(() => {
+    socket.off("updateCard", handleCardUpdated);
+});
 
 // Watch for changes in name, content, or currentStatus
 watch(

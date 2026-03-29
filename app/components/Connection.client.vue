@@ -19,6 +19,7 @@ const emits = defineEmits([
     "card-moved",
     "card-orderd",
     "card-deleted",
+    "comment-count-updated",
 ]);
 
 const onConnect = () => {
@@ -84,6 +85,11 @@ const onConnect = () => {
 
     socket.on("deleteArea", ({ area, boardId }) => {
         if (props.boardID * 1 === boardId) emits("area-deleted", area);
+    });
+
+    socket.on("commentCountUpdated", ({ cardId, commentCount, boardId }) => {
+        if (props.boardID * 1 === boardId)
+            emits("comment-count-updated", { cardId, commentCount });
     });
 };
 
