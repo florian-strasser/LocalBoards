@@ -35,10 +35,11 @@ export function setupDatabase() {
   db.execute(`CREATE TABLE IF NOT EXISTS \`apikey\` (
       \`id\` varchar(36) NOT NULL,
       \`name\` text,
+      \`configId\` varchar(255) NOT NULL DEFAULT 'default',
+      \`referenceId\` varchar(255) NOT NULL,
       \`start\` text,
       \`prefix\` text,
       \`key\` varchar(255) NOT NULL,
-      \`userId\` varchar(36) NOT NULL,
       \`refillInterval\` int DEFAULT NULL,
       \`refillAmount\` int DEFAULT NULL,
       \`lastRefillAt\` timestamp(3) NULL DEFAULT NULL,
@@ -56,8 +57,7 @@ export function setupDatabase() {
       \`metadata\` text,
       PRIMARY KEY (\`id\`),
       KEY \`apikey_key_idx\` (\`key\`),
-      KEY \`apikey_userId_idx\` (\`userId\`),
-      CONSTRAINT \`apikey_ibfk_1\` FOREIGN KEY (\`userId\`) REFERENCES \`user\` (\`id\`) ON DELETE CASCADE
+      KEY \`apikey_userId_idx\` (\`userId\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
 
   // Create the session table for better-auth
@@ -189,6 +189,83 @@ export function setupDatabase() {
         FOREIGN KEY (cardId) REFERENCES cards(id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   `);
+
+  // Add new columns to the apikey table if they don't exist
+  db.execute(
+    `
+      ALTER TABLE apikey
+      ADD COLUMN configId varchar(255) NOT NULL DEFAULT 'default',
+      ADD COLUMN referenceId varchar(255)
+    `,
+  ).catch((error) => {
+    // Ignore errors for this migration as it might fail if the columns already exist
+    console.log("Apikey columns migration:", error.message);
+  });
+
+  // Migrate existing data (copy userId to referenceId)
+  db.execute(
+    `
+      UPDATE apikey SET referenceId = userId WHERE referenceId IS NULL
+    `,
+  ).catch((error) => {
+    // Ignore errors for this migration as it might fail if the columns already exist
+    console.log("Apikey data migration:", error.message);
+  });
+
+  // Make referenceId required and add indexes
+  db.execute(
+    `
+      ALTER TABLE apikey
+      MODIFY COLUMN configId varchar(255) NOT NULL DEFAULT 'default'
+    `,
+  ).catch((error) => {
+    // Ignore errors for this migration as it might fail if the columns already exist
+    console.log("Apikey configId modification:", error.message);
+  });
+
+  // Make referenceId required and add indexes
+  db.execute(
+    `
+      ALTER TABLE apikey
+      MODIFY COLUMN referenceId varchar(255) NOT NULL
+    `,
+  ).catch((error) => {
+    // Ignore errors for this migration as it might fail if the columns already exist
+    console.log("Apikey referenceId modification:", error.message);
+  });
+
+  // Add indexes for referenceId and configId
+  db.execute(
+    `
+      CREATE INDEX idx_apikey_referenceId ON apikey(referenceId)
+    `,
+  ).catch((error) => {
+    // Ignore errors for this migration as it might fail if the indexes already exist
+    console.log("Apikey referenceId index creation:", error.message);
+  });
+
+  // Add indexes for referenceId and configId
+  db.execute(
+    `
+      CREATE INDEX idx_apikey_configId ON apikey(configId)
+    `,
+  ).catch((error) => {
+    // Ignore errors for this migration as it might fail if the indexes already exist
+    console.log("Apikey configId index creation:", error.message);
+  });
+
+  // Drop the user_id column from the apikey table
+  db.execute(`ALTER TABLE apikey DROP FOREIGN KEY apikey_ibfk_1`).catch(
+    (error) => {
+      // Ignore errors for this migration as it might fail if the values already exist
+      console.log("DROP foreign key:", error.message);
+    },
+  );
+
+  db.execute(`ALTER TABLE apikey DROP COLUMN userId`).catch((error) => {
+    // Ignore errors for this migration as it might fail if the values already exist
+    console.log("DROP userId:", error.message);
+  });
 
   // Add new notification types to existing notifications table if they don't exist
   db.execute(

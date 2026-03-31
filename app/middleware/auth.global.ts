@@ -1,5 +1,5 @@
+import { authClient } from "~/lib/auth-client";
 export default defineNuxtRouteMiddleware(async (to) => {
-  const nuxtApp = useNuxtApp();
   const runtimeConfig = useRuntimeConfig();
   const allowSignup = runtimeConfig.public.signup === "true" ? true : false;
   // Pattern to match reset-password URLs with a token
@@ -13,10 +13,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
     !resetPasswordPattern.test(to.path)
   ) {
     // Redirect to dashboard
-    const result = await useFetch("/api/auth/get-session");
-    if (!result.data.value) {
+    // const result = await useFetch("/api/auth/get-session");
+    const relativeFetch = ((url: string, opts?: any) => {
+      try {
+        if (url.startsWith("http")) url = new URL(url).pathname;
+      } catch {}
+      return useFetch(url, opts);
+    }) as any;
+
+    const { data: session } = await authClient.useSession(relativeFetch);
+    if (!session.value) {
       return navigateTo("/");
-    } else if (result.data.value.user.role !== "admin") {
+    } else if (session.value.user.role !== "admin") {
       if (
         to.path.startsWith("/new-user") ||
         to.path.startsWith("/users") ||

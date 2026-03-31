@@ -28,7 +28,7 @@
             class="pl-8 flex items-center text-sm gap-x-3 flex-wrap text-gray"
         >
             <div class="flex gap-x-1.5 shrink-0" v-if="props.card.commentCount">
-                <MessageSquare class="size-4 shrink-0 grow-0" />
+                <MessageSquareText class="size-4 shrink-0 grow-0" />
                 <div class="shrink-0 grow-0">
                     {{ props.card.commentCount }}
                 </div>
@@ -46,7 +46,7 @@
     </button>
 </template>
 <script setup lang="ts">
-import { Check, MessageSquare, Paperclip } from "lucide-vue-next";
+import { Check, MessageSquareText, Paperclip } from "lucide-vue-next";
 const cardModal = defineModel();
 const props = defineProps({
     card: Object,

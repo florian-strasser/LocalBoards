@@ -15,12 +15,11 @@ export async function getApiKeyUser(event: H3Event) {
   if (!result.valid || !result.key) {
     return null;
   }
-
   const [users] = await db.execute(
     `SELECT *
      FROM user
      WHERE id = ?`,
-    [result.key!.userId],
+    [result.key.referenceId],
   );
   const user = users[0];
 

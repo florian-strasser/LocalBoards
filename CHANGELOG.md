@@ -1,4 +1,9 @@
-## 0.9.0
+## v0.9.1
+
+- Fix: Required some changes to the creation of api keys
+- Picked a better matching icon for commentCount
+
+## v0.9.0
 
 - /api/data/card.ts: Returns additionally commentCount and attachmentCount
 - /api/data/cards.ts: Returns additionally commentCount and attachmentCount
