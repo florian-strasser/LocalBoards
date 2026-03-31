@@ -120,15 +120,42 @@ const handleFileUpload = (event: Event) => {
 
 const uploadImage = async (file: File) => {
     try {
+        // Upload the file to the server
+        const imageUrl = await uploadFileToServer(file);
+        data.value = imageUrl;
+    } catch (error) {
+        console.error("Error uploading image:", error);
+        // Fallback to base64 for backward compatibility
         const fileReader = new FileReader();
-
         fileReader.readAsDataURL(file);
         fileReader.onload = () => {
             data.value = fileReader.result;
         };
+    }
+};
+
+const uploadFileToServer = async (file: File) => {
+    try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await $fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+        });
+
+        return response.url;
     } catch (error) {
-        console.error("Error uploading image:", error);
-        // You might want to show an error message to the user here
+        console.error("File upload failed:", error);
+        // Fallback to base64 for backward compatibility
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64Data = e.target.result.split(",")[1];
+                resolve(base64Data);
+            };
+            reader.readAsDataURL(file);
+        });
     }
 };
 </script>

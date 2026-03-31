@@ -66,10 +66,9 @@
 import { authClient } from "@/lib/auth-client";
 import * as z from "zod";
 
-const runtimeConfig = useRuntimeConfig();
 const nuxtApp = useNuxtApp();
 
-const allowSignup = runtimeConfig.public.signup === "true" ? true : false;
+const allowSignup = nuxtApp.$config.public.signup === true ? true : false;
 
 useHead({
     title: $t("login"),

@@ -1,3 +1,8 @@
+## v0.9.2
+
+- Fixed issue with public registration, env variable was not checked correctly
+- Board and user images are now also stored as physical files instead of Base64 decoded
+
 ## v0.9.1
 
 - Fix: Required some changes to the creation of api keys
