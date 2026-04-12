@@ -40,7 +40,6 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
 import { Timer, Trash2 } from "lucide-vue-next";
 
 const props = defineProps({
@@ -68,14 +67,34 @@ const formattedExpires = computed(() => {
 
 const deleteKey = async () => {
     const keyId = props.id;
-    const { data, error } = await authClient.apiKey.delete({
-        keyId: keyId, // required
-    });
-    deleteKeyModal.value = false;
+    try {
+        const response = await $fetch("/api/auth/api-key/delete", {
+            method: "POST",
+            body: {
+                keyId: keyId,
+            },
+        });
 
-    emits("key-deleted", keyId);
-    await nuxtApp.callHook("app:toast", {
-        message: $t("keyDeleted"),
-    });
+        if (response.success) {
+            deleteKeyModal.value = false;
+            emits("key-deleted", keyId);
+            await nuxtApp.callHook("app:toast", {
+                message: $t("keyDeleted"),
+            });
+        } else {
+            throw new Error(response.error || "Failed to delete API key");
+        }
+    } catch (e) {
+        let errorMessage = "Failed to delete API key";
+        if (e?.data?.error) {
+            errorMessage = e.data.error;
+        } else if (e?.message) {
+            errorMessage = e.message;
+        }
+
+        await nuxtApp.callHook("app:toast", {
+            message: errorMessage,
+        });
+    }
 };
 </script>

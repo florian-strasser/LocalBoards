@@ -10,10 +10,10 @@
             >
             <YourBoards
                 v-if="session"
-                :userID="session.user.id"
+                :userID="session.data.user.id"
                 @newBoardButtonClicked="createBoard = true"
             />
-            <SharedBoards v-if="session" :userID="session.user.id" />
+            <SharedBoards v-if="session" :userID="session.data.user.id" />
         </ContentWrapper>
         <ModalWindow v-model="createBoard">
             <div>
@@ -82,25 +82,15 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
-
 const nuxtApp = useNuxtApp();
 
 useHead({
     title: $t("dashboard"),
 });
 
-const relativeFetch = ((url: string, opts?: any) => {
-    try {
-        if (url.startsWith("http")) url = new URL(url).pathname;
-    } catch {}
-    return useFetch(url, opts);
-}) as any;
+const { data: session } = await useFetch("/api/auth/get-session");
 
-const { data: session } = await authClient.useSession(relativeFetch);
-
-const userID = session.value.user.id;
-
+const userID = session.value.data.user.id;
 const createBoard = ref(false);
 
 const newBoardName = ref($t("untitledBoard"));

@@ -141,6 +141,11 @@
   "error_UPDATING_USER": "Er is een fout opgetreden bij het bijwerken van de gebruiker",
   "error_EMAIL_TAKEN": "Dit e-mailadres is al in gebruik",
   "error_PASSWORD_TOO_SHORT": "Het wachtwoord is te kort",
+  "error_INVALID_OLD_PASSWORD": "Huidig wachtwoord is onjuist",
+  "error_PASSWORDS_REQUIRED": "Zowel het oude als het nieuwe wachtwoord zijn vereist",
+  "error_PASSWORD_TOO_SHORT_NEW": "Het nieuwe wachtwoord moet minimaal 8 tekens lang zijn",
+  "error_LOCAL_ACCOUNT_NOT_FOUND": "Lokaal account niet gevonden",
+  "error_UNAUTHORIZED_NO_SESSION": "Niet geautoriseerd - Geen actieve sessie",
   "error_copyFailed": "Kopiëren mislukt",
   "wrongFileType": "Verkeerd bestandstype. Alleen de volgende bestandstypen zijn toegestaan: PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP, HTML",
   "edit": "Bewerken",
@@ -168,5 +173,7 @@
   "areas": "Gebieden",
   "hideAreas": "Gebieden verbergen",
   "back": "Terug",
-  "editorEmojis": "Emoji's"
+  "editorEmojis": "Emoji's",
+  "reset_your_password_subject": "Wachtwoord resetten",
+  "reset_your_password_message": "Klik op deze link om een nieuw wachtwoord in te stellen:"
 }

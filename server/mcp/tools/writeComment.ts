@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 const db = setupDatabase();
 
@@ -96,6 +97,15 @@ export default defineMcpTool({
             date: rows[0].date,
           }
         : null;
+
+      // Emit socket event for new comment
+      const serverSocket = getServerSocket();
+      if (serverSocket) {
+        serverSocket.to(`card-${cardID}`).emit("addComment", {
+          comment,
+          cardID: cardID,
+        });
+      }
 
       // Get board information for notifications
       const [boardInfoRows] = await db.execute(

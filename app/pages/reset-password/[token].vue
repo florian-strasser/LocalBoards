@@ -43,8 +43,6 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
-
 const route = useRoute();
 const token = route.params.token;
 
@@ -54,19 +52,27 @@ const passwordChanged = ref(false);
 const errorMessage = ref("");
 
 const handleReset = async () => {
-    const { data, error } = await authClient.resetPassword(
-        {
-            newPassword: password.value, // required
-            token, // required
-        },
-        {
-            onSuccess: async (ctx) => {
-                passwordChanged.value = true;
+    try {
+        const response = await $fetch("/api/auth/reset-password", {
+            method: "POST",
+            body: {
+                token: token,
+                newPassword: password.value,
             },
-            onError: (ctx) => {
-                errorMessage.value = ctx.error.message;
-            },
-        },
-    );
+        });
+        if (response.success) {
+            passwordChanged.value = true;
+        } else {
+            throw new Error(response.error || "Failed to reset password");
+        }
+    } catch (err) {
+        let eMessage = "Failed to reset password";
+        if (err?.data?.error) {
+            eMessage = err.data.error;
+        } else if (err?.message) {
+            eMessage = err.message;
+        }
+        errorMessage.value = eMessage;
+    }
 };
 </script>

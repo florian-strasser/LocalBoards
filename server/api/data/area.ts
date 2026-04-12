@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
-import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 export default defineEventHandler(async (event) => {
   // Check the HTTP method
@@ -12,11 +12,7 @@ export default defineEventHandler(async (event) => {
   // Validate API key if provided
   let userIdFromApiKey = null;
   if (apiKey) {
-    const data = await auth.api.verifyApiKey({
-      body: {
-        key: apiKey,
-      },
-    });
+    const data = await verifyApiKey(apiKey);
 
     if (data.error) {
       event.res.statusCode = 403;
@@ -26,9 +22,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const session = await auth.api.getSession({
-    headers: event.headers,
-  });
+  const session = await getSession(event);
 
   if (!userIdFromApiKey && !session) {
     event.res.statusCode = 403;
@@ -99,6 +93,16 @@ export default defineEventHandler(async (event) => {
             id,
           ]);
           area = rows[0];
+          // Emit socket event for area update (API calls only)
+          if (userIdFromApiKey) {
+            const serverSocket = getServerSocket();
+            if (serverSocket) {
+              serverSocket.to(`board-${boardId}`).emit("updateArea", {
+                area,
+                boardId,
+              });
+            }
+          }
         } else {
           const [arows] = await db.execute(
             "SELECT * FROM areas WHERE board = ?",
@@ -115,6 +119,16 @@ export default defineEventHandler(async (event) => {
             result.insertId,
           ]);
           area = rows[0];
+          // Emit socket event for area creation (API calls only)
+          if (userIdFromApiKey) {
+            const serverSocket = getServerSocket();
+            if (serverSocket) {
+              serverSocket.to(`board-${boardId}`).emit("addArea", {
+                area,
+                boardId,
+              });
+            }
+          }
         }
 
         return { area };
@@ -206,6 +220,17 @@ export default defineEventHandler(async (event) => {
         if (result.affectedRows === 0) {
           event.res.statusCode = 404;
           return { error: "Area not found or already deleted" };
+        }
+
+        // Emit socket event for area deletion (API calls only)
+        if (userIdFromApiKey) {
+          const serverSocket = getServerSocket();
+          if (serverSocket) {
+            serverSocket.to(`board-${boardId}`).emit("deleteArea", {
+              area: id,
+              boardId,
+            });
+          }
         }
 
         return { message: "Area deleted successfully" };

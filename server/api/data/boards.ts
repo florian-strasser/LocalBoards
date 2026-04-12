@@ -1,5 +1,4 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
-import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 
 export default defineEventHandler(async (event) => {
@@ -14,11 +13,7 @@ export default defineEventHandler(async (event) => {
   const apiKey = event.headers.get("x-api-key");
 
   if (apiKey) {
-    const data = await auth.api.verifyApiKey({
-      body: {
-        key: apiKey,
-      },
-    });
+    const data = await verifyApiKey(apiKey);
 
     if (data.error) {
       event.res.statusCode = 403;
@@ -30,9 +25,7 @@ export default defineEventHandler(async (event) => {
       }
     }
   } else {
-    const session = await auth.api.getSession({
-      headers: event.headers,
-    });
+    const session = await getSession(event);
 
     if (!session || session.user.id !== userId) {
       event.res.statusCode = 403;

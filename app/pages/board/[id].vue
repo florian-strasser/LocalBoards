@@ -15,7 +15,6 @@
                     >
                         {{ boardName }}
                     </h1>
-
                     <div
                         v-if="userID === boardUser"
                         class="flex gap-x-4 items-center"
@@ -275,23 +274,14 @@
 </template>
 <script setup lang="ts">
 import { socket } from "~/lib/socket";
-import { authClient } from "@/lib/auth-client";
 import Sortable from "sortablejs";
 import { Pencil, UserRoundPlus, Trash2, X } from "lucide-vue-next";
 import { Plus, FolderPlus } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
 
-const relativeFetch = ((url: string, opts?: any) => {
-    try {
-        if (url.startsWith("http")) url = new URL(url).pathname;
-    } catch {}
-    return useFetch(url, opts);
-}) as any;
-
-const { data: session } = await authClient.useSession(relativeFetch);
-
-const userID = session.value.user.id;
+const { data: session } = await useFetch("/api/auth/get-session");
+const userID = session.value.data.user.id;
 
 const route = useRoute();
 const boardID = ref(route.params.id);

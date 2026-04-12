@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 const db = setupDatabase();
 
@@ -157,6 +158,18 @@ export default defineMcpTool({
               ],
             );
           }
+        }
+
+        // Emit socket event for card move
+        const serverSocket = getServerSocket();
+        if (serverSocket) {
+          serverSocket.to(`board-${boardId}`).emit("movedCard", {
+            cardId,
+            fromAreaId,
+            toAreaId,
+            newIndex,
+            boardId,
+          });
         }
 
         return jsonResult({ success: true });

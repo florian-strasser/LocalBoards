@@ -141,6 +141,11 @@
   "error_UPDATING_USER": "Se produjo un error al actualizar el usuario",
   "error_EMAIL_TAKEN": "Esta dirección de correo electrónico ya está en uso",
   "error_PASSWORD_TOO_SHORT": "La contraseña es demasiado corta",
+  "error_INVALID_OLD_PASSWORD": "Contraseña actual incorrecta",
+  "error_PASSWORDS_REQUIRED": "Se requieren tanto la contraseña antigua como la nueva",
+  "error_PASSWORD_TOO_SHORT_NEW": "La nueva contraseña debe tener al menos 8 caracteres",
+  "error_LOCAL_ACCOUNT_NOT_FOUND": "Cuenta local no encontrada",
+  "error_UNAUTHORIZED_NO_SESSION": "No autorizado - No hay sesión activa",
   "error_copyFailed": "Error al copiar",
   "wrongFileType": "Tipo de archivo incorrecto. Solo se permiten los siguientes tipos de archivo: PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP, HTML",
   "edit": "Editar",
@@ -168,5 +173,7 @@
   "areas": "Áreas",
   "hideAreas": "Ocultar áreas",
   "back": "Atrás",
-  "editorEmojis": "Emojis"
+  "editorEmojis": "Emojis",
+  "reset_your_password_subject": "Restablecer contraseña",
+  "reset_your_password_message": "Haz clic en este enlace para asignar una nueva contraseña:"
 }

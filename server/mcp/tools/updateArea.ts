@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 const db = setupDatabase();
 
@@ -79,6 +80,15 @@ export default defineMcpTool({
       // Fetch the updated area
       const [rows] = await db.execute("SELECT * FROM areas WHERE id = ?", [id]);
       const area = rows[0];
+
+      // Emit socket event for area update
+      const serverSocket = getServerSocket();
+      if (serverSocket) {
+        serverSocket.to(`board-${boardId}`).emit("updateArea", {
+          area,
+          boardId,
+        });
+      }
 
       return jsonResult({ area });
     } catch (error) {

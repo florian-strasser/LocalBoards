@@ -14,292 +14,162 @@ const db = createPool({
 });
 
 export function setupDatabase() {
-  // Create better-auth account table
+  // Create account table
   db.execute(`CREATE TABLE IF NOT EXISTS \`account\` (
-      \`id\` varchar(36) NOT NULL,
-      \`accountId\` text NOT NULL,
-      \`providerId\` text NOT NULL,
-      \`userId\` varchar(36) NOT NULL,
-      \`accessToken\` text,
-      \`refreshToken\` text,
-      \`idToken\` text,
-      \`accessTokenExpiresAt\` timestamp(3) NULL DEFAULT NULL,
-      \`refreshTokenExpiresAt\` timestamp(3) NULL DEFAULT NULL,
-      \`scope\` text,
-      \`password\` text,
-      \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-      \`updatedAt\` timestamp(3) NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
+    \`id\` varchar(36) NOT NULL,
+    \`accountId\` text NOT NULL,
+    \`providerId\` text NOT NULL,
+    \`userId\` varchar(36) NOT NULL,
+    \`password\` text,
+    \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    \`updatedAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
 
-  // Create better-auth apikey table
+  // Create apikey table
   db.execute(`CREATE TABLE IF NOT EXISTS \`apikey\` (
-      \`id\` varchar(36) NOT NULL,
-      \`name\` text,
-      \`configId\` varchar(255) NOT NULL DEFAULT 'default',
-      \`referenceId\` varchar(255) NOT NULL,
-      \`start\` text,
-      \`prefix\` text,
-      \`key\` varchar(255) NOT NULL,
-      \`refillInterval\` int DEFAULT NULL,
-      \`refillAmount\` int DEFAULT NULL,
-      \`lastRefillAt\` timestamp(3) NULL DEFAULT NULL,
-      \`enabled\` tinyint(1) DEFAULT NULL,
-      \`rateLimitEnabled\` tinyint(1) DEFAULT NULL,
-      \`rateLimitTimeWindow\` int DEFAULT NULL,
-      \`rateLimitMax\` int DEFAULT NULL,
-      \`requestCount\` int DEFAULT NULL,
-      \`remaining\` int DEFAULT NULL,
-      \`lastRequest\` timestamp(3) NULL DEFAULT NULL,
-      \`expiresAt\` timestamp(3) NULL DEFAULT NULL,
-      \`createdAt\` timestamp(3) NOT NULL,
-      \`updatedAt\` timestamp(3) NOT NULL,
-      \`permissions\` text,
-      \`metadata\` text,
-      PRIMARY KEY (\`id\`),
-      KEY \`apikey_key_idx\` (\`key\`),
-      KEY \`apikey_userId_idx\` (\`userId\`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
+    \`id\` varchar(36) NOT NULL,
+    \`name\` text,
+    \`start\` text,
+    \`prefix\` text,
+    \`key\` varchar(255) NOT NULL,
+    \`refillInterval\` int DEFAULT NULL,
+    \`refillAmount\` int DEFAULT NULL,
+    \`lastRefillAt\` timestamp(3) NULL DEFAULT NULL,
+    \`enabled\` tinyint(1) DEFAULT NULL,
+    \`rateLimitEnabled\` tinyint(1) DEFAULT NULL,
+    \`rateLimitTimeWindow\` int DEFAULT NULL,
+    \`rateLimitMax\` int DEFAULT NULL,
+    \`requestCount\` int DEFAULT NULL,
+    \`remaining\` int DEFAULT NULL,
+    \`lastRequest\` timestamp(3) NULL DEFAULT NULL,
+    \`expiresAt\` timestamp(3) NULL DEFAULT NULL,
+    \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    \`updatedAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    \`permissions\` text,
+    \`metadata\` text,
+    \`configId\` varchar(255) NOT NULL DEFAULT 'default',
+    \`referenceId\` varchar(255) NOT NULL,
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
 
-  // Create the session table for better-auth
+  // Create boards table
+  db.execute(`CREATE TABLE IF NOT EXISTS \`boards\` (
+    \`id\` int NOT NULL AUTO_INCREMENT,
+    \`user\` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+    \`name\` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+    \`style\` enum('kanban','todo','notices') COLLATE utf8mb4_general_ci DEFAULT 'kanban',
+    \`status\` enum('private','public') COLLATE utf8mb4_general_ci DEFAULT 'private',
+    \`image\` longtext COLLATE utf8mb4_general_ci,
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+
+  // Create areas table
+  db.execute(`CREATE TABLE IF NOT EXISTS \`areas\` (
+    \`id\` int NOT NULL AUTO_INCREMENT,
+    \`board\` int NOT NULL,
+    \`name\` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+    \`sort\` int DEFAULT '0',
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+
+  // Create cards table
+  db.execute(`CREATE TABLE IF NOT EXISTS \`cards\` (
+    \`id\` int NOT NULL AUTO_INCREMENT,
+    \`area\` int NOT NULL,
+    \`name\` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+    \`sort\` int DEFAULT '0',
+    \`content\` longtext COLLATE utf8mb4_general_ci,
+    \`status\` tinyint(1) DEFAULT '0',
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+
+  // Create attachments table
+  db.execute(`CREATE TABLE IF NOT EXISTS \`attachments\` (
+    \`id\` int NOT NULL AUTO_INCREMENT,
+    \`card\` int NOT NULL,
+    \`filename\` varchar(255) NOT NULL,
+    \`filetype\` varchar(100) NOT NULL,
+    \`filesize\` int NOT NULL,
+    \`filedata\` longtext NOT NULL,
+    \`createdAt\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
+
+  // Create comments table
+  db.execute(`CREATE TABLE IF NOT EXISTS \`comments\` (
+    \`id\` int NOT NULL AUTO_INCREMENT,
+    \`card\` int NOT NULL,
+    \`user\` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+    \`content\` longtext COLLATE utf8mb4_general_ci,
+    \`date\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+
+  // Create invitations table
+  db.execute(`CREATE TABLE IF NOT EXISTS \`invitations\` (
+    \`id\` int NOT NULL AUTO_INCREMENT,
+    \`board\` int NOT NULL,
+    \`user\` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+    \`permission\` enum('read','edit') COLLATE utf8mb4_general_ci DEFAULT 'read',
+    \`date\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+
+  // Create notifications table
+  db.execute(`CREATE TABLE IF NOT EXISTS \`notifications\` (
+    \`id\` int NOT NULL AUTO_INCREMENT,
+    \`userId\` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+    \`type\` enum('invitation','comment','card_created','card_moved','card_status_changed') COLLATE utf8mb4_general_ci NOT NULL,
+    \`boardId\` int DEFAULT NULL,
+    \`cardId\` int DEFAULT NULL,
+    \`message\` longtext COLLATE utf8mb4_general_ci,
+    \`isRead\` tinyint(1) DEFAULT '0',
+    \`createdAt\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+
+  // Create session table
   db.execute(`CREATE TABLE IF NOT EXISTS \`session\` (
-      \`id\` varchar(36) NOT NULL,
-      \`expiresAt\` timestamp(3) NOT NULL,
-      \`token\` varchar(255) NOT NULL,
-      \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-      \`updatedAt\` timestamp(3) NOT NULL,
-      \`ipAddress\` text,
-      \`userAgent\` text,
-      \`userId\` varchar(36) NOT NULL,
-      \`impersonatedBy\` text
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
+    \`id\` varchar(36) NOT NULL,
+    \`expiresAt\` timestamp(3) NOT NULL,
+    \`token\` varchar(255) NOT NULL,
+    \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    \`updatedAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    \`ipAddress\` text,
+    \`userAgent\` text,
+    \`userId\` varchar(36) NOT NULL,
+    \`impersonatedBy\` text,
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
 
-  // Create the user table for better-auth
+  // Create user table
   db.execute(`CREATE TABLE IF NOT EXISTS \`user\` (
-      \`id\` varchar(36) NOT NULL,
-      \`name\` varchar(255) NOT NULL,
-      \`email\` varchar(255) NOT NULL,
-      \`emailVerified\` tinyint(1) NOT NULL,
-      \`image\` longtext,
-      \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-      \`updatedAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-      \`role\` text,
-      \`banned\` tinyint(1) DEFAULT NULL,
-      \`banReason\` text,
-      \`banExpires\` timestamp(3) NULL DEFAULT NULL,
-      \`username\` varchar(255) DEFAULT NULL,
-      \`displayUsername\` text
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
+    \`id\` varchar(36) NOT NULL,
+    \`name\` varchar(255) NOT NULL,
+    \`email\` varchar(255) NOT NULL,
+    \`emailVerified\` tinyint(1) NOT NULL,
+    \`image\` longtext,
+    \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    \`updatedAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    \`role\` varchar(5) NOT NULL DEFAULT 'user',
+    \`banned\` tinyint(1) DEFAULT NULL,
+    \`banReason\` text,
+    \`banExpires\` timestamp(3) NULL DEFAULT NULL,
+    \`displayUsername\` text,
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
 
-  // Create the verification table for better-auth
+  // Create verification table
   db.execute(`CREATE TABLE IF NOT EXISTS \`verification\` (
-      \`id\` varchar(36) NOT NULL,
-      \`identifier\` varchar(255) NOT NULL,
-      \`value\` text NOT NULL,
-      \`expiresAt\` timestamp(3) NOT NULL,
-      \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-      \`updatedAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
-
-  // Create tables in the correct order for foreign key constraints
-  // 1. Boards (no dependencies)
-  db.execute(`
-    CREATE TABLE IF NOT EXISTS boards (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      user VARCHAR(255) NOT NULL,
-      name VARCHAR(255) NOT NULL,
-      style ENUM('kanban', 'todo', 'notices') DEFAULT 'kanban',
-      status ENUM('private', 'public') DEFAULT 'private',
-      image LONGTEXT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-  `);
-
-  // 2. Areas (depends on boards)
-  db.execute(`
-    CREATE TABLE IF NOT EXISTS areas (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      board INT NOT NULL,
-      name VARCHAR(255) NOT NULL,
-      sort INT DEFAULT 0,
-      FOREIGN KEY (board) REFERENCES boards(id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-  `);
-
-  // 3. Cards (depends on areas)
-  db.execute(`
-    CREATE TABLE IF NOT EXISTS cards (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      area INT NOT NULL,
-      name VARCHAR(255) NOT NULL,
-      sort INT DEFAULT 0,
-      content LONGTEXT,
-      status BOOLEAN DEFAULT FALSE,
-      FOREIGN KEY (area) REFERENCES areas(id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-  `);
-
-  // 4. Comments (depends on cards)
-  db.execute(`
-    CREATE TABLE IF NOT EXISTS comments (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      card INT NOT NULL,
-      user VARCHAR(255) NOT NULL,
-      content LONGTEXT,
-      date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (card) REFERENCES cards(id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-  `);
-
-  // 5. Invitations (depends on boards)
-  db.execute(`
-    CREATE TABLE IF NOT EXISTS invitations (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      board INT NOT NULL,
-      user VARCHAR(255) NOT NULL,
-      permission ENUM('read', 'edit') DEFAULT 'read',
-      date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (board) REFERENCES boards(id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-  `);
-
-  // 6. Attachments (depends on cards)
-  db.execute(`
-    CREATE TABLE IF NOT EXISTS attachments (
-      id INT PRIMARY KEY AUTO_INCREMENT,
-      card INT NOT NULL,
-      filename VARCHAR(255) NOT NULL,
-      filetype VARCHAR(100) NOT NULL,
-      filesize INT NOT NULL,
-      filedata LONGTEXT NOT NULL,
-      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (card) REFERENCES cards(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-  `);
-  // 6. Notifications (depends on boards and cards)
-  db.execute(`
-      CREATE TABLE IF NOT EXISTS notifications (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        userId VARCHAR(255) NOT NULL,
-        type ENUM('invitation', 'comment', 'card_created', 'card_moved', 'card_status_changed') NOT NULL,
-        boardId INT,
-        cardId INT,
-        message LONGTEXT,
-        isRead BOOLEAN DEFAULT FALSE,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (boardId) REFERENCES boards(id),
-        FOREIGN KEY (cardId) REFERENCES cards(id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-  `);
-
-  // Add new columns to the apikey table if they don't exist
-  db.execute(
-    `
-      ALTER TABLE apikey
-      ADD COLUMN configId varchar(255) NOT NULL DEFAULT 'default',
-      ADD COLUMN referenceId varchar(255)
-    `,
-  ).catch((error) => {
-    // Ignore errors for this migration as it might fail if the columns already exist
-    console.log("Apikey columns migration:", error.message);
-  });
-
-  // Migrate existing data (copy userId to referenceId)
-  db.execute(
-    `
-      UPDATE apikey SET referenceId = userId WHERE referenceId IS NULL
-    `,
-  ).catch((error) => {
-    // Ignore errors for this migration as it might fail if the columns already exist
-    console.log("Apikey data migration:", error.message);
-  });
-
-  // Make referenceId required and add indexes
-  db.execute(
-    `
-      ALTER TABLE apikey
-      MODIFY COLUMN configId varchar(255) NOT NULL DEFAULT 'default'
-    `,
-  ).catch((error) => {
-    // Ignore errors for this migration as it might fail if the columns already exist
-    console.log("Apikey configId modification:", error.message);
-  });
-
-  // Make referenceId required and add indexes
-  db.execute(
-    `
-      ALTER TABLE apikey
-      MODIFY COLUMN referenceId varchar(255) NOT NULL
-    `,
-  ).catch((error) => {
-    // Ignore errors for this migration as it might fail if the columns already exist
-    console.log("Apikey referenceId modification:", error.message);
-  });
-
-  // Add indexes for referenceId and configId
-  db.execute(
-    `
-      CREATE INDEX idx_apikey_referenceId ON apikey(referenceId)
-    `,
-  ).catch((error) => {
-    // Ignore errors for this migration as it might fail if the indexes already exist
-    console.log("Apikey referenceId index creation:", error.message);
-  });
-
-  // Add indexes for referenceId and configId
-  db.execute(
-    `
-      CREATE INDEX idx_apikey_configId ON apikey(configId)
-    `,
-  ).catch((error) => {
-    // Ignore errors for this migration as it might fail if the indexes already exist
-    console.log("Apikey configId index creation:", error.message);
-  });
-
-  // Drop the user_id column from the apikey table
-  db.execute(`ALTER TABLE apikey DROP FOREIGN KEY apikey_ibfk_1`).catch(
-    (error) => {
-      // Ignore errors for this migration as it might fail if the values already exist
-      console.log("DROP foreign key:", error.message);
-    },
-  );
-
-  db.execute(`ALTER TABLE apikey DROP COLUMN userId`).catch((error) => {
-    // Ignore errors for this migration as it might fail if the values already exist
-    console.log("DROP userId:", error.message);
-  });
-
-  // Add new notification types to existing notifications table if they don't exist
-  db.execute(
-    `
-      ALTER TABLE notifications
-      MODIFY COLUMN type ENUM('invitation', 'comment', 'card_created', 'card_moved', 'card_status_changed') NOT NULL
-  `,
-  ).catch((error) => {
-    // Ignore errors for this migration as it might fail if the values already exist
-    console.log("Notification types migration:", error.message);
-  });
-
-  // Change message column to LONGTEXT to support longer content
-  db.execute(
-    `
-      ALTER TABLE notifications
-      MODIFY COLUMN message LONGTEXT
-  `,
-  ).catch((error) => {
-    // Ignore errors for this migration as it might fail if the column already exists
-    console.log("Message column migration:", error.message);
-  });
-  db.execute(`ALTER TABLE user MODIFY COLUMN image longtext`);
-
-  db.execute(
-    `
-    ALTER TABLE boards
-    ADD COLUMN image LONGTEXT,
-    MODIFY COLUMN style ENUM('kanban', 'todo', 'notices') DEFAULT 'kanban'
-  `,
-  ).catch((error) => {
-    // Ignore errors for this migration as it might fail if the columns already exist
-    console.log("Boards columns migration:", error.message);
-  });
+    \`id\` varchar(36) NOT NULL,
+    \`identifier\` varchar(255) NOT NULL,
+    \`value\` text NOT NULL,
+    \`expiresAt\` timestamp(3) NOT NULL,
+    \`createdAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    \`updatedAt\` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (\`id\`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
 
   return db;
 }

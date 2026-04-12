@@ -1,17 +1,9 @@
 <script setup lang="ts">
 import { UsersRound, LogOut, UserRoundPen } from "lucide-vue-next";
-import { authClient } from "@/lib/auth-client";
 
-const relativeFetch = ((url: string, opts?: any) => {
-    try {
-        if (url.startsWith("http")) url = new URL(url).pathname;
-    } catch {}
-    return useFetch(url, opts);
-}) as any;
-
-const { data: session } = await authClient.useSession(relativeFetch);
+const { data: session } = await useFetch("/api/auth/get-session");
 const handleLogout = async () => {
-    await authClient.signOut();
+    await useFetch("/api/auth/sign-out", { method: "POST" });
     await navigateTo("/");
 };
 </script>
@@ -28,9 +20,9 @@ const handleLogout = async () => {
                 class="relative flex gap-x-4 menu app-nav px-6 py-4 rounded-full bg-white dark:bg-slate"
             >
                 <li>
-                    <NotificationBell :userID="session.user.id" />
+                    <NotificationBell :userID="session.data.user.id" />
                 </li>
-                <li v-if="session.user.role === 'admin'">
+                <li v-if="session.data.user.role === 'admin'">
                     <NuxtLinkLocale
                         to="/users/"
                         class="text-gray hover:text-secondary cursor-pointer block"

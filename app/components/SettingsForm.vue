@@ -28,14 +28,13 @@
     </form>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
 import * as z from "zod";
 
 const nuxtApp = useNuxtApp();
-const session = await useFetch("/api/auth/get-session");
+const { data: session } = await useFetch("/api/auth/get-session");
 
-const name = ref(session.data.value.user.name || "");
-const image = ref(session.data.value.user.image || undefined);
+const name = ref(session.value?.data?.user?.name || "");
+const image = ref(session.value?.data?.user?.image || undefined);
 
 const schema = z.object({
     name: z
@@ -52,14 +51,22 @@ const handleSettings = async () => {
         // Validate the form data
         schema.parse(formData);
 
-        // Update data
-        await authClient.updateUser({
-            name: name.value,
-            image: image.value,
+        // Update data using our custom endpoint
+        const response = await $fetch("/api/auth/update-user", {
+            method: "POST",
+            body: {
+                name: name.value,
+                image: image.value,
+            },
         });
-        await nuxtApp.callHook("app:toast", {
-            message: $t("settingsSavedUserData"),
-        });
+
+        if (response.success) {
+            await nuxtApp.callHook("app:toast", {
+                message: $t("settingsSavedUserData"),
+            });
+        } else {
+            throw new Error(response.error || "Failed to update user");
+        }
     } catch (e) {
         // Handle validation errors
         if (e instanceof z.ZodError) {
@@ -70,7 +77,7 @@ const handleSettings = async () => {
             // You can display these errors to the user
         } else {
             await nuxtApp.callHook("app:toast", {
-                message: e,
+                message: e.message || "Failed to update user settings",
             });
         }
     }

@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
-import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 export default defineEventHandler(async (event) => {
   // Check the HTTP method
@@ -12,11 +12,7 @@ export default defineEventHandler(async (event) => {
   // Validate API key if provided
   let userIdFromApiKey = null;
   if (apiKey) {
-    const data = await auth.api.verifyApiKey({
-      body: {
-        key: apiKey,
-      },
-    });
+    const data = await verifyApiKey(apiKey);
 
     if (data.error) {
       event.res.statusCode = 403;
@@ -26,9 +22,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const session = await auth.api.getSession({
-    headers: event.headers,
-  });
+  const session = await getSession(event);
 
   try {
     // Initialize database
@@ -170,6 +164,19 @@ export default defineEventHandler(async (event) => {
             id,
           ]);
           board = rows[0];
+
+          // Emit socket event for board update (API calls only)
+          if (userIdFromApiKey) {
+            const serverSocket = getServerSocket();
+            if (serverSocket) {
+              serverSocket.to(`board-${id}`).emit("updateBoard", {
+                boardID: id,
+                boardName: board.name,
+                boardStatus: board.status,
+                boardStyle: board.style,
+              });
+            }
+          }
         } else {
           event.res.statusCode = 403;
           return { error: "Unauthorized access" };
@@ -259,6 +266,16 @@ export default defineEventHandler(async (event) => {
         return { error: "Board not found or already deleted" };
       }
 
+      // Emit socket event for board deletion (API calls only)
+      if (userIdFromApiKey) {
+        const serverSocket = getServerSocket();
+        if (serverSocket) {
+          serverSocket.to(`board-${id}`).emit("deletedBoard", {
+            boardID: id,
+          });
+        }
+      }
+
       return { message: "Board deleted successfully" };
     } else if (method === "PATCH") {
       // Handle PATCH request to update area order
@@ -328,6 +345,23 @@ export default defineEventHandler(async (event) => {
             return {
               error: `Area with ID ${area.id} not found or you do not have permission to edit it`,
             };
+          }
+        }
+
+        // Fetch updated areas to emit
+        const [updatedAreas] = await db.execute(
+          "SELECT * FROM areas WHERE board = ? ORDER BY sort",
+          [boardId],
+        );
+
+        // Emit socket event for area order update (API calls only)
+        if (userIdFromApiKey) {
+          const serverSocket = getServerSocket();
+          if (serverSocket) {
+            serverSocket.to(`board-${boardId}`).emit("updateAreas", {
+              areas: updatedAreas,
+              boardId,
+            });
           }
         }
 

@@ -138,6 +138,11 @@
   "error_UPDATING_USER": "Wystąpił błąd podczas aktualizowania użytkownika",
   "error_EMAIL_TAKEN": "Ten adres e-mail jest już zajęty",
   "error_PASSWORD_TOO_SHORT": "Hasło jest zbyt krótkie",
+  "error_INVALID_OLD_PASSWORD": "Nieprawidłowe aktualne hasło",
+  "error_PASSWORDS_REQUIRED": "Wymagane są zarówno stare, jak i nowe hasło",
+  "error_PASSWORD_TOO_SHORT_NEW": "Nowe hasło musi mieć co najmniej 8 znaków",
+  "error_LOCAL_ACCOUNT_NOT_FOUND": "Nie znaleziono lokalnego konta",
+  "error_UNAUTHORIZED_NO_SESSION": "Nieautoryzowany - Brak aktywnej sesji",
   "error_copyFailed": "Kopiowanie nie powiodło się",
   "wrongFileType": "Zły typ pliku. Dozwolone są tylko następujące typy plików: PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP, HTML",
   "edit": "Edytuj",
@@ -165,5 +170,7 @@
   "areas": "Obszary",
   "hideAreas": "Ukryj obszary",
   "back": "Wstecz",
-  "editorEmojis": "Emotikony"
+  "editorEmojis": "Emotikony",
+  "reset_your_password_subject": "Zresetuj hasło",
+  "reset_your_password_message": "Kliknij ten link, aby przypisać nowe hasło:"
 }

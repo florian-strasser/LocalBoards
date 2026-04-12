@@ -69,7 +69,6 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
 import * as z from "zod";
 
 const nuxtApp = useNuxtApp();
@@ -112,28 +111,18 @@ const handleSignUp = async () => {
     try {
         // Validate the form data
         schema.parse(formData);
-        const { data, error } = await authClient.signUp.email(
-            {
+        const { data, error } = await $fetch(`/api/auth/sign-up`, {
+            method: "POST",
+            body: {
                 name: name.value, // required
                 email: email.value, // required
                 password: password.value, // required
                 callbackURL: "/dashboard/",
-                rememberMe: true,
             },
-            {
-                onSuccess: async (ctx) => {
-                    await nuxtApp.callHook("app:toast", {
-                        message: $t("successfullySignedUp"),
-                    });
-                    await navigateTo("/dashboard/");
-                },
-                onError: async (ctx) => {
-                    await nuxtApp.callHook("app:toast", {
-                        message: $t("error_" + ctx.error.code),
-                    });
-                },
-            },
-        );
+        });
+        if (data.callbackURL) {
+            navigateTo(data.callbackURL);
+        }
     } catch (e) {
         // Handle validation errors
         if (e instanceof z.ZodError) {

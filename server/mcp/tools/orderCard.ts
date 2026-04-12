@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 const db = setupDatabase();
 
@@ -99,6 +100,19 @@ export default defineMcpTool({
         "SELECT id, area, name, content, status, sort FROM cards WHERE area = ? ORDER BY sort ASC",
         [areaId],
       );
+
+      // Emit socket event for card reordering
+      const serverSocket = getServerSocket();
+      if (serverSocket) {
+        for (const order of cardOrders) {
+          serverSocket.to(`board-${areaId}`).emit("orderdCard", {
+            cardId: order.cardId,
+            areaId: areaId,
+            newIndex: order.sort,
+            boardId: board.id,
+          });
+        }
+      }
 
       return jsonResult({ cards: updatedCards });
     } catch (error) {

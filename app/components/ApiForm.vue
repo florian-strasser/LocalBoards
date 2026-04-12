@@ -56,7 +56,6 @@
     </form>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
 import { Clipboard } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
@@ -69,24 +68,38 @@ const emits = defineEmits(["key-created"]);
 
 const handleNewKey = async () => {
     try {
-        const { data, error } = await authClient.apiKey.create({
-            name: name.value || $t("settingsKeyNameUnknown"),
-            expiresIn: 60 * 60 * 24 * expiresIn.value,
+        const response = await $fetch("/api/auth/api-key/create", {
+            method: "POST",
+            body: {
+                name: name.value || $t("settingsKeyNameUnknown"),
+                expiresIn: 60 * 60 * 24 * expiresIn.value,
+            },
         });
-        if (error) {
-            await nuxtApp.callHook("app:toast", {
-                message: $t("error_" + error.code),
+
+        if (response.success) {
+            createdKey.value = response.key;
+            emits("key-created", {
+                id: response.id,
+                name: response.name,
+                start: response.start,
+                expiresAt: response.expiresAt,
             });
-        } else {
-            createdKey.value = data.key;
-            emits("key-created", data);
             await nuxtApp.callHook("app:toast", {
                 message: $t("savedKey"),
             });
+        } else {
+            throw new Error(response.error || "Failed to create API key");
         }
     } catch (e) {
+        let errorMessage = "Failed to create API key";
+        if (e?.data?.error) {
+            errorMessage = e.data.error;
+        } else if (e?.message) {
+            errorMessage = e.message;
+        }
+
         await nuxtApp.callHook("app:toast", {
-            message: e,
+            message: errorMessage,
         });
     }
 };

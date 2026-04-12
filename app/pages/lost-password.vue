@@ -44,7 +44,6 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
 const nuxtApp = useNuxtApp();
 const email = ref("");
 
@@ -56,10 +55,30 @@ useHead({
 });
 
 const handleReset = async () => {
-    const { data, error } = await authClient.requestPasswordReset({
-        email: email.value, // required
-        redirectTo: "http://localhost:3000/reset-password",
-    });
-    requestNew.value = true;
+    try {
+        const response = await $fetch("/api/auth/request-password", {
+            method: "POST",
+            body: {
+                email: email.value,
+            },
+        });
+
+        if (response.success) {
+            requestNew.value = true;
+        } else {
+            throw new Error(
+                response.error || "Failed to request password reset",
+            );
+        }
+    } catch (err) {
+        let errorMessage = "Failed to request password reset";
+        if (err?.data?.error) {
+            errorMessage = err.data.error;
+        } else if (err?.message) {
+            errorMessage = err.message;
+        }
+
+        errorMessage.value = errorMessage;
+    }
 };
 </script>

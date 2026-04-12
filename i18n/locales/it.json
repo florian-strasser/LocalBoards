@@ -141,6 +141,11 @@
   "error_UPDATING_USER": "Si è verificato un errore durante l’aggiornamento dell’utente",
   "error_EMAIL_TAKEN": "Questa e-mail è già in uso",
   "error_PASSWORD_TOO_SHORT": "La password è troppo corta",
+  "error_INVALID_OLD_PASSWORD": "Password attuale non valida",
+  "error_PASSWORDS_REQUIRED": "Sono richieste sia la password vecchia che quella nuova",
+  "error_PASSWORD_TOO_SHORT_NEW": "La nuova password deve essere lunga almeno 8 caratteri",
+  "error_LOCAL_ACCOUNT_NOT_FOUND": "Account locale non trovato",
+  "error_UNAUTHORIZED_NO_SESSION": "Non autorizzato - Nessuna sessione attiva",
   "error_copyFailed": "Copia non riuscita",
   "wrongFileType": "Tipo di file errato. Sono consentiti solo i seguenti tipi di file: PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP, HTML",
   "edit": "Modifica",
@@ -168,5 +173,7 @@
   "areas": "Aree",
   "hideAreas": "Nascondi aree",
   "back": "Indietro",
-  "editorEmojis": "Emoji"
+  "editorEmojis": "Emoji",
+  "reset_your_password_subject": "Reimposta la password",
+  "reset_your_password_message": "Fai clic su questo link per assegnare una nuova password:"
 }

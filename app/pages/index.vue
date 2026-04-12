@@ -63,12 +63,15 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
 import * as z from "zod";
 
 const nuxtApp = useNuxtApp();
-
-const allowSignup = nuxtApp.$config.public.signup === true ? true : false;
+const allowSignup =
+    nuxtApp.$config.public.signup === true
+        ? true
+        : nuxtApp.$config.public.signup === "true"
+          ? true
+          : false;
 
 useHead({
     title: $t("login"),
@@ -91,38 +94,37 @@ const handleLogin = async () => {
         // Validate the form data
         schema.parse(formData);
 
-        const { data, error } = await authClient.signIn.email(
-            {
-                email: email.value, // required
-                password: password.value, // required
-                rememberMe: true,
+        const { data, error } = await $fetch(`/api/auth/sign-in`, {
+            method: "POST",
+            body: {
+                email: email.value,
+                password: password.value,
                 callbackURL: "/dashboard/",
             },
-            {
-                onSuccess: async (ctx) => {
-                    await navigateTo("/dashboard/");
-                },
-                onError: async (ctx) => {
-                    const response = await JSON.parse(ctx.responseText);
-                    await nuxtApp.callHook("app:toast", {
-                        message: $t("error_" + response.code),
-                    });
-                },
-            },
-        );
+        });
+        if (data.callbackURL) {
+            navigateTo(data.callbackURL);
+        }
     } catch (e) {
         // Handle validation errors
         if (e instanceof z.ZodError) {
             const errors = await JSON.parse(e);
-            console.log(errors[0]);
             await nuxtApp.callHook("app:toast", {
                 message: $t("error_" + errors[0].code),
             });
             // You can display these errors to the user
         } else {
-            console.log(e);
+            // Extract error message from fetch response
+            let errorMessage = "Login failed";
+
+            if (e?.data?.error) {
+                errorMessage = $t("error_" + e.data.error);
+            } else if (e?.message) {
+                errorMessage = e.message;
+            }
+
             await nuxtApp.callHook("app:toast", {
-                message: e,
+                message: errorMessage,
             });
         }
     }

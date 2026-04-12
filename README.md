@@ -1,9 +1,8 @@
 # LocalBoards
 [![Nuxt](https://img.shields.io/badge/Nuxt-4.4.2-00DC82?style=flat&logo=nuxt)](https://nuxt.com)
-[![Better Auth](https://img.shields.io/badge/Better%20Auth-1.5.6-000000?style=flat&logo=betterauth)](https://www.better-auth.com)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.3-25C2A0?style=flat&logo=socketdotio)](https://socket.io)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/florian-strasser/LocalBoards/blob/master/LICENSE)
-[![Version](https://img.shields.io/badge/version-0.9.2-orange)](https://github.com/florian-strasser/LocalBoards/releases)
+[![Version](https://img.shields.io/badge/version-0.10.0-orange)](https://github.com/florian-strasser/LocalBoards/releases)
 
 ![LocalBoards Screen](https://raw.githubusercontent.com/florian-strasser/LocalBoards/refs/heads/master/docs/public/images/localboards-screen.webp)
 
@@ -31,7 +30,7 @@ npm install
 ```
 
 ### Configure Environment Variables
-Create a `.env` file (and optionally a `.env.local` file for local development) with the following settings. Adjust the values to match your database and email configuration. Ensure that `NUXT_BOARDS_URL` and `BETTER_AUTH_URL` are set to the same URL.
+Create a `.env` file (and optionally a `.env.local` file for local development) with the following settings. Adjust the values to match your database and email configuration.
 
 ```dotenv
 # App Name
@@ -39,11 +38,6 @@ NUXT_APP_NAME=LocalBoards
 NUXT_BOARDS_URL=http://localhost:3000
 NUXT_LANGUAGE=en
 NUXT_PUBLIC_PRIVACY_URL=https://www.yourdomain.com/privacy-policy/
-
-# Better Auth
-BETTER_AUTH_SECRET=YwOqJxSCU78j5uekgi60b0CHyuxiMkis
-BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_TELEMETRY=0
 
 # DB
 NUXT_MYSQL_HOST=localhost

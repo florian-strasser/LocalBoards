@@ -95,7 +95,6 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
 import { Trash, Eye, EyeOff, Pencil, PencilOff } from "lucide-vue-next";
 const props = defineProps({
     boardID: String,
@@ -110,16 +109,9 @@ const nuxtApp = useNuxtApp();
 const inviteEmail = ref("");
 const invitePermission = ref("read");
 
-const relativeFetch = ((url: string, opts?: any) => {
-    try {
-        if (url.startsWith("http")) url = new URL(url).pathname;
-    } catch {}
-    return useFetch(url, opts);
-}) as any;
+const { data: session } = await useFetch("/api/auth/get-session");
 
-const { data: session } = await authClient.useSession(relativeFetch);
-
-const userID = session.value.user.id;
+const userID = session.value.data.user.id;
 
 const createInvitation = async () => {
     try {
@@ -149,7 +141,6 @@ const createInvitation = async () => {
             }
         }
     } catch (err) {
-        console.log(err);
         await nuxtApp.callHook("app:toast", {
             message: err,
         });

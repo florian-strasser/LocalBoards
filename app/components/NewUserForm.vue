@@ -79,7 +79,6 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
 import { Zap } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
@@ -102,26 +101,36 @@ const role = ref("user");
 const createdUser = ref(false);
 
 const handleNewUser = async () => {
-    await authClient.admin.createUser(
-        {
-            email: email.value,
-            password: password.value,
-            name: name.value,
-            role: role.value,
-        },
-        {
-            onSuccess: async (ctx) => {
-                createdUser.value = true;
-                await nuxtApp.callHook("app:toast", {
-                    message: $t("userCreated"),
-                });
+    try {
+        const response = await $fetch("/api/auth/admin/create", {
+            method: "POST",
+            body: {
+                name: name.value,
+                email: email.value,
+                password: password.value,
+                role: role.value,
             },
-            onError: async (ctx) => {
-                await nuxtApp.callHook("app:toast", {
-                    message: $t("error_" + ctx.error.code),
-                });
-            },
-        },
-    );
+        });
+
+        if (response.success) {
+            createdUser.value = true;
+            await nuxtApp.callHook("app:toast", {
+                message: $t("userCreated"),
+            });
+        } else {
+            throw new Error(response.error || "Failed to create user");
+        }
+    } catch (e) {
+        let errorMessage = "Failed to create user";
+        if (e?.data?.error) {
+            errorMessage = e.data.error;
+        } else if (e?.message) {
+            errorMessage = e.message;
+        }
+
+        await nuxtApp.callHook("app:toast", {
+            message: errorMessage,
+        });
+    }
 };
 </script>

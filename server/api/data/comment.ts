@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
-import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 export default defineEventHandler(async (event) => {
   // Check the HTTP method
@@ -12,11 +12,7 @@ export default defineEventHandler(async (event) => {
   // Validate API key if provided
   let userIdFromApiKey = null;
   if (apiKey) {
-    const data = await auth.api.verifyApiKey({
-      body: {
-        key: apiKey,
-      },
-    });
+    const data = await verifyApiKey(apiKey);
 
     if (data.error) {
       event.res.statusCode = 403;
@@ -26,9 +22,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const session = await auth.api.getSession({
-    headers: event.headers,
-  });
+  const session = await getSession(event);
 
   const userId = userIdFromApiKey || session?.user.id;
 
@@ -193,6 +187,17 @@ export default defineEventHandler(async (event) => {
               date: rows[0].date,
             }
           : null;
+
+        // Emit socket event for new comment (API calls only)
+        if (userIdFromApiKey) {
+          const serverSocket = getServerSocket();
+          if (serverSocket) {
+            serverSocket.to(`card-${card}`).emit("addComment", {
+              comment,
+              cardID: card,
+            });
+          }
+        }
 
         // Fetch all users who have access to the board (owner and invited users)
         const [boardRows] = await db.execute(

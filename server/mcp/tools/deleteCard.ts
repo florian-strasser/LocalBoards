@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 const db = setupDatabase();
 
@@ -85,6 +86,15 @@ export default defineMcpTool({
 
       if (result.affectedRows === 0) {
         return textResult("Card not found or already deleted.");
+      }
+
+      // Emit socket event for card deletion
+      const serverSocket = getServerSocket();
+      if (serverSocket) {
+        serverSocket.to(`board-${board.id}`).emit("deletedCard", {
+          boardId: board.id,
+          card: card,
+        });
       }
 
       return jsonResult({ message: "Card deleted successfully", card });

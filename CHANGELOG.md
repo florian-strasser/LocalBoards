@@ -1,3 +1,76 @@
+## v0.10.0 - Complete Authentication System Overhaul
+
+## 🚀 Major Architecture Change: Dropped better-auth
+**Breaking Change**: Replaced entire `better-auth` dependency with custom authentication system for improved reliability, performance, and maintainability. Backup your database and merge it with the adjusted structure. User passwords need to be reseted.
+
+## 🔄 Real-Time Event Enhancements
+**Multi-Platform Real-Time Updates**: Extended existing Socket.IO event system to API and MCP tools, ensuring consistent real-time updates across all interaction methods.
+
+### 📡 Real-Time Events Extended to API & MCP
+- **Card Operations**: `addCard`, `updateCard`, `deleteCard`, `moveCard` events
+- **Area Operations**: `addArea`, `updateArea`, `deleteArea`, `updateAreas` events  
+- **Board Operations**: `updateBoard`, `deletedBoard` events
+- **Comment Operations**: `addComment` events
+- **Multiplayer Collaboration**: Real-time updates for opened cards (title, content, attachments)
+
+### 🔧 Authentication Core (Replaced better-auth)
+- **Session Management**: Custom session creation, validation, and destruction
+- **Performance**: No external auth server dependency
+- **Endpoints Created**:
+  - `/api/auth/sign-in` - User login with session creation
+  - `/api/auth/sign-up` - User registration with auto-login
+  - `/api/auth/logout` - Session termination
+  - `/api/auth/get-session` - Session validation middleware
+
+### 👤 User Management
+- **Profile Updates**: `/api/auth/update-user` endpoint
+- **Password Changes**: `/api/auth/update-password` endpoint
+- **Admin Functions**: Complete admin user CRUD operations
+  - `/api/auth/admin/create` - Admin user creation
+  - `/api/auth/admin/list` - User listing
+  - `/api/auth/admin/update` - User updates
+  - `/api/auth/admin/delete` - User deletion
+
+### 🔑 API Key Management
+- **Generation**: `/api/auth/api-key/create` endpoint
+- **Listing**: `/api/auth/api-key/list` endpoint  
+- **Deletion**: `/api/auth/api-key/delete` endpoint
+- **Security**: Proper ownership validation and cleanup
+
+### 🔒 Password Reset System
+- **Request Reset**: `/api/auth/request-password` endpoint
+- **Complete Reset**: `/api/auth/reset-password` endpoint
+- **Email Integration**: Proper translated email sending
+- **Token Security**: 24-hour expiration, one-time use
+
+### 🌍 Internationalization
+- **New Translation Keys**: Added to all 7 languages (en, de, es, fr, it, nl, pl)
+- **Error Messages**: Comprehensive error translations for all endpoints
+- **Email Translations**: Server-side translation utility for emails
+
+### 📝 Component Updates
+**Removed all `better-auth` dependencies and updated to use custom endpoints:**
+- `SettingsForm.vue` - Profile updates
+- `PasswordForm.vue` - Password changes
+- `ApiForm.vue` - API key creation
+- `ApiList.vue` - API key listing
+- `ApiItem.vue` - API key deletion
+- `UserList.vue` - User management
+- `NewUserForm.vue` - User creation
+- `EditUserForm.vue` - User profile editing
+- `EditUserPassword.vue` - User password updates
+- `lost-password.vue` - Password reset request
+- `reset-password/[token].vue` - Password reset completion
+
+### 🔧 Technical Improvements
+- **Session Utility**: Created `server/utils/auth.ts` with reusable functions
+- **Translation Utility**: Created `server/utils/translations.ts` for server-side emails
+- **Middleware Updates**: Updated auth middleware for new session validation
+- **Error Handling**: Consistent error responses across all endpoints
+- **Security**: Proper input validation and sanitization
+
+## v0.9.2
+
 ## v0.9.2
 
 - Fixed issue with public registration, env variable was not checked correctly

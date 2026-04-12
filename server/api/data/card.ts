@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
-import { auth } from "~/lib/auth";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 // Function to handle file uploads
 async function handleFileUpload(db, cardID, file) {
@@ -25,11 +25,7 @@ export default defineEventHandler(async (event) => {
   // Validate API key if provided
   let userIdFromApiKey = null;
   if (apiKey) {
-    const data = await auth.api.verifyApiKey({
-      body: {
-        key: apiKey,
-      },
-    });
+    const data = await verifyApiKey(apiKey);
 
     if (data.error) {
       event.res.statusCode = 403;
@@ -39,9 +35,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const session = await auth.api.getSession({
-    headers: event.headers,
-  });
+  const session = await getSession(event);
 
   const userId = userIdFromApiKey || session?.user.id;
 
@@ -229,6 +223,15 @@ export default defineEventHandler(async (event) => {
           }
         }
 
+        // Emit socket event for card creation (only for API calls, not frontend)
+        if (apiKey) {
+          const serverSocket = getServerSocket();
+          serverSocket.to(`board-${boardRows[0]?.boardId}`).emit("addCard", {
+            boardId: boardRows[0]?.boardId,
+            card: rows[0],
+          });
+        }
+
         return { card };
       } else {
         event.res.statusCode = 403;
@@ -391,6 +394,16 @@ export default defineEventHandler(async (event) => {
           }));
         }
 
+        // Emit socket event for card update (only for API calls, not frontend)
+        if (apiKey) {
+          const serverSocket = getServerSocket();
+          serverSocket.to(`board-${boardRows[0]?.boardId}`).emit("updateCard", {
+            boardId: boardRows[0]?.boardId,
+            attachments: attachments,
+            card: rows[0],
+          });
+        }
+
         return { card, attachments };
       } else {
         event.res.statusCode = 403;
@@ -473,6 +486,15 @@ export default defineEventHandler(async (event) => {
         if (result.affectedRows === 0) {
           event.res.statusCode = 404;
           return { error: "Card not found or already deleted" };
+        }
+
+        // Emit socket event for card deletion (only for API calls, not frontend)
+        if (apiKey) {
+          const serverSocket = getServerSocket();
+          serverSocket.to(`board-${boardRows[0]?.id}`).emit("deletedCard", {
+            boardId: boardRows[0]?.id,
+            card: card,
+          });
         }
 
         return { message: "Card deleted successfully", card: card };

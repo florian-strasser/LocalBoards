@@ -30,13 +30,7 @@
 </template>
 <script setup lang="ts">
 import { socket } from "~/lib/socket";
-import { authClient } from "@/lib/auth-client";
 import { Plus, X } from "lucide-vue-next";
-
-interface Session {
-    id: string;
-    [key: string]: any;
-}
 
 interface Comment {
     id: number;
@@ -55,16 +49,9 @@ const emit = defineEmits(["Comment-created"]);
 const newCommentCreation = ref(false);
 const newComment = ref("");
 
-const relativeFetch = ((url: string, opts?: any) => {
-    try {
-        if (url.startsWith("http")) url = new URL(url).pathname;
-    } catch {}
-    return useFetch(url, opts);
-}) as any;
+const { data: session } = await useFetch("/api/auth/get-session");
 
-const { data: session } = await authClient.useSession(relativeFetch);
-
-const userID = session.value.user.id;
+const userID = session.value.data.user.id;
 
 const createNewComment = () => {
     newComment.value = "";
@@ -72,7 +59,6 @@ const createNewComment = () => {
 };
 
 const createComment = async (e) => {
-    console.log(e);
     try {
         const data = await $fetch<{ comment?: Comment }>("/api/data/comment", {
             method: "POST",

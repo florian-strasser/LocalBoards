@@ -23,7 +23,6 @@
     </form>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
 import * as z from "zod";
 
 const nuxtApp = useNuxtApp();
@@ -47,19 +46,21 @@ const handlePassword = async () => {
         // Validate the form data
         schema.parse(formData);
 
-        const { data, error } = await authClient.changePassword({
-            newPassword: newPassword.value,
-            currentPassword: oldPassword.value,
-            revokeOtherSessions: true,
+        // Update password using our custom endpoint
+        const response = await $fetch("/api/auth/update-password", {
+            method: "POST",
+            body: {
+                oldPassword: oldPassword.value,
+                newPassword: newPassword.value,
+                revokeOtherSessions: true,
+            },
         });
-        if (error) {
-            await nuxtApp.callHook("app:toast", {
-                message: $t("error_" + error.code),
-            });
-        } else {
+        if (response.success) {
             await nuxtApp.callHook("app:toast", {
                 message: $t("savedPassword"),
             });
+        } else {
+            throw new Error(response.error || "Failed to update password");
         }
     } catch (e) {
         // Handle validation errors
@@ -70,8 +71,16 @@ const handlePassword = async () => {
             });
             // You can display these errors to the user
         } else {
+            // Handle fetch errors
+            let errorMessage = "Failed to update password";
+            if (e?.data?.error) {
+                // Extract error message from response data
+                errorMessage = e.data.error;
+            } else if (e?.message) {
+                errorMessage = e.message;
+            }
             await nuxtApp.callHook("app:toast", {
-                message: e,
+                message: $t("error_" + errorMessage),
             });
         }
     }

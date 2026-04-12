@@ -1,30 +1,29 @@
-import { authClient } from "~/lib/auth-client";
 export default defineNuxtRouteMiddleware(async (to) => {
   const runtimeConfig = useRuntimeConfig();
-  const allowSignup = runtimeConfig.public.signup === "true" ? true : false;
-  // Pattern to match reset-password URLs with a token
-  const resetPasswordPattern = /^\/reset-password\/[a-zA-Z0-9]+$/;
+  const allowSignup =
+    runtimeConfig.public.signup === true
+      ? true
+      : runtimeConfig.public.signup === "true"
+        ? true
+        : false;
+  // Pattern to match reset-password URLs with a token (UUID format)
+  const resetPasswordPattern =
+    /^\/reset-password\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
   // Check if the path matches the pattern /edit-user/:id
   if (
     to.path !== "/" &&
     !to.path.startsWith("/sign-up") &&
     !to.path.startsWith("/lost-password") &&
     !to.path.startsWith("/sign-up") &&
+    !to.path.startsWith("/api") &&
     !resetPasswordPattern.test(to.path)
   ) {
     // Redirect to dashboard
-    // const result = await useFetch("/api/auth/get-session");
-    const relativeFetch = ((url: string, opts?: any) => {
-      try {
-        if (url.startsWith("http")) url = new URL(url).pathname;
-      } catch {}
-      return useFetch(url, opts);
-    }) as any;
+    const { data: session } = await useFetch("/api/auth/get-session");
 
-    const { data: session } = await authClient.useSession(relativeFetch);
     if (!session.value) {
       return navigateTo("/");
-    } else if (session.value.user.role !== "admin") {
+    } else if (session.value.data.user.role !== "admin") {
       if (
         to.path.startsWith("/new-user") ||
         to.path.startsWith("/users") ||
@@ -37,9 +36,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo("/");
   } else {
     // Redirect to dashboard
-    const result = await useFetch("/api/auth/get-session");
+    const { data: session } = await useFetch("/api/auth/get-session");
 
-    if (result.data.value) {
+    if (session.value) {
       return navigateTo("/dashboard/");
     }
   }

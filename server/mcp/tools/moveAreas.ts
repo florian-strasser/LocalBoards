@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 const db = setupDatabase();
 
@@ -83,6 +84,21 @@ export default defineMcpTool({
               `Area with ID ${area.id} not found or you do not have permission to edit it.`,
             );
           }
+        }
+
+        // Fetch updated areas to emit
+        const [updatedAreas] = await db.execute(
+          "SELECT * FROM areas WHERE board = ? ORDER BY sort",
+          [boardId],
+        );
+
+        // Emit socket event for area order update
+        const serverSocket = getServerSocket();
+        if (serverSocket) {
+          serverSocket.to(`board-${boardId}`).emit("updateAreas", {
+            areas: updatedAreas,
+            boardId,
+          });
         }
 
         return jsonResult({ message: "Area order updated successfully" });

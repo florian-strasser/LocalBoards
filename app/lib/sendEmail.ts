@@ -2,8 +2,6 @@ import nodemailer from "nodemailer";
 
 const runtimeConfig = useRuntimeConfig();
 
-const appName = runtimeConfig.appName;
-
 const emailHost = runtimeConfig.emailHost;
 const emailPort = runtimeConfig.emailPort;
 const emailSecure = runtimeConfig.emailSecure;

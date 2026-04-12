@@ -134,7 +134,6 @@ const translateNotification = (message: string): string => {
 
         return `${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}`;
     }
-    // console.log(message);
     // Handle new comment notification format: New comment by "username" on card "cardname"
     if (message.startsWith('New comment by "')) {
         // Extract the username and card name

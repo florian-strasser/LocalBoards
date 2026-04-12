@@ -141,6 +141,11 @@
   "error_UPDATING_USER": "Une erreur est survenue lors de la mise à jour de l'utilisateur",
   "error_EMAIL_TAKEN": "Cette adresse e-mail est déjà utilisée",
   "error_PASSWORD_TOO_SHORT": "Le mot de passe est trop court",
+  "error_INVALID_OLD_PASSWORD": "Ancien mot de passe invalide",
+  "error_PASSWORDS_REQUIRED": "L'ancien et le nouveau mot de passe sont requis",
+  "error_PASSWORD_TOO_SHORT_NEW": "Le nouveau mot de passe doit comporter au moins 8 caractères",
+  "error_LOCAL_ACCOUNT_NOT_FOUND": "Compte local introuvable",
+  "error_UNAUTHORIZED_NO_SESSION": "Non autorisé - Aucune session active",
   "error_copyFailed": "Échec de la copie",
   "wrongFileType": "Mauvais type de fichier. Seuls les types de fichiers suivants sont autorisés : PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP, HTML",
   "edit": "Modifier",
@@ -168,5 +173,7 @@
   "areas": "Zones",
   "hideAreas": "Masquer les zones",
   "back": "Retour",
-  "editorEmojis": "Émojis"
+  "editorEmojis": "Émojis",
+  "reset_your_password_subject": "Réinitialiser votre mot de passe",
+  "reset_your_password_message": "Cliquez sur ce lien pour attribuer un nouveau mot de passe :"
 }

@@ -30,7 +30,11 @@ const keyList = ref([]);
 const createKey = ref(false);
 
 const { data, error } = await useFetch("/api/auth/api-key/list");
-keyList.value = data.value.apiKeys;
+if (data.value?.apiKeys) {
+    keyList.value = data.value.apiKeys;
+} else {
+    keyList.value = [];
+}
 
 const handleKeyDeleted = async (id) => {
     const keyToDelete = keyList.value.find((key) => key.id === id);

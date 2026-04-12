@@ -1,3 +1,5 @@
+import { getApiKeyUser } from "../utils/auth";
+
 export default defineMcpHandler({
   middleware: async (event) => {
     const result = await getApiKeyUser(event);

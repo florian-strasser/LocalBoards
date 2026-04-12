@@ -45,55 +45,51 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
-
 const nuxtApp = useNuxtApp();
 
 const props = defineProps({
     id: String,
 });
 
-/*
-const { data: userData, error } = await authClient.admin.listUsers({
-    query: {
-        limit: 1,
-        filterField: "id",
-        filterValue: props.id,
-        filterOperator: "eq",
-    },
-});
-*/
-const { data: userData, error } = await useFetch("/api/auth/admin/list-users", {
-    method: "GET",
-    query: {
-        limit: 1,
-        filterField: "id",
-        filterValue: props.id,
-        filterOperator: "eq",
-    },
+// Get user data using our custom endpoint
+const { data: userData } = await useFetch("/api/auth/admin/list");
+
+// Find the specific user by ID
+const currentUser = computed(() => {
+    return userData.value?.users?.find((user) => user.id === props.id);
 });
 
-const name = ref(userData.value.users[0].name);
-const email = ref(userData.value.users[0].email);
+const name = ref(currentUser.value?.username || "");
+const email = ref(currentUser.value?.email || "");
 
 const savedUser = ref(false);
 
 const handleSaveUser = async () => {
     try {
-        const { data: updatedUser, error } = await authClient.admin.updateUser({
-            userId: props.id,
-            data: {
-                email: email.value,
+        const response = await $fetch("/api/auth/admin/update", {
+            method: "POST",
+            body: {
+                userId: props.id,
                 name: name.value,
+                email: email.value,
             },
         });
-        if (error) {
-            throw new Error($t("error_EMAIL_TAKEN"));
+
+        if (response.success) {
+            savedUser.value = true;
+        } else {
+            throw new Error(response.error || "Failed to update user");
         }
-        savedUser.value = true;
     } catch (err) {
+        let errorMessage = "Failed to update user";
+        if (err?.data?.error) {
+            errorMessage = err.data.error;
+        } else if (err?.message) {
+            errorMessage = err.message;
+        }
+
         await nuxtApp.callHook("app:toast", {
-            message: err.message || $t("error_UPDATING_USER"),
+            message: errorMessage || $t("error_UPDATING_USER"),
         });
     }
 };

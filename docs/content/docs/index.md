@@ -24,7 +24,7 @@ npm install
 ```
 
 ### Configure Environment Variables
-Create a `.env` file (and optionally a `.env.local` file for local development) with the following settings. Adjust the values to match your database and email configuration. Ensure that `NUXT_BOARDS_URL` and `BETTER_AUTH_URL` are set to the same URL. Additionally you can define the used language with `NUXT_LANGUAGE` and one of these properties: `en, de, fr, es, it, nl, pl`
+Create a `.env` file (and optionally a `.env.local` file for local development) with the following settings. Adjust the values to match your database and email configuration. Additionally you can define the used language with `NUXT_LANGUAGE` and one of these properties: `en, de, fr, es, it, nl, pl`
 
 ```dotenv
 # App Name
@@ -32,11 +32,6 @@ NUXT_APP_NAME=LocalBoards
 NUXT_BOARDS_URL=http://localhost:3000
 NUXT_LANGUAGE=en
 NUXT_PUBLIC_PRIVACY_URL=https://www.yourdomain.com/privacy-policy/
-
-# Better Auth
-BETTER_AUTH_SECRET=YwOqJxSCU78j5uekgi60b0CHyuxiMkis
-BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_TELEMETRY=0
 
 # DB
 NUXT_MYSQL_HOST=localhost

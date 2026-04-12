@@ -42,7 +42,6 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
 import { Zap } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
@@ -67,21 +66,31 @@ const changedPassword = ref(false);
 
 const handleSavePassword = async () => {
     const userId = props.id;
-    const { data: newUser, error } = await authClient.admin.setUserPassword(
-        {
-            newPassword: password.value,
-            userId: userId,
-        },
-        {
-            onSuccess: async (ctx) => {
-                changedPassword.value = true;
+    try {
+        const response = await $fetch("/api/auth/admin/update", {
+            method: "POST",
+            body: {
+                userId: userId,
+                password: password.value,
             },
-            onError: async (ctx) => {
-                await nuxtApp.callHook("app:toast", {
-                    message: $t("error_" + ctx.error.code),
-                });
-            },
-        },
-    );
+        });
+
+        if (response.success) {
+            changedPassword.value = true;
+        } else {
+            throw new Error(response.error || "Failed to update password");
+        }
+    } catch (err) {
+        let errorMessage = "Failed to update password";
+        if (err?.data?.error) {
+            errorMessage = err.data.error;
+        } else if (err?.message) {
+            errorMessage = err.message;
+        }
+
+        await nuxtApp.callHook("app:toast", {
+            message: errorMessage,
+        });
+    }
 };
 </script>

@@ -141,6 +141,11 @@
   "error_UPDATING_USER": "An error occurred while updating the user",
   "error_EMAIL_TAKEN": "Email is already taken",
   "error_PASSWORD_TOO_SHORT": "Password is too short",
+  "error_INVALID_OLD_PASSWORD": "Invalid old password",
+  "error_PASSWORDS_REQUIRED": "Both old and new passwords are required",
+  "error_PASSWORD_TOO_SHORT_NEW": "New password must be at least 8 characters long",
+  "error_LOCAL_ACCOUNT_NOT_FOUND": "Local account not found",
+  "error_UNAUTHORIZED_NO_SESSION": "Unauthorized - No active session",
   "error_copyFailed": "Failed to copy",
   "wrongFileType": "Wrong file type. Only the following file types are allowed: PDF, Word, Excel, PowerPoint, JPG, PNG, ZIP, HTML",
   "edit": "Edit",
@@ -168,5 +173,7 @@
   "areas": "Areas",
   "hideAreas": "Hide areas",
   "back": "Back",
-  "editorEmojis": "Emojis"
+  "editorEmojis": "Emojis",
+  "reset_your_password_subject": "Reset your password",
+  "reset_your_password_message": "Click on this link to assign a new password:"
 }

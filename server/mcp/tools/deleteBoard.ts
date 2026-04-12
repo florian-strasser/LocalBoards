@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 const db = setupDatabase();
 
@@ -68,6 +69,14 @@ export default defineMcpTool({
 
       if (result.affectedRows === 0) {
         return textResult("Board not found or already deleted.");
+      }
+
+      // Emit socket event for board deletion
+      const serverSocket = getServerSocket();
+      if (serverSocket) {
+        serverSocket.to(`board-${boardId}`).emit("deletedBoard", {
+          boardID: boardId,
+        });
       }
 
       return jsonResult({ message: "Board deleted successfully" });

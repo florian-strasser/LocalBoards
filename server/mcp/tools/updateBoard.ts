@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 const db = setupDatabase();
 
@@ -85,6 +86,17 @@ export default defineMcpTool({
         id,
       ]);
       const returnBoard = rows[0];
+
+      // Emit socket event for board update
+      const serverSocket = getServerSocket();
+      if (serverSocket) {
+        serverSocket.to(`board-${id}`).emit("updateBoard", {
+          boardID: id,
+          boardName: returnBoard.name,
+          boardStatus: returnBoard.status,
+          boardStyle: returnBoard.style,
+        });
+      }
 
       return jsonResult({ board: returnBoard });
     } catch (error) {

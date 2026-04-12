@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { getServerSocket } from "../../utils/socket";
 
 const db = setupDatabase();
 
@@ -100,6 +101,15 @@ export default defineMcpTool({
 
       if (result.affectedRows === 0) {
         return textResult("Area not found or already deleted.");
+      }
+
+      // Emit socket event for area deletion
+      const serverSocket = getServerSocket();
+      if (serverSocket) {
+        serverSocket.to(`board-${boardId}`).emit("deleteArea", {
+          area: areaId,
+          boardId,
+        });
       }
 
       return jsonResult({ message: "Area deleted successfully" });

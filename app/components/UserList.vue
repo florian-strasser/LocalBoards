@@ -26,30 +26,46 @@
     </div>
 </template>
 <script setup lang="ts">
-import { authClient } from "@/lib/auth-client";
-
 const nuxtApp = useNuxtApp();
 
 const deleteModal = ref(false);
 const userList = ref([]);
 
-const { data: users } = await useFetch("/api/auth/admin/list-users");
-if (users && users.value.users) {
+const { data: users } = await useFetch("/api/auth/admin/list");
+if (users?.value?.users) {
     userList.value = users.value.users;
 }
 
 const deleteUser = async () => {
-    const { data: deletedUser, error } = await authClient.admin.removeUser({
-        userId: deleteModal.value,
-    });
+    try {
+        const response = await $fetch("/api/auth/admin/delete", {
+            method: "POST",
+            body: {
+                userId: deleteModal.value,
+            },
+        });
 
-    if (!error) {
-        // Remove the deleted user from the list
-        userList.value = userList.value.filter(
-            (user) => user.id !== deleteModal.value,
-        );
+        if (response.success) {
+            // Remove the deleted user from the list
+            userList.value = userList.value.filter(
+                (user) => user.id !== deleteModal.value,
+            );
+            await nuxtApp.callHook("app:toast", {
+                message: $t("userDeleted"),
+            });
+        } else {
+            throw new Error(response.error || "Failed to delete user");
+        }
+    } catch (e) {
+        let errorMessage = "Failed to delete user";
+        if (e?.data?.error) {
+            errorMessage = e.data.error;
+        } else if (e?.message) {
+            errorMessage = e.message;
+        }
+
         await nuxtApp.callHook("app:toast", {
-            message: $t("userDeleted"),
+            message: errorMessage,
         });
     }
 
