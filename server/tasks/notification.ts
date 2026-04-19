@@ -15,9 +15,9 @@ const textList = {
     youHaveTheFollowingUnreadNotifications:
       "You have the following unread notifications",
     clickHereToViewYourNotifications: "Click here to view your notifications",
-    notificationInvitedToBoard: "You have been invited to the board:",
+    notificationInvitedToBoard: "You have been invited to the board",
     notificationNewComment: 'New comment by "{username}" on card:',
-    notificationNewCard: "New card created:",
+    notificationNewCard: "New card created",
     notificationCardMoved: "Card",
     notificationCardMovedFrom: " moved from ",
     notificationCardMovedTo: " to ",
@@ -48,10 +48,10 @@ const textList = {
     youHaveTheFollowingUnreadNotifications:
       "Vous avez les notifications non lues suivantes",
     clickHereToViewYourNotifications: "Cliquez ici pour voir vos notifications",
-    notificationInvitedToBoard: "Vous avez été invité au tableau :",
+    notificationInvitedToBoard: "Vous avez été invité au tableau",
     notificationNewComment:
       'Nouveau commentaire de "{username}" sur la carte :',
-    notificationNewCard: "Nouvelle carte créée :",
+    notificationNewCard: "Nouvelle carte créée",
     notificationCardMoved: "Carte",
     notificationCardMovedFrom: " déplacée de ",
     notificationCardMovedTo: " à ",
@@ -66,9 +66,9 @@ const textList = {
       "Tienes las siguientes notificaciones no leídas",
     clickHereToViewYourNotifications:
       "Haz clic aquí para ver tus notificaciones",
-    notificationInvitedToBoard: "Has sido invitado al tablero:",
+    notificationInvitedToBoard: "Has sido invitado al tablero",
     notificationNewComment: 'Nuevo comentario de "{username}" en la tarjeta:',
-    notificationNewCard: "Nueva tarjeta creada:",
+    notificationNewCard: "Nueva tarjeta creada",
     notificationCardMoved: "Tarjeta",
     notificationCardMovedFrom: " movida de ",
     notificationCardMovedTo: " a ",
@@ -82,9 +82,9 @@ const textList = {
     youHaveTheFollowingUnreadNotifications:
       "Hai le seguenti notifiche non lette",
     clickHereToViewYourNotifications: "Clicca qui per vedere le tue notifiche",
-    notificationInvitedToBoard: "Sei stato invitato alla bacheca:",
+    notificationInvitedToBoard: "Sei stato invitato alla bacheca",
     notificationNewComment: 'Nuovo commento di "{username}" sulla carta:',
-    notificationNewCard: "Nuova carta creata:",
+    notificationNewCard: "Nuova carta creata",
     notificationCardMoved: "Carta",
     notificationCardMovedFrom: " spostata da ",
     notificationCardMovedTo: " a ",
@@ -98,9 +98,9 @@ const textList = {
     youHaveTheFollowingUnreadNotifications:
       "Je hebt de volgende ongelezen meldingen",
     clickHereToViewYourNotifications: "Klik hier om je meldingen te bekijken",
-    notificationInvitedToBoard: "Je bent uitgenodigd voor het bord:",
+    notificationInvitedToBoard: "Je bent uitgenodigd voor het bord",
     notificationNewComment: 'Nieuwe reactie van "{username}" op kaart:',
-    notificationNewCard: "Nieuwe kaart gemaakt:",
+    notificationNewCard: "Nieuwe kaart gemaakt",
     notificationCardMoved: "Kaart",
     notificationCardMovedFrom: " verplaatst van ",
     notificationCardMovedTo: " naar ",
@@ -115,9 +115,9 @@ const textList = {
       "Masz następujące nieprzeczytane powiadomienia",
     clickHereToViewYourNotifications:
       "Kliknij tutaj, aby zobaczyć swoje powiadomienia",
-    notificationInvitedToBoard: "Zostałeś zaproszony do tablicy:",
+    notificationInvitedToBoard: "Zostałeś zaproszony do tablicy",
     notificationNewComment: 'Nowy komentarz od "{username}" do karty:',
-    notificationNewCard: "Nowa karta utworzona:",
+    notificationNewCard: "Nowa karta utworzona",
     notificationCardMoved: "Karta",
     notificationCardMovedFrom: " przeniesiona z ",
     notificationCardMovedTo: " do ",
@@ -162,7 +162,7 @@ const translateNotification = (message: string): string => {
     const cardPrefix = translateText("notificationCardMoved");
     const movedFrom = translateText("notificationCardMovedFrom");
     const movedTo = translateText("notificationCardMovedTo");
-    return `${cardPrefix} "${cardName}"${movedFrom}"${fromArea}"${movedTo}"${toArea}"`;
+    return `<p>${cardPrefix} "${cardName}"${movedFrom}"${fromArea}"${movedTo}"${toArea}"</p>`;
   }
 
   // Handle card status changed notification format: Card "name" status changed to completed/reopened
@@ -184,7 +184,7 @@ const translateNotification = (message: string): string => {
       status === "completed"
         ? translateText("notificationCardStatusCompleted")
         : translateText("notificationCardStatusReopened");
-    return `${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}`;
+    return `<p>${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}</p>`;
   }
 
   // Map the static part to a translation key
@@ -220,6 +220,12 @@ const translateNotification = (message: string): string => {
       // Translate the static parts while preserving the format
       const translatedMessage = translateText("notificationNewComment");
       return `<p>${translatedMessage.replace("{username}", username)} "${cardName}":</p><div class="comment">${comment.replace(/<img src="/g, '<img src="' + baseURL).replace(/<img/g, '<img style="max-width:100%; display:block;"')}</div>`;
+    } else if (
+      translationKey === "notificationNewCard" ||
+      translationKey === "notificationInvitedToBoard"
+    ) {
+      const dynamicPart = message.slice(staticPart.length).trim();
+      return `<p>${translateText(translationKey)}${dynamicPart}</p>`;
     } else {
       // Replace the static part with the translated text
       const dynamicPart = message.slice(staticPart.length).trim();
@@ -266,7 +272,7 @@ const sendNotification = async () => {
     for (const userId of Object.keys(notificationsByUser)) {
       const userNotifications = notificationsByUser[userId];
       const notificationMessages = userNotifications.map((notification) => {
-        return `<li style='margin-bottom:0.125em; padding:1em 1.5em 0.33em 1.5em; background:rgba(0,0,0,0.1); border-radius:0.5em;'>${translateNotification(notification.message)}</li>`;
+        return `<li style='margin-bottom:0.125em; padding:0.8em 1.5em 0.33em 1.5em; background:rgba(0,0,0,0.1); border-radius:0.5em;'>${translateNotification(notification.message)}</li>`;
       });
 
       // Fetch the user's email address from the user table

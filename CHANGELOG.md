@@ -1,9 +1,22 @@
+## v0.10.1
+
+### Webapp
+- Fixed an issue with additional ":" characters in some notification mails
+- Added missing paragraph elements in notification mails
+- Removed unnecessary dependencies
+- Updated dependencies
+
+### Docs
+- Updated migration docs
+- Removed unnecessary dependencies
+- Updated dependencies
+
 ## v0.10.0 - Complete Authentication System Overhaul
 
-## 🚀 Major Architecture Change: Dropped better-auth
+### 🚀 Major Architecture Change: Dropped better-auth
 **Breaking Change**: Replaced entire `better-auth` dependency with custom authentication system for improved reliability, performance, and maintainability. Backup your database and merge it with the adjusted structure. User passwords need to be reseted.
 
-## 🔄 Real-Time Event Enhancements
+### 🔄 Real-Time Event Enhancements
 **Multi-Platform Real-Time Updates**: Extended existing Socket.IO event system to API and MCP tools, ensuring consistent real-time updates across all interaction methods.
 
 ### 📡 Real-Time Events Extended to API & MCP
@@ -71,8 +84,6 @@
 
 ## v0.9.2
 
-## v0.9.2
-
 - Fixed issue with public registration, env variable was not checked correctly
 - Board and user images are now also stored as physical files instead of Base64 decoded
 
@@ -90,7 +101,6 @@
 - Update commentCount when a new comment is created
 - Update attachmentCount when a new attachment is uploaded
 - Updated all dependencies
-
 
 ## v0.8.1
 
