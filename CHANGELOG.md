@@ -1,3 +1,8 @@
+## v0.11.1
+
+### Hotfix
+- Fixed session creation failure for installations with numeric user IDs by removing strict UUID validation in `server/utils/auth.ts` createSession function
+
 ## v0.11.0
 
 This release is all around security. I spent alot time to make every single API Endpoint more secure.

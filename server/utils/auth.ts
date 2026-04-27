@@ -8,8 +8,11 @@ const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function createSession(event: any, userId: string) {
-  // Validate userId is UUID format
-  if (!userId || typeof userId !== "string" || !uuidRegex.test(userId)) {
+  // Accept string or number, convert to string for backward compatibility
+  const userIdStr = String(userId);
+
+  // Validate userId is a non-empty string
+  if (!userIdStr || typeof userIdStr !== "string") {
     console.error("Invalid userId for session creation");
     return { error: "INVALID_USER_ID" };
   }
@@ -27,23 +30,30 @@ export async function createSession(event: any, userId: string) {
         uuidv4(),
         new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
         sessionToken,
-        userId,
+        userIdStr,
       ],
     );
 
     // Set session cookie
+    const isProduction =
+      process.env.NODE_ENV === "production" || process.env.NODE_ENV === "prod";
+    const isSecureContext =
+      process.env.NODE_ENV === "production" ||
+      process.env.SSL === "true" ||
+      event.headers["x-forwarded-proto"] === "https";
+
     setCookie(event, "session_token", sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureContext,
       sameSite: "lax",
-      maxAge: 24 * 60 * 60, // 1 day in seconds
+      maxAge: 24 * 60 * 60,
       path: "/",
     });
 
     return {
       sessionToken,
       user: {
-        id: userId,
+        id: userIdStr,
       },
     };
   } catch (error) {
