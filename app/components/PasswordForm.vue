@@ -65,16 +65,15 @@ const handlePassword = async () => {
     } catch (e) {
         // Handle validation errors
         if (e instanceof z.ZodError) {
-            const errors = await JSON.parse(e);
+            // FIX: ZodError is already an object, no need to parse - use errors array directly
+            const errorCode = e.errors[0]?.code || "invalid";
             await nuxtApp.callHook("app:toast", {
-                message: $t("error_" + errors[0].code),
+                message: $t("error_" + errorCode),
             });
-            // You can display these errors to the user
         } else {
-            // Handle fetch errors
-            let errorMessage = "Failed to update password";
+            // Keep server error messages for translation
+            let errorMessage = "FAILED_TO_UPDATE_PASSWORD";
             if (e?.data?.error) {
-                // Extract error message from response data
                 errorMessage = e.data.error;
             } else if (e?.message) {
                 errorMessage = e.message;

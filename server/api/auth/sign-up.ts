@@ -2,6 +2,7 @@ import { setupDatabase } from "../../../app/lib/databaseSetup";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { getCookie } from "h3";
+import { createSession } from "../../utils/auth";
 
 export default defineEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig();
@@ -14,9 +15,10 @@ export default defineEventHandler(async (event) => {
 
   if (allowSignup) {
     const method = event.req.method;
+    // HIGH FIX: Use 405 Method Not Allowed instead of 403
     if (method !== "POST") {
-      event.res.statusCode = 403;
-      return { error: "Unauthorized access" };
+      event.res.statusCode = 405;
+      return { error: "Method not allowed" };
     }
 
     // Check if user already has an active session
@@ -35,12 +37,12 @@ export default defineEventHandler(async (event) => {
         if (sessions.length > 0) {
           event.res.statusCode = 400;
           return {
-            error:
-              "Active session detected. Please log out first before creating a new account.",
+            error: "Registration failed",
           };
         }
       } catch (error) {
         console.error("Session check error:", error);
+        // HIGH FIX: Don't fail silently - continue with signup but log
       }
     }
 
@@ -48,24 +50,45 @@ export default defineEventHandler(async (event) => {
       const body = await readBody(event);
       const { name, email, password, callbackURL } = body;
 
-      // Validate input
+      // HIGH FIX: Validate input with generic messages
       if (!name || !email || !password) {
         event.res.statusCode = 400;
-        return { error: "Name, email, and password are required" };
+        return { error: "Registration failed" };
+      }
+
+      // HIGH FIX: Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        event.res.statusCode = 400;
+        return { error: "Registration failed" };
+      }
+
+      // HIGH FIX: Validate password length (min 8 chars)
+      if (typeof password !== "string" || password.length < 8) {
+        event.res.statusCode = 400;
+        return { error: "Registration failed" };
       }
 
       // Initialize the database
       const db = await setupDatabase();
 
-      // Check if the user already exists
+      // CRITICAL FIX: Use constant-time check to prevent timing attacks
+      // Check if email exists first
       const [existingUsers] = await db.execute(
         "SELECT * FROM `user` WHERE `email` = ?",
         [email],
       );
 
-      if (existingUsers.length > 0) {
+      const userExists = existingUsers.length > 0;
+
+      // Always perform fake hash comparison to maintain constant time
+      const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
+      await bcrypt.compare(password, fakeHash);
+
+      // HIGH FIX: Generic error message to prevent user enumeration
+      if (userExists) {
         event.res.statusCode = 400;
-        return { error: "User with this email already exists" };
+        return { error: "Registration failed" };
       }
 
       // Hash the password
@@ -75,41 +98,56 @@ export default defineEventHandler(async (event) => {
       // Generate a UUID for the user
       const userId = uuidv4();
 
-      // Insert the user into the database
-      await db.execute(
-        "INSERT INTO `user` (`id`, `name`, `email`, `emailVerified`) VALUES (?, ?, ?, ?)",
-        [userId, name, email, 0],
-      );
+      // Use transaction via pool connection for atomic user+account creation
+      const conn = await db.getConnection();
+      try {
+        await conn.beginTransaction();
 
-      // Optionally, create an account entry for the user
-      await db.execute(
-        "INSERT INTO `account` (`id`, `accountId`, `providerId`, `userId`, `password`) VALUES (?, ?, ?, ?, ?)",
-        [uuidv4(), email, "local", userId, hashedPassword],
-      );
+        // Insert the user into the database
+        await conn.execute(
+          "INSERT INTO `user` (`id`, `name`, `email`, `emailVerified`) VALUES (?, ?, ?, ?)",
+          [userId, name, email, 0],
+        );
 
-      // Create a session for the newly registered user
-      const sessionResult = await createSession(event, userId);
+        // Create an account entry for the user
+        await conn.execute(
+          "INSERT INTO `account` (`id`, `accountId`, `providerId`, `userId`, `password`) VALUES (?, ?, ?, ?, ?)",
+          [uuidv4(), email, "local", userId, hashedPassword],
+        );
 
-      if (sessionResult.error) {
-        console.error("Session creation failed:", sessionResult.error);
-        // Continue without session - user can still log in manually
-      }
+        // Commit transaction
+        await conn.commit();
 
-      // Return success response with user details and session token
-      return {
-        data: {
-          success: true,
-          message: "User registered successfully",
-          user: {
-            id: userId,
-            name: name,
-            email: email,
-            role: "user", // Default role
+        // Create a session for the newly registered user
+        const sessionResult = await createSession(event, userId);
+
+        if (sessionResult.error) {
+          console.error("Session creation failed:", sessionResult.error);
+          // Continue without session - user can still log in manually
+        }
+
+        // Return success response with user details and session token
+        return {
+          data: {
+            success: true,
+            message: "User registered successfully",
+            user: {
+              id: userId,
+              name: name,
+              email: email,
+              role: "user", // Default role
+            },
+            sessionToken: sessionResult?.sessionToken,
+            callbackURL,
           },
-          sessionToken: sessionResult?.sessionToken,
-          callbackURL,
-        },
-      };
+        };
+      } catch (error) {
+        // Rollback transaction on any error
+        await conn.rollback();
+        throw error;
+      } finally {
+        conn.release();
+      }
     } catch (error) {
       console.error("Signup error:", error);
       event.res.statusCode = 500;

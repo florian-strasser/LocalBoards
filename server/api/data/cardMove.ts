@@ -23,7 +23,20 @@ export default defineEventHandler(async (event) => {
 
   const session = await getSession(event);
 
+  // CRITICAL FIX: Early auth check - block unauthenticated access
+  if (!userIdFromApiKey && !session) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
+
+  // CRITICAL FIX: Use authenticated userId consistently
   const userId = userIdFromApiKey || session?.user.id;
+
+  // CRITICAL FIX: Ensure userId is defined (defense in depth)
+  if (!userId) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
 
   try {
     const db = setupDatabase();
@@ -46,34 +59,59 @@ export default defineEventHandler(async (event) => {
     if (method === "POST") {
       const { cardId, fromAreaId, toAreaId, newIndex } = await readBody(event);
 
+      // HIGH FIX: Validate all required fields with generic message
       if (!cardId || !fromAreaId || !toAreaId || newIndex === undefined) {
         event.res.statusCode = 400;
         return {
-          error: "Card ID, fromAreaId, toAreaId, and newIndex are required",
+          error: "Required fields are missing",
         };
       }
 
-      const [boardRows] = (await db.execute(
+      // HIGH FIX: Validate all IDs are positive integers
+      if (
+        isNaN(Number(cardId)) ||
+        Number(cardId) <= 0 ||
+        isNaN(Number(fromAreaId)) ||
+        Number(fromAreaId) <= 0 ||
+        isNaN(Number(toAreaId)) ||
+        Number(toAreaId) <= 0
+      ) {
+        event.res.statusCode = 400;
+        return { error: "Invalid ID values" };
+      }
+
+      // CRITICAL FIX: Check access to BOTH source and destination boards
+      const [fromBoardRows] = (await db.execute(
         "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
         [fromAreaId],
       )) as any[];
-      const board = (boardRows as any[])[0];
+      const fromBoard = (fromBoardRows as any[])[0];
 
-      if (!board) {
+      if (!fromBoard) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
+      }
+
+      const [toBoardRows] = (await db.execute(
+        "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
+        [toAreaId],
+      )) as any[];
+      const toBoard = (toBoardRows as any[])[0];
+
+      if (!toBoard) {
+        // HIGH FIX: Generic error to prevent board enumeration
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
       }
 
       let writeAccess = false;
-      if (board.status === "private" && (!userId || board.user !== userId)) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Check if the user has an invitation
+      // Check source board access
+      if (fromBoard.status === "private" && fromBoard.user !== userId) {
+        // Check if the user has an invitation to source board
         const [invitationRows] = (await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
+          [fromBoard.id, userId],
         )) as any[];
 
         if ((invitationRows as any[]).length === 0) {
@@ -82,15 +120,35 @@ export default defineEventHandler(async (event) => {
         }
         // Determine write access based on invitation permission
         writeAccess = (invitationRows as any[])[0].permission === "edit";
-      } else if (board.user === userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
+      } else if (fromBoard.user === userId) {
+        // User is the creator of the source board, so they have write access
+        writeAccess = true;
+      } else if (fromBoard.status === "public") {
+        writeAccess = true;
+      }
+
+      // If source board access granted, also check destination board access
+      if (writeAccess && toBoard.id !== fromBoard.id) {
+        // Different boards - need to check destination board too
+        if (toBoard.status === "private" && toBoard.user !== userId) {
+          const [toInvitationRows] = (await db.execute(
+            "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+            [toBoard.id, userId],
+          )) as any[];
+
+          if ((toInvitationRows as any[]).length === 0) {
+            event.res.statusCode = 403;
+            return { error: "Unauthorized access" };
+          }
+          writeAccess = (toInvitationRows as any[])[0].permission === "edit";
+        } else if (toBoard.user !== userId) {
+          // Destination is private and user is not the owner
+          if (toBoard.status === "public") {
+            writeAccess = true;
+          } else {
+            writeAccess = false;
+          }
         }
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public" && (userIdFromApiKey || session)) {
-        writeAccess = true;
       }
 
       if (writeAccess) {

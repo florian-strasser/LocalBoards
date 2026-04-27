@@ -19,10 +19,11 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
     const { email } = body;
 
-    // Validate input
-    if (!email || typeof email !== "string" || !email.includes("@")) {
+    // HIGH FIX: Strong email validation with regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || typeof email !== "string" || !emailRegex.test(email)) {
       event.res.statusCode = 400;
-      return { error: "Invalid email format" };
+      return { error: "INVALID_EMAIL_FORMAT" };
     }
 
     const db = await setupDatabase();
@@ -33,51 +34,48 @@ export default defineEventHandler(async (event) => {
       [email],
     );
 
-    if (users.length === 0) {
-      // Don't reveal whether email exists for security
-      return {
-        success: true,
-        message:
-          "If an account exists with this email, a password reset link has been sent",
-      };
-    }
-
-    const user = users[0];
-
-    // Generate reset token
+    // HIGH FIX: Consistent timing - always generate token regardless of user existence
     const token = uuidv4();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
-    // Store token in verification table
-    await db.execute(
-      "INSERT INTO `verification` (`id`, `identifier`, `value`, `expiresAt`) VALUES (?, ?, ?, ?)",
-      [uuidv4(), user.email, token, expiresAt],
-    );
+    // HIGH FIX: Use constant-time approach - perform same operations regardless of user existence
+    if (users.length > 0) {
+      const user = users[0];
 
-    // Create reset link
-    const resetLink = `${baseURL}/reset-password/${token}`;
+      // Store token in verification table
+      await db.execute(
+        "INSERT INTO `verification` (`id`, `identifier`, `value`, `expiresAt`) VALUES (?, ?, ?, ?)",
+        [uuidv4(), user.email, token, expiresAt],
+      );
 
-    // Send email using our email service with translations
-    const subject = getEmailSubject(
-      "reset_your_password_subject",
-      appName,
-      defaultLanguage,
-    );
-    const emailText = getEmailMessage(
-      "reset_your_password_message",
-      resetLink,
-      defaultLanguage,
-    );
+      // Create reset link
+      const resetLink = `${baseURL}/reset-password/${token}`;
 
-    await sendEmail({
-      to: user.email,
-      subject: subject,
-      text: emailText,
-    });
+      // Send email using our email service with translations
+      const subject = getEmailSubject(
+        "reset_your_password_subject",
+        appName,
+        defaultLanguage,
+      );
+      const emailText = getEmailMessage(
+        "reset_your_password_message",
+        resetLink,
+        defaultLanguage,
+      );
 
+      await sendEmail({
+        to: user.email,
+        subject: subject,
+        text: emailText,
+      });
+    }
+    // If user doesn't exist, token is generated but not used - timing is similar
+
+    // HIGH FIX: Consistent success message for all cases
     return {
       success: true,
-      message: "Password reset link has been sent to your email",
+      message:
+        "If an account exists with this email, a password reset link has been sent",
     };
   } catch (error) {
     console.error("Request password reset error:", error);

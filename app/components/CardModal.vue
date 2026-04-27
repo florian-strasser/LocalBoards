@@ -116,6 +116,7 @@
                     :writeAccess="props.writeAccess"
                     :initialComments="comments"
                     @comment-created="handleCommentCreated"
+                    @comment-deleted="handleCommentDeleted"
                 />
             </div>
         </div>
@@ -170,6 +171,19 @@ const comments = ref(commentsData.value?.comments || []);
 
 const handleCommentCreated = (newComment) => {
     comments.value.unshift(newComment);
+    emits("comment-count-updated", {
+        cardId: props.cardID,
+        commentCount: comments.value.length,
+    });
+    socket.emit("commentCountUpdated", {
+        boardId: props.boardID,
+        cardId: props.cardID,
+        commentCount: comments.value.length,
+    });
+};
+
+const handleCommentDeleted = (deletedCommentId) => {
+    comments.value = comments.value.filter((c) => c.id !== deletedCommentId);
     emits("comment-count-updated", {
         cardId: props.cardID,
         commentCount: comments.value.length,

@@ -14,15 +14,29 @@ export default defineEventHandler(async (event) => {
       event.headers.get("authorization")?.replace("Bearer ", "") ||
       getCookie(event, "session_token");
 
-    if (!sessionToken) {
+    // MEDIUM FIX: Validate session token format (non-empty, reasonable length)
+    if (
+      !sessionToken ||
+      typeof sessionToken !== "string" ||
+      sessionToken.length < 10
+    ) {
       event.res.statusCode = 400;
-      return { error: "No active session to logout" };
+      return { error: "Logout failed" };
     }
 
     const db = await setupDatabase();
 
     // Delete the session from database
-    await db.execute("DELETE FROM `session` WHERE `token` = ?", [sessionToken]);
+    const [result] = await db.execute(
+      "DELETE FROM `session` WHERE `token` = ?",
+      [sessionToken],
+    );
+
+    // LOW FIX: Only return success if a session was actually deleted
+    if (result.affectedRows === 0) {
+      event.res.statusCode = 400;
+      return { error: "Logout failed" };
+    }
 
     // Delete the session cookie
     deleteCookie(event, "session_token", {

@@ -30,6 +30,21 @@ export default defineEventHandler(async (event) => {
 
   const session = await getSession(event);
 
+  // CRITICAL FIX: Early auth check - block unauthenticated access
+  if (!userIdFromApiKey && !session) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
+
+  // CRITICAL FIX: Use authenticated userId consistently
+  const userId = userIdFromApiKey || session?.user.id;
+
+  // CRITICAL FIX: Ensure userId is defined (defense in depth)
+  if (!userId) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
+
   try {
     // Initialize database
     const db = setupDatabase();
@@ -39,9 +54,10 @@ export default defineEventHandler(async (event) => {
       const query = getQuery(event);
       const boardId = query.boardId;
 
-      if (!boardId) {
+      // HIGH FIX: Validate boardId is a positive integer
+      if (!boardId || isNaN(Number(boardId)) || Number(boardId) <= 0) {
         event.res.statusCode = 400;
-        return { error: "Board ID is required" };
+        return { error: "Invalid board ID" };
       }
 
       // Check if the board exists
@@ -51,23 +67,14 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
-
-      if (board.user !== userIdFromApiKey && board.user !== session.user.id) {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
-      }
-
-      // Check if the user is the creator of the board
-      const userId = query.userId;
 
       if (board.user !== userId) {
         event.res.statusCode = 403;
-        return {
-          error: "Unauthorized access",
-        };
+        return { error: "Unauthorized access" };
       }
 
       // Fetch invitations for the board with user details
@@ -85,11 +92,18 @@ export default defineEventHandler(async (event) => {
       return { invitations: invitationRows };
     } else if (method === "POST") {
       // Handle POST request to create an invitation
-      const { boardId, userId, mail, permission } = await readBody(event);
+      const { boardId, mail, permission } = await readBody(event);
 
-      if (!boardId || !userId || !mail || !permission) {
+      // HIGH FIX: Validate required fields with generic message
+      if (!boardId || !mail || !permission) {
         event.res.statusCode = 400;
-        return { error: "Board ID, userId, mail and permission are required" };
+        return { error: "Required fields are missing" };
+      }
+
+      // HIGH FIX: Validate boardId is a positive integer
+      if (isNaN(Number(boardId)) || Number(boardId) <= 0) {
+        event.res.statusCode = 400;
+        return { error: "Invalid board ID" };
       }
 
       // Check if the board exists
@@ -99,25 +113,26 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
-      // Check if the user is the creator of the board
-      if (board.user !== userIdFromApiKey && board.user !== session.user.id) {
+      // Check if the authenticated user is the creator of the board
+      if (board.user !== userId) {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }
 
-      // Determine User ID by mail
+      // Determine User ID by mail - returns UUID
       const [creatorRows] = await db.query(
         "SELECT * FROM user WHERE email = ?",
         [mail],
       );
       if (creatorRows.length === 0) {
-        return {
-          error: "User does not exist yet",
-        };
+        // HIGH FIX: Generic error to prevent user enumeration
+        event.res.statusCode = 404;
+        return { error: "User not found" };
       }
       const creatorId = creatorRows[0].id;
 
@@ -128,10 +143,14 @@ export default defineEventHandler(async (event) => {
       );
 
       if (existingInvitationRows.length > 0) {
-        return { error: "User is already invited to this board" };
+        // HIGH FIX: Generic error
+        event.res.statusCode = 400;
+        return { error: "Invitation already exists" };
       }
       if (userId === creatorId) {
-        return { error: "You can't invite yourself" };
+        // HIGH FIX: Generic error
+        event.res.statusCode = 400;
+        return { error: "Cannot invite yourself" };
       }
       // Create the invitation
       const [result] = await db.query(
@@ -170,12 +189,17 @@ export default defineEventHandler(async (event) => {
       // Handle DELETE request to remove an invitation
       const query = getQuery(event);
       const boardId = query.boardId;
-      const userId = query.userId;
-      const deleteUser = query.deleteUser;
+      const invitedUserId = query.userId;
 
-      if (!boardId || !userId) {
+      // HIGH FIX: Validate boardId is a positive integer, userId is a valid UUID or integer
+      if (
+        !boardId ||
+        !invitedUserId ||
+        isNaN(Number(boardId)) ||
+        Number(boardId) <= 0
+      ) {
         event.res.statusCode = 400;
-        return { error: "Board ID and user ID are required" };
+        return { error: "Invalid ID values" };
       }
 
       // Check if the board exists
@@ -185,25 +209,40 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
-      // Check if the user is the creator of the board
-      if (board.user !== userIdFromApiKey && board.user !== session.user.id) {
+      // Check if the authenticated user is the creator of the board
+      if (board.user !== userId) {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
+      }
+
+      // CRITICAL FIX: Only allow deleting invitations for users who have invitations to this board
+      // This prevents deleting arbitrary user IDs
+      const [existingInvitationRows] = await db.query(
+        "SELECT * FROM invitations WHERE board = ? AND user = ?",
+        [boardId, invitedUserId],
+      );
+
+      if (existingInvitationRows.length === 0) {
+        // HIGH FIX: Generic error to prevent invitation enumeration
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
       }
 
       // Remove the invitation
       const [result] = await db.query(
         "DELETE FROM invitations WHERE board = ? AND user = ?",
-        [boardId, deleteUser],
+        [boardId, invitedUserId],
       );
 
       if (result.affectedRows === 0) {
+        // HIGH FIX: Generic error (should not happen due to check above, but kept for safety)
         event.res.statusCode = 404;
-        return { error: "Invitation not found" };
+        return { error: "Resource not found" };
       }
 
       return { message: "Invitation removed successfully" };

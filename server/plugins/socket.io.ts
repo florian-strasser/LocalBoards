@@ -41,6 +41,19 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
       });
     });
 
+    // CommentDeleted
+    socket.on("commentDeleted", async ({ cardID, commentId }) => {
+      console.log(
+        `Kommentar ${commentId} wurde auf Card ${cardID} gelöscht (user-${socket.id})`,
+      );
+      io.except(`user-${socket.id}`)
+        .to(`card-${cardID}`)
+        .emit("deleteComment", {
+          commentId,
+          cardID,
+        });
+    });
+
     // BoardUpdated
     socket.on(
       "boardUpdated",

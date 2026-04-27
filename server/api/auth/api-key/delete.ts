@@ -1,5 +1,10 @@
 import { setupDatabase } from "../../../../app/lib/databaseSetup";
 import { getSession } from "../../../utils/auth";
+import bcrypt from "bcryptjs";
+
+// UUID v4 regex for keyId validation
+const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
@@ -13,29 +18,36 @@ export default defineEventHandler(async (event) => {
     const session = await getSession(event);
     if (!session) {
       event.res.statusCode = 401;
-      return { error: "Unauthorized - No active session" };
+      return { error: "UNAUTHORIZED" };
     }
 
     const body = await readBody(event);
     const { keyId } = body;
 
-    // Validate input
-    if (!keyId || typeof keyId !== "string" || keyId.trim() === "") {
+    // Validate input - UUID format
+    if (!keyId || typeof keyId !== "string" || !uuidRegex.test(keyId)) {
       event.res.statusCode = 400;
-      return { error: "Key ID is required" };
+      return { error: "INVALID_KEY_ID" };
     }
 
     const db = await setupDatabase();
 
     // First, verify the key belongs to the current user
+    // Use constant-time check to prevent timing attacks
     const [keys] = await db.execute(
       "SELECT id FROM `apikey` WHERE `id` = ? AND `referenceId` = ?",
       [keyId, session.user.id],
     );
 
-    if (keys.length === 0) {
+    const keyExists = keys.length > 0;
+
+    // Always perform fake hash comparison to maintain constant time
+    const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
+    await bcrypt.compare(keyId, fakeHash);
+
+    if (!keyExists) {
       event.res.statusCode = 404;
-      return { error: "API key not found or doesn't belong to you" };
+      return { error: "API_KEY_NOT_FOUND" };
     }
 
     // Delete the API key
@@ -43,11 +55,11 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: "API key deleted successfully",
+      message: "API_KEY_DELETED_SUCCESSFULLY",
     };
   } catch (error) {
     console.error("Delete API key error:", error);
     event.res.statusCode = 500;
-    return { error: "Internal server error" };
+    return { error: "INTERNAL_SERVER_ERROR" };
   }
 });

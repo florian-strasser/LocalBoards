@@ -23,7 +23,20 @@ export default defineEventHandler(async (event) => {
 
   const session = await getSession(event);
 
+  // CRITICAL FIX: Early auth check - block unauthenticated access
+  if (!userIdFromApiKey && !session) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
+
+  // CRITICAL FIX: Use authenticated userId consistently
   const userId = userIdFromApiKey || session?.user.id;
+
+  // CRITICAL FIX: Ensure userId is defined (defense in depth)
+  if (!userId) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
 
   try {
     const db = setupDatabase();
@@ -45,9 +58,21 @@ export default defineEventHandler(async (event) => {
     if (method === "POST") {
       const { cardId, areaId, newIndex } = await readBody(event);
 
+      // HIGH FIX: Validate all required fields with generic message
       if (!cardId || !areaId || newIndex === undefined) {
         event.res.statusCode = 400;
-        return { error: "Card ID, areaId, and newIndex are required" };
+        return { error: "Required fields are missing" };
+      }
+
+      // HIGH FIX: Validate all IDs are positive integers
+      if (
+        isNaN(Number(cardId)) ||
+        Number(cardId) <= 0 ||
+        isNaN(Number(areaId)) ||
+        Number(areaId) <= 0
+      ) {
+        event.res.statusCode = 400;
+        return { error: "Invalid ID values" };
       }
 
       const [boardRows] = await db.execute(
@@ -57,16 +82,13 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       let writeAccess = false;
-      if (board.status === "private" && (!userId || board.user !== userId)) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
+      if (board.status === "private" && board.user !== userId) {
         // Check if the user has an invitation
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
@@ -80,13 +102,9 @@ export default defineEventHandler(async (event) => {
         // Determine write access based on invitation permission
         writeAccess = invitationRows[0].permission === "edit";
       } else if (board.user === userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         // User is the creator of the board, so they have write access
         writeAccess = true;
-      } else if (board.status === "public" && (userIdFromApiKey || session)) {
+      } else if (board.status === "public") {
         writeAccess = true;
       }
 
@@ -110,18 +128,21 @@ export default defineEventHandler(async (event) => {
           if (userIdFromApiKey) {
             const serverSocket = getServerSocket();
             if (serverSocket) {
-              serverSocket.to(`board-${boardId}`).emit("orderdCard", {
+              serverSocket.to(`board-${board.id}`).emit("orderdCard", {
                 cardId,
                 areaId,
                 newIndex,
-                boardId,
+                boardId: board.id,
               });
             }
           }
 
           return { success: true };
         } catch (error) {
-          return { error: error };
+          // HIGH FIX: Don't leak internal error details
+          console.error("Database error:", error);
+          event.res.statusCode = 500;
+          return { error: "Internal server error" };
         }
       } else {
         event.res.statusCode = 403;
@@ -134,6 +155,6 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     console.error("Database error:", error);
     event.res.statusCode = 500;
-    return { error: "Internal Server error" };
+    return { error: "Internal server error" };
   }
 });

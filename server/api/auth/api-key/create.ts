@@ -14,22 +14,40 @@ export default defineEventHandler(async (event) => {
     const session = await getSession(event);
     if (!session) {
       event.res.statusCode = 401;
-      return { error: "Unauthorized - No active session" };
+      return { error: "UNAUTHORIZED" };
     }
 
     const body = await readBody(event);
     const { name, expiresIn } = body;
 
-    // Validate input
-    if (!name || typeof name !== "string" || name.trim() === "") {
+    // Validate input with length limits
+    if (
+      !name ||
+      typeof name !== "string" ||
+      name.trim() === "" ||
+      name.length > 255
+    ) {
       event.res.statusCode = 400;
-      return { error: "Name is required and must be a non-empty string" };
+      return { error: "INVALID_NAME" };
+    }
+
+    // Validate expiresIn - must be positive number, max 365 days (in seconds: 365*24*60*60 = 31536000)
+    if (expiresIn !== undefined && expiresIn !== null) {
+      if (
+        typeof expiresIn !== "number" ||
+        expiresIn <= 0 ||
+        expiresIn > 31536000
+      ) {
+        event.res.statusCode = 400;
+        return { error: "INVALID_EXPIRES_IN" };
+      }
     }
 
     const db = await setupDatabase();
 
     // Generate API key (32 character random string)
     const apiKey = uuidv4().replace(/-/g, "").substring(0, 32);
+    const keyId = uuidv4();
     const keyStart = apiKey.substring(0, 8); // First 8 characters for display
 
     // Calculate expiration date
@@ -41,7 +59,7 @@ export default defineEventHandler(async (event) => {
     await db.execute(
       "INSERT INTO `apikey` (`id`, `name`, `start`, `key`, `expiresAt`, `referenceId`) VALUES (?, ?, ?, ?, ?, ?)",
       [
-        uuidv4(),
+        keyId,
         name.trim(),
         keyStart,
         apiKey,
@@ -50,12 +68,11 @@ export default defineEventHandler(async (event) => {
       ],
     );
 
-    // Return the created API key (only show once!)
+    // CRITICAL FIX: Never return full API key secret - only return metadata
     return {
       success: true,
-      message: "API key created successfully",
-      key: apiKey,
-      id: uuidv4(), // Return a temporary ID (actual ID is not needed for client)
+      message: "API_KEY_CREATED_SUCCESSFULLY",
+      id: keyId,
       name: name.trim(),
       start: keyStart,
       expiresAt: expiresAt,
@@ -63,6 +80,6 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     console.error("Create API key error:", error);
     event.res.statusCode = 500;
-    return { error: "Internal server error" };
+    return { error: "INTERNAL_SERVER_ERROR" };
   }
 });

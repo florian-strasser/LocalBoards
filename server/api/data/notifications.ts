@@ -4,16 +4,6 @@ import { setupDatabase } from "../../../app/lib/databaseSetup";
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
 
-  const session = await getSession(event);
-
-  const query = getQuery(event);
-  const userId = query.userId;
-
-  if (!userId) {
-    event.res.statusCode = 400;
-    return { error: "User ID is required" };
-  }
-
   // Extract API key from headers
   const apiKey = event.headers.get("x-api-key");
 
@@ -30,19 +20,30 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (userIdFromApiKey && userIdFromApiKey !== userId) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  } else if (session.user.id !== userId) {
+  const session = await getSession(event);
+
+  // CRITICAL FIX: Early auth check - block unauthenticated access
+  if (!userIdFromApiKey && !session) {
     event.res.statusCode = 403;
     return { error: "Unauthorized access" };
   }
+
+  // CRITICAL FIX: Use authenticated userId consistently
+  const userId = userIdFromApiKey || session?.user.id;
+
+  // CRITICAL FIX: Ensure userId is defined (defense in depth)
+  if (!userId) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
+
+  const query = getQuery(event);
 
   try {
     const db = setupDatabase();
 
     if (method === "GET") {
-      // Fetch notifications for the user
+      // Fetch notifications for the authenticated user
       const [rows] = await db.execute(
         "SELECT * FROM notifications WHERE userId = ? ORDER BY createdAt DESC",
         [userId],
@@ -51,9 +52,15 @@ export default defineEventHandler(async (event) => {
     } else if (method === "PATCH") {
       // Mark a notification as read
       const notificationId = query.id;
-      if (!notificationId) {
+
+      // HIGH FIX: Validate notificationId is a positive integer
+      if (
+        !notificationId ||
+        isNaN(Number(notificationId)) ||
+        Number(notificationId) <= 0
+      ) {
         event.res.statusCode = 400;
-        return { error: "Notification ID is required" };
+        return { error: "Invalid notification ID" };
       }
 
       await db.execute(

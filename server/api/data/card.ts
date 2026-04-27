@@ -37,7 +37,20 @@ export default defineEventHandler(async (event) => {
 
   const session = await getSession(event);
 
+  // CRITICAL FIX: Early auth check - block unauthenticated access
+  if (!userIdFromApiKey && !session) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
+
+  // CRITICAL FIX: Use authenticated userId consistently
   const userId = userIdFromApiKey || session?.user.id;
+
+  // CRITICAL FIX: Ensure userId is defined (defense in depth)
+  if (!userId) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
 
   try {
     // Initialize database
@@ -47,21 +60,23 @@ export default defineEventHandler(async (event) => {
       // Handle GET request to fetch card details
       const { cardID } = getQuery(event);
 
-      if (!cardID) {
+      // HIGH FIX: Validate cardId is a positive integer
+      const cardId = Array.isArray(cardID) ? cardID[0] : cardID;
+      if (!cardId || isNaN(Number(cardId)) || Number(cardId) <= 0) {
         event.res.statusCode = 400;
-        return { error: "Card ID is required" };
+        return { error: "Invalid card ID" };
       }
 
       // Fetch card details
-      const cardId = Array.isArray(cardID) ? cardID[0] : cardID;
       const [rows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
         cardId,
       ]);
       const card = rows[0];
 
       if (!card) {
+        // HIGH FIX: Generic error to prevent card enumeration
         event.res.statusCode = 404;
-        return { error: "Card not found" };
+        return { error: "Resource not found" };
       }
 
       const [boardRows] = await db.execute(
@@ -71,16 +86,13 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       let readAccess = false;
       if (board.status === "private" && board.user !== userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
           [board.id, userId],
@@ -90,10 +102,6 @@ export default defineEventHandler(async (event) => {
           readAccess = true;
         }
       } else if (board.user === userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         readAccess = true;
       } else if (board.status === "public") {
         readAccess = true;
@@ -123,11 +131,18 @@ export default defineEventHandler(async (event) => {
       }
     } else if (method === "POST") {
       // Handle POST request to create a new card
-      const { areaId, name, content, status, user } = await readBody(event);
+      const { areaId, name, content, status } = await readBody(event);
 
-      if (!areaId || !name || !user) {
+      // HIGH FIX: Validate required fields with generic message
+      if (!areaId || !name) {
         event.res.statusCode = 400;
-        return { error: "Area ID, name, and user are required" };
+        return { error: "Required fields are missing" };
+      }
+
+      // HIGH FIX: Validate areaId is a positive integer
+      if (isNaN(Number(areaId)) || Number(areaId) <= 0) {
+        event.res.statusCode = 400;
+        return { error: "Invalid area ID" };
       }
 
       const [boardRows] = await db.execute(
@@ -137,16 +152,13 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       let writeAccess = false;
-      if (board.status === "private" && (!userId || board.user !== userId)) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
+      if (board.status === "private" && board.user !== userId) {
         // Check if the user has an invitation
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
@@ -160,13 +172,9 @@ export default defineEventHandler(async (event) => {
         // Determine write access based on invitation permission
         writeAccess = invitationRows[0].permission === "edit";
       } else if (board.user === userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         // User is the creator of the board, so they have write access
         writeAccess = true;
-      } else if (board.status === "public" && (userIdFromApiKey || session)) {
+      } else if (board.status === "public") {
         writeAccess = true;
       }
 
@@ -202,18 +210,19 @@ export default defineEventHandler(async (event) => {
         );
 
         // Create notifications for the board owner and invited users
+        // CRITICAL FIX: Use authenticated userId instead of body user
         const usersToNotify = [
           boardOwner,
           ...invitedUsers.map((inv) => inv.user),
         ].filter(Boolean);
 
-        for (const userId of usersToNotify) {
-          if (userId !== user) {
-            // Don't notify the user who created the card
+        for (const notifyUserId of usersToNotify) {
+          if (notifyUserId !== userId) {
+            // Don't notify the authenticated user who created the card
             await db.execute(
               "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
               [
-                userId,
+                notifyUserId,
                 "card_created",
                 boardId,
                 card.id,
@@ -241,9 +250,16 @@ export default defineEventHandler(async (event) => {
       // Handle PUT request to update an existing card
       const { cardID, name, content, status, files } = await readBody(event);
 
+      // HIGH FIX: Validate required fields with generic message
       if (!cardID || !name) {
         event.res.statusCode = 400;
-        return { error: "Card ID and name are required" };
+        return { error: "Required fields are missing" };
+      }
+
+      // HIGH FIX: Validate cardID is a positive integer
+      if (isNaN(Number(cardID)) || Number(cardID) <= 0) {
+        event.res.statusCode = 400;
+        return { error: "Invalid card ID" };
       }
 
       // Fetch card details
@@ -253,8 +269,9 @@ export default defineEventHandler(async (event) => {
       const card = rows[0];
 
       if (!card) {
+        // HIGH FIX: Generic error to prevent card enumeration
         event.res.statusCode = 404;
-        return { error: "Card not found" };
+        return { error: "Resource not found" };
       }
 
       const [boardRows] = await db.execute(
@@ -264,16 +281,13 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       let writeAccess = false;
-      if (board.status === "private" && (!userId || board.user !== userId)) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
+      if (board.status === "private" && board.user !== userId) {
         // Check if the user has an invitation
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
@@ -287,13 +301,9 @@ export default defineEventHandler(async (event) => {
         // Determine write access based on invitation permission
         writeAccess = invitationRows[0].permission === "edit";
       } else if (board.user === userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         // User is the creator of the board, so they have write access
         writeAccess = true;
-      } else if (board.status === "public" && (userIdFromApiKey || session)) {
+      } else if (board.status === "public") {
         writeAccess = true;
       }
 
@@ -330,8 +340,9 @@ export default defineEventHandler(async (event) => {
         const card = rows[0];
 
         if (!card) {
+          // HIGH FIX: Generic error to prevent card enumeration
           event.res.statusCode = 404;
-          return { error: "Card not found" };
+          return { error: "Resource not found" };
         }
 
         // Convert status from number to boolean
@@ -410,12 +421,13 @@ export default defineEventHandler(async (event) => {
         return { error: "Unauthorized access" };
       }
     } else if (method === "DELETE") {
-      // Hier sollte der Deleteprozess laufen
+      // Handle DELETE request to delete a card
       const { cardID } = await readBody(event);
 
-      if (!cardID) {
+      // HIGH FIX: Validate cardID is a positive integer
+      if (!cardID || isNaN(Number(cardID)) || Number(cardID) <= 0) {
         event.res.statusCode = 400;
-        return { error: "Card ID is required" };
+        return { error: "Invalid card ID" };
       }
 
       // Fetch card details
@@ -425,8 +437,9 @@ export default defineEventHandler(async (event) => {
       const card = rows[0];
 
       if (!card) {
+        // HIGH FIX: Generic error to prevent card enumeration
         event.res.statusCode = 404;
-        return { error: "Card not found" };
+        return { error: "Resource not found" };
       }
 
       const [boardRows] = await db.execute(
@@ -436,16 +449,13 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       let writeAccess = false;
-      if (board.status === "private" && (!userId || board.user !== userId)) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
+      if (board.status === "private" && board.user !== userId) {
         // Check if the user has an invitation
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
@@ -459,13 +469,9 @@ export default defineEventHandler(async (event) => {
         // Determine write access based on invitation permission
         writeAccess = invitationRows[0].permission === "edit";
       } else if (board.user === userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         // User is the creator of the board, so they have write access
         writeAccess = true;
-      } else if (board.status === "public" && (userIdFromApiKey || session)) {
+      } else if (board.status === "public") {
         writeAccess = true;
       }
 
@@ -484,8 +490,9 @@ export default defineEventHandler(async (event) => {
         ]);
 
         if (result.affectedRows === 0) {
+          // HIGH FIX: Generic error to prevent card enumeration
           event.res.statusCode = 404;
-          return { error: "Card not found or already deleted" };
+          return { error: "Resource not found or already deleted" };
         }
 
         // Emit socket event for card deletion (only for API calls, not frontend)

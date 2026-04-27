@@ -89,9 +89,10 @@ export default defineEventHandler(async (event) => {
             };
           }
 
-          const [rows] = await db.execute("SELECT * FROM areas WHERE id = ?", [
-            id,
-          ]);
+          const [rows] = await db.execute(
+            "SELECT * FROM areas WHERE id = ? AND board = ?",
+            [id, boardId],
+          );
           area = rows[0];
           // Emit socket event for area update (API calls only)
           if (userIdFromApiKey) {
@@ -115,9 +116,10 @@ export default defineEventHandler(async (event) => {
             [boardId, name, areaCount],
           );
 
-          const [rows] = await db.execute("SELECT * FROM areas WHERE id = ?", [
-            result.insertId,
-          ]);
+          const [rows] = await db.execute(
+            "SELECT * FROM areas WHERE id = ? AND board = ?",
+            [result.insertId, boardId],
+          );
           area = rows[0];
           // Emit socket event for area creation (API calls only)
           if (userIdFromApiKey) {
@@ -159,23 +161,17 @@ export default defineEventHandler(async (event) => {
       }
 
       let writeAccess = false;
-      if (board.status === "private" && (!userId || board.user !== userId)) {
-        // Check if the user has an invitation
+      if (!userId || board.user !== userId) {
+        // Check if the user has an invitation with edit permission
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
           [boardId, userId],
         );
-
-        if (invitationRows.length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
+        if (invitationRows.length > 0) {
+          writeAccess = invitationRows[0].permission === "edit";
         }
-        // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
-      } else if (board.user === userId) {
+      } else {
         // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public" && (userIdFromApiKey || session)) {
         writeAccess = true;
       }
 

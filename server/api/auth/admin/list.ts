@@ -13,12 +13,12 @@ export default defineEventHandler(async (event) => {
     const session = await getSession(event);
     if (!session) {
       event.res.statusCode = 401;
-      return { error: "Unauthorized - No active session" };
+      return { error: "UNAUTHORIZED" };
     }
 
     if (session.user.role !== "admin") {
       event.res.statusCode = 403;
-      return { error: "Forbidden - Admin role required" };
+      return { error: "FORBIDDEN" };
     }
 
     const db = await setupDatabase();
@@ -45,6 +45,6 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     console.error("List users error:", error);
     event.res.statusCode = 500;
-    return { error: "Internal server error" };
+    return { error: "INTERNAL_SERVER_ERROR" };
   }
 });

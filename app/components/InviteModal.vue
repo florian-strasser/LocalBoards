@@ -118,8 +118,7 @@ const createInvitation = async () => {
         const data = await $fetch("/api/data/invite", {
             method: "POST",
             body: {
-                boardId: props.boardID,
-                userId: userID,
+                boardId: Number(props.boardID),
                 mail: inviteEmail.value,
                 permission: invitePermission.value,
             },
@@ -150,7 +149,7 @@ const createInvitation = async () => {
 const removeInvitation = async (userId) => {
     try {
         const data = await $fetch(
-            `/api/data/invite?boardId=${props.boardID}&userId=${userID}&deleteUser=${userId}`,
+            `/api/data/invite?boardId=${Number(props.boardID)}&userId=${userId}`,
             {
                 method: "DELETE",
             },

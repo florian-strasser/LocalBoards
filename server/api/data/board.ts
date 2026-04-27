@@ -24,6 +24,21 @@ export default defineEventHandler(async (event) => {
 
   const session = await getSession(event);
 
+  // CRITICAL FIX: Early auth check - block unauthenticated access
+  if (!userIdFromApiKey && !session) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
+
+  // CRITICAL FIX: Use authenticated userId consistently
+  const userId = userIdFromApiKey || session?.user.id;
+
+  // CRITICAL FIX: Ensure userId is defined (defense in depth)
+  if (!userId) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
+
   try {
     // Initialize database
     const db = setupDatabase();
@@ -33,9 +48,10 @@ export default defineEventHandler(async (event) => {
       const query = getQuery(event);
       const id = query.id;
 
-      if (!id) {
+      // HIGH FIX: Validate boardId is a positive integer
+      if (!id || isNaN(Number(id)) || Number(id) <= 0) {
         event.res.statusCode = 400;
-        return { error: "Board ID is required for GET requests" };
+        return { error: "Invalid board ID" };
       }
 
       const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
@@ -44,26 +60,15 @@ export default defineEventHandler(async (event) => {
       const board = rows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       // Check if the user has access to this board
-      const userId = query.userId;
 
       let writeAccess = false;
-      if (
-        board.status === "private" &&
-        (!userIdFromApiKey || board.user !== userIdFromApiKey) &&
-        (!userId || board.user !== userId)
-      ) {
-        if (userIdFromApiKey && userId !== userIdFromApiKey) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        } else if (!session || session.user.id !== userId) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
+      if (board.status === "private" && board.user !== userId) {
         // Check if the user has an invitation
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
@@ -77,30 +82,42 @@ export default defineEventHandler(async (event) => {
         // Determine write access based on invitation permission
         writeAccess = invitationRows[0].permission === "edit";
       } else if (board.user === userId) {
-        if (userIdFromApiKey && userId !== userIdFromApiKey) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        if (!session || session.user.id !== userId) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         // User is the creator of the board, so they have write access
         writeAccess = true;
-      } else if (board.status === "public" && session) {
+      } else if (board.status === "public") {
         writeAccess = true;
       }
 
       return { board, writeAccess };
     } else if (method === "POST") {
       // Get the board data from the request body
-      const { id, userId, name, style, image, status } = await readBody(event);
+      const {
+        id,
+        userId: bodyUserId,
+        name,
+        style,
+        image,
+        status,
+      } = await readBody(event);
 
-      if (!userId || !name || !style || !status) {
+      // HIGH FIX: Validate required fields with generic message
+      if (!bodyUserId || !name || !style || !status) {
         event.res.statusCode = 400;
         return {
-          error: "User ID, name, style and status are required",
+          error: "Required fields are missing",
         };
+      }
+
+      // CRITICAL FIX: Ensure body userId matches authenticated user
+      if (bodyUserId !== userId) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
+
+      // HIGH FIX: Validate id if present
+      if (id && (isNaN(Number(id)) || Number(id) <= 0)) {
+        event.res.statusCode = 400;
+        return { error: "Invalid board ID" };
       }
 
       let board;
@@ -112,19 +129,12 @@ export default defineEventHandler(async (event) => {
 
         if (!board) {
           event.res.statusCode = 404;
-          return { error: "Board not found" };
+          return { error: "Resource not found" };
         }
 
         let writeAccess = false;
 
         if (board.user !== userId) {
-          if (userIdFromApiKey && userId !== userIdFromApiKey) {
-            event.res.statusCode = 403;
-            return { error: "Unauthorized access" };
-          } else if (!session || session.user.id !== userId) {
-            event.res.statusCode = 403;
-            return { error: "Unauthorized access" };
-          }
           // Check if the user has an invitation with edit permission
           const [invitationRows] = await db.execute(
             "SELECT permission FROM invitations WHERE board = ? AND user = ? AND permission = 'edit'",
@@ -137,14 +147,7 @@ export default defineEventHandler(async (event) => {
           }
           writeAccess = invitationRows[0].permission === "edit";
         } else if (board.user === userId) {
-          if (userIdFromApiKey && userId !== userIdFromApiKey) {
-            event.res.statusCode = 403;
-            return { error: "Unauthorized access" };
-          } else if (!session || session.user.id !== userId) {
-            event.res.statusCode = 403;
-            return { error: "Unauthorized access" };
-          }
-          writeAccess = "edit";
+          writeAccess = true;
         }
         if (writeAccess) {
           // Update existing board
@@ -156,7 +159,7 @@ export default defineEventHandler(async (event) => {
           if (result.affectedRows === 0) {
             event.res.statusCode = 404;
             return {
-              error: "Board not found or you do not have permission to edit it",
+              error: "Resource not found or access denied",
             };
           }
 
@@ -182,13 +185,6 @@ export default defineEventHandler(async (event) => {
           return { error: "Unauthorized access" };
         }
       } else {
-        if (userIdFromApiKey && userId !== userIdFromApiKey) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        } else if (!session || session.user.id !== userId) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         // Create new board
         const [result] = await db.execute(
           "INSERT INTO boards (user, name, style, image, status) VALUES (?, ?, ?, ?, ?)",
@@ -208,21 +204,13 @@ export default defineEventHandler(async (event) => {
       // Handle DELETE request to delete a board
       const query = getQuery(event);
       const id = query.id;
-      const userId = query.userId;
 
-      if (!id || !userId) {
+      // HIGH FIX: Validate boardId is a positive integer
+      if (!id || isNaN(Number(id)) || Number(id) <= 0) {
         event.res.statusCode = 400;
         return {
-          error: "Board ID and user ID are required for DELETE requests",
+          error: "Invalid board ID",
         };
-      }
-
-      if (userIdFromApiKey && userId !== userIdFromApiKey) {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
-      } else if (!session || session.user.id !== userId) {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
 
       const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
@@ -231,14 +219,15 @@ export default defineEventHandler(async (event) => {
       const board = rows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       // Check if the user has permission to delete the board
       if (board.user !== userId) {
         event.res.statusCode = 403;
-        return { error: "You don't have permission to delete this board" };
+        return { error: "Unauthorized access" };
       }
 
       // Delete all invitations associated with the board
@@ -263,7 +252,7 @@ export default defineEventHandler(async (event) => {
 
       if (result.affectedRows === 0) {
         event.res.statusCode = 404;
-        return { error: "Board not found or already deleted" };
+        return { error: "Resource not found or already deleted" };
       }
 
       // Emit socket event for board deletion (API calls only)
@@ -281,15 +270,17 @@ export default defineEventHandler(async (event) => {
       // Handle PATCH request to update area order
       const { boardId, areas } = await readBody(event);
 
-      if (!session && !userIdFromApiKey) {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
-      }
-
-      if (!boardId || !areas || !Array.isArray(areas)) {
+      // HIGH FIX: Validate boardId and areas
+      if (
+        !boardId ||
+        isNaN(Number(boardId)) ||
+        Number(boardId) <= 0 ||
+        !areas ||
+        !Array.isArray(areas)
+      ) {
         event.res.statusCode = 400;
         return {
-          error: "Board ID and areas array are required for PATCH requests",
+          error: "Invalid request parameters",
         };
       }
 
@@ -299,12 +290,12 @@ export default defineEventHandler(async (event) => {
       const board = rows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       // Check if the user has access to this board
-      const userId = userIdFromApiKey || session?.user.id;
 
       let writeAccess = false;
       if (board.status === "private" && board.user !== userId) {
@@ -343,7 +334,7 @@ export default defineEventHandler(async (event) => {
           if (result.affectedRows === 0) {
             event.res.statusCode = 404;
             return {
-              error: `Area with ID ${area.id} not found or you do not have permission to edit it`,
+              error: "Resource not found or access denied",
             };
           }
         }

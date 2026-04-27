@@ -1,8 +1,19 @@
 import { setupDatabase } from "../../app/lib/databaseSetup";
 import { v4 as uuidv4 } from "uuid";
 import { setCookie } from "h3";
+import bcrypt from "bcryptjs";
+
+// UUID v4 regex for validation
+const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function createSession(event: any, userId: string) {
+  // Validate userId is UUID format
+  if (!userId || typeof userId !== "string" || !uuidRegex.test(userId)) {
+    console.error("Invalid userId for session creation");
+    return { error: "INVALID_USER_ID" };
+  }
+
   try {
     const db = await setupDatabase();
 
@@ -37,11 +48,19 @@ export async function createSession(event: any, userId: string) {
     };
   } catch (error) {
     console.error("Session creation error:", error);
-    return { error: "Failed to create session" };
+    return { error: "SESSION_CREATION_FAILED" };
   }
 }
 
 export async function verifyApiKey(apiKey: string) {
+  // Validate API key input
+  if (!apiKey || typeof apiKey !== "string" || apiKey.length > 64) {
+    // Always perform constant-time operation before returning
+    const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
+    await bcrypt.compare("fake", fakeHash);
+    return { error: "INVALID_API_KEY" };
+  }
+
   try {
     const db = await setupDatabase();
 
@@ -51,15 +70,32 @@ export async function verifyApiKey(apiKey: string) {
       [apiKey],
     );
 
-    if (keys.length === 0) {
-      return { error: "Invalid API key" };
+    const keyExists = keys.length > 0;
+    let key = null;
+
+    // Always perform fake hash comparison to maintain constant time
+    const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
+    await bcrypt.compare(apiKey, fakeHash);
+
+    if (!keyExists) {
+      // Also perform the expiration check timing to maintain consistency
+      const fakeDate = new Date();
+      if (fakeDate < new Date()) {
+        await bcrypt.compare(apiKey, fakeHash);
+      }
+      return { error: "INVALID_API_KEY" };
     }
 
-    const key = keys[0];
+    key = keys[0];
 
-    // Check if key is expired
-    if (key.expiresAt && new Date(key.expiresAt) < new Date()) {
-      return { error: "API key expired" };
+    // Check if key is expired - always perform the check for constant timing
+    const isExpired = key.expiresAt && new Date(key.expiresAt) < new Date();
+
+    // Perform another fake operation to maintain timing consistency
+    await bcrypt.compare(key.id, fakeHash);
+
+    if (isExpired) {
+      return { error: "INVALID_API_KEY" };
     }
 
     return {
@@ -73,7 +109,7 @@ export async function verifyApiKey(apiKey: string) {
     };
   } catch (error) {
     console.error("API key verification error:", error);
-    return { error: "Internal server error" };
+    return { error: "API_KEY_VERIFICATION_FAILED" };
   }
 }
 

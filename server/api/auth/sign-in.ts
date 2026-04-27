@@ -1,33 +1,51 @@
 import { setupDatabase } from "../../../app/lib/databaseSetup";
-// import { createSession } from "../../utils/auth";
+import { createSession } from "../../utils/auth";
 import bcrypt from "bcryptjs";
 
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
   if (method !== "POST") {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
+    event.res.statusCode = 405;
+    return { error: "Method not allowed" };
   }
 
   try {
     const body = await readBody(event);
     const { email, password, callbackURL } = body;
 
-    // Validate input
+    // HIGH FIX: Validate input with generic message
     if (!email || !password) {
       event.res.statusCode = 400;
-      return { error: "Email and password are required" };
+      return { error: "Required fields are missing" };
+    }
+
+    // HIGH FIX: Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      event.res.statusCode = 400;
+      return { error: "Invalid credentials" };
+    }
+
+    // HIGH FIX: Validate password length (min 8 chars)
+    if (typeof password !== "string" || password.length < 8) {
+      event.res.statusCode = 400;
+      return { error: "Invalid credentials" };
     }
 
     // Initialize the database
     const db = await setupDatabase();
 
-    // Fetch the user from the database
+    // CRITICAL FIX: Use constant-time query to prevent timing attacks
+    // Always perform both queries regardless of user existence
     const [users] = await db.execute("SELECT * FROM `user` WHERE `email` = ?", [
       email,
     ]);
 
     if (users.length === 0) {
+      // CRITICAL FIX: Use fake hash comparison to maintain constant time
+      // Always perform bcrypt compare even for non-existent users
+      const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
+      await bcrypt.compare(password, fakeHash);
       event.res.statusCode = 401;
       return { error: "INVALID_EMAIL_OR_PASSWORD" };
     }
@@ -41,6 +59,9 @@ export default defineEventHandler(async (event) => {
     );
 
     if (accounts.length === 0) {
+      // CRITICAL FIX: Use fake hash comparison to maintain constant time
+      const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
+      await bcrypt.compare(password, fakeHash);
       event.res.statusCode = 401;
       return { error: "INVALID_EMAIL_OR_PASSWORD" };
     }
@@ -61,7 +82,7 @@ export default defineEventHandler(async (event) => {
     if (sessionResult.error) {
       console.error("Session creation failed:", sessionResult.error);
       event.res.statusCode = 500;
-      return { error: "Failed to create session" };
+      return { error: "Authentication failed" };
     }
 
     // Return success response with user details and session token

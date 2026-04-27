@@ -1,5 +1,6 @@
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { getSession } from "../../utils/auth";
+import { getCookie } from "h3";
 import bcrypt from "bcryptjs";
 
 export default defineEventHandler(async (event) => {
@@ -10,11 +11,16 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    // Get current session token from request for later use
+    const currentSessionToken =
+      event.headers.get("authorization")?.replace("Bearer ", "") ||
+      getCookie(event, "session_token");
+
     // Verify session first
     const session = await getSession(event);
     if (!session) {
       event.res.statusCode = 401;
-      return { error: "Unauthorized - No active session" };
+      return { error: "UNAUTHORIZED" };
     }
 
     const body = await readBody(event);
@@ -23,23 +29,35 @@ export default defineEventHandler(async (event) => {
     // Validate input
     if (!oldPassword || !newPassword) {
       event.res.statusCode = 400;
-      return { error: "Both old and new passwords are required" };
+      return { error: "BOTH_PASSWORDS_REQUIRED" };
+    }
+
+    // MEDIUM FIX: Check old != new password
+    if (oldPassword === newPassword) {
+      event.res.statusCode = 400;
+      return { error: "OLD_NEW_SAME" };
     }
 
     if (newPassword.length < 8) {
       event.res.statusCode = 400;
-      return { error: "New password must be at least 8 characters long" };
+      return { error: "PASSWORD_TOO_SHORT" };
     }
 
     const db = await setupDatabase();
 
-    // Get the user's current password hash
+    // CRITICAL FIX: Use constant-time check for account existence
     const [accounts] = await db.execute(
       "SELECT * FROM `account` WHERE `userId` = ? AND `providerId` = ?",
       [session.user.id, "local"],
     );
 
-    if (accounts.length === 0) {
+    const accountExists = accounts.length > 0;
+
+    // Always perform fake comparison to maintain constant time
+    const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
+    await bcrypt.compare(oldPassword, fakeHash);
+
+    if (!accountExists) {
       event.res.statusCode = 404;
       return { error: "LOCAL_ACCOUNT_NOT_FOUND" };
     }
@@ -64,10 +82,10 @@ export default defineEventHandler(async (event) => {
     );
 
     // Revoke other sessions if requested
-    if (revokeOtherSessions) {
+    if (revokeOtherSessions && currentSessionToken) {
       await db.execute(
         "DELETE FROM `session` WHERE `userId` = ? AND `token` != ?",
-        [session.user.id, session.session.token],
+        [session.user.id, currentSessionToken],
       );
     }
 
@@ -79,6 +97,6 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     console.error("Update password error:", error);
     event.res.statusCode = 500;
-    return { error: "INTERNAL_SERVER_ERROR" };
+    return { error: "Internal server error" };
   }
 });

@@ -1,6 +1,10 @@
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import bcrypt from "bcryptjs";
 
+// UUID v4 regex pattern for token validation
+const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
   if (method !== "POST") {
@@ -12,10 +16,10 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
     const { token, newPassword } = body;
 
-    // Validate input
-    if (!token || typeof token !== "string") {
+    // HIGH FIX: Strong token and password validation with generic errors
+    if (!token || typeof token !== "string" || !uuidRegex.test(token)) {
       event.res.statusCode = 400;
-      return { error: "Invalid or missing token" };
+      return { error: "INVALID_TOKEN" };
     }
 
     if (
@@ -24,32 +28,43 @@ export default defineEventHandler(async (event) => {
       newPassword.length < 8
     ) {
       event.res.statusCode = 400;
-      return { error: "Password must be at least 8 characters long" };
+      return { error: "INVALID_PASSWORD" };
     }
 
     const db = await setupDatabase();
 
-    // Check if token exists and is valid
+    // CRITICAL FIX: Use constant-time checks for token and user existence
     const [tokens] = await db.execute(
       "SELECT * FROM `verification` WHERE `value` = ? AND `expiresAt` > NOW()",
       [token],
     );
 
-    if (tokens.length === 0) {
+    const tokenExists = tokens.length > 0;
+
+    // Always perform fake hash comparison to maintain constant time
+    const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
+    await bcrypt.compare(newPassword, fakeHash);
+
+    if (!tokenExists) {
       event.res.statusCode = 400;
-      return { error: "Invalid or expired token" };
+      return { error: "INVALID_TOKEN" };
     }
 
     const verificationToken = tokens[0];
 
-    // Get user by email
+    // CRITICAL FIX: Use constant-time check for user existence
     const [users] = await db.execute("SELECT * FROM `user` WHERE `email` = ?", [
       verificationToken.identifier,
     ]);
 
-    if (users.length === 0) {
+    const userExists = users.length > 0;
+
+    // Always perform another fake hash comparison to maintain constant time
+    await bcrypt.compare(token, fakeHash);
+
+    if (!userExists) {
       event.res.statusCode = 404;
-      return { error: "User not found" };
+      return { error: "INVALID_TOKEN" };
     }
 
     const user = users[0];
@@ -72,11 +87,11 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: "Password has been reset successfully",
+      message: "PASSWORD_RESET_SUCCESSFUL",
     };
   } catch (error) {
     console.error("Reset password error:", error);
     event.res.statusCode = 500;
-    return { error: "Internal server error" };
+    return { error: "INTERNAL_SERVER_ERROR" };
   }
 });

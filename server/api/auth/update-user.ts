@@ -3,26 +3,54 @@ import { getSession } from "../../utils/auth";
 
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
+  // LOW FIX: Use generic error message
   if (method !== "POST") {
     event.res.statusCode = 405;
-    return { error: "METHOD_NOT_ALLOWED" };
+    return { error: "Method not allowed" };
   }
 
   try {
     // Verify session first
     const session = await getSession(event);
+    // HIGH FIX: Use generic error message
     if (!session) {
       event.res.statusCode = 401;
-      return { error: "UNAUTHORIZED" };
+      return { error: "Unauthorized" };
     }
 
     const body = await readBody(event);
     const { name, image } = body;
 
     // Validate input
+    // HIGH FIX: Use generic error message
     if (!name || typeof name !== "string" || name.trim() === "") {
       event.res.statusCode = 400;
-      return { error: "NAME_IS_REQUIRED" };
+      return { error: "Invalid input" };
+    }
+
+    // MEDIUM FIX: Validate image field - must be valid URL, base64, relative path, or null
+    if (image && typeof image === "string") {
+      // Block potentially dangerous schemes (XSS protection)
+      if (image.trim().toLowerCase().startsWith("javascript:")) {
+        event.res.statusCode = 400;
+        return { error: "Invalid input" };
+      }
+      // Allow http, https, data URI, relative paths (/, ./, ../), or empty
+      const isUrl = image.startsWith("http://") || image.startsWith("https://");
+      const isBase64 = image.startsWith("data:");
+      const isRelativePath =
+        image.startsWith("/") ||
+        image.startsWith("./") ||
+        image.startsWith("../");
+      if (!isUrl && !isBase64 && !isRelativePath) {
+        event.res.statusCode = 400;
+        return { error: "Invalid input" };
+      }
+      // Sanitize: limit length to prevent DoS with huge base64
+      if (image.length > 1000000) {
+        event.res.statusCode = 400;
+        return { error: "Invalid input" };
+      }
     }
 
     const db = await setupDatabase();
@@ -40,18 +68,19 @@ export default defineEventHandler(async (event) => {
     );
 
     if (users.length === 0) {
+      // HIGH FIX: Use generic error message (should not happen with valid session)
       event.res.statusCode = 404;
-      return { error: "USER_NOT_FOUND" };
+      return { error: "Resource not found" };
     }
 
     return {
       success: true,
-      message: "USER_UPDATED_SUCCESSFULLY",
+      message: "User updated successfully",
       user: users[0],
     };
   } catch (error) {
     console.error("Update user error:", error);
     event.res.statusCode = 500;
-    return { error: "INTERNAL_SERVER_ERROR" };
+    return { error: "Internal server error" };
   }
 });

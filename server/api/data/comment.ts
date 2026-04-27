@@ -24,7 +24,20 @@ export default defineEventHandler(async (event) => {
 
   const session = await getSession(event);
 
+  // CRITICAL FIX: Early auth check - block unauthenticated access
+  if (!userIdFromApiKey && !session) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
+
+  // CRITICAL FIX: Use authenticated userId consistently
   const userId = userIdFromApiKey || session?.user.id;
+
+  // CRITICAL FIX: Ensure userId is defined (defense in depth)
+  if (!userId) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
 
   try {
     // Initialize database
@@ -34,9 +47,10 @@ export default defineEventHandler(async (event) => {
       // Handle GET request to fetch comments for a card
       const { cardID } = getQuery(event);
 
-      if (!cardID) {
+      // HIGH FIX: Validate cardID is a positive integer
+      if (!cardID || isNaN(Number(cardID)) || Number(cardID) <= 0) {
         event.res.statusCode = 400;
-        return { error: "Card ID is required" };
+        return { error: "Invalid card ID" };
       }
 
       const [rows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
@@ -45,8 +59,9 @@ export default defineEventHandler(async (event) => {
       const card = rows[0];
 
       if (!card) {
+        // HIGH FIX: Generic error to prevent card enumeration
         event.res.statusCode = 404;
-        return { error: "Card not found" };
+        return { error: "Resource not found" };
       }
 
       const [boardRows] = await db.execute(
@@ -56,16 +71,13 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       let readAccess = false;
       if (board.status === "private" && board.user !== userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
           [board.id, userId],
@@ -75,10 +87,6 @@ export default defineEventHandler(async (event) => {
           readAccess = true;
         }
       } else if (board.user === userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         readAccess = true;
       } else if (board.status === "public") {
         readAccess = true;
@@ -107,11 +115,18 @@ export default defineEventHandler(async (event) => {
       }
     } else if (method === "POST") {
       // Handle POST request to create a new comment
-      const { card, content, user } = await readBody(event);
+      const { card, content } = await readBody(event);
 
-      if (!card || !content || !user) {
+      // HIGH FIX: Validate required fields with generic message
+      if (!card || !content) {
         event.res.statusCode = 400;
-        return { error: "Card ID, content, and user are required" };
+        return { error: "Required fields are missing" };
+      }
+
+      // HIGH FIX: Validate card is a positive integer
+      if (isNaN(Number(card)) || Number(card) <= 0) {
+        event.res.statusCode = 400;
+        return { error: "Invalid card ID" };
       }
 
       const [rows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
@@ -120,8 +135,9 @@ export default defineEventHandler(async (event) => {
       const cardItem = rows[0];
 
       if (!cardItem) {
+        // HIGH FIX: Generic error to prevent card enumeration
         event.res.statusCode = 404;
-        return { error: "Card not found" };
+        return { error: "Resource not found" };
       }
 
       const [boardRows] = await db.execute(
@@ -131,16 +147,13 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       let writeAccess = false;
-      if (board.status === "private" && (!userId || board.user !== userId)) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
+      if (board.status === "private" && board.user !== userId) {
         // Check if the user has an invitation
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
@@ -154,21 +167,18 @@ export default defineEventHandler(async (event) => {
         // Determine write access based on invitation permission
         writeAccess = invitationRows[0].permission === "edit";
       } else if (board.user === userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         // User is the creator of the board, so they have write access
         writeAccess = true;
-      } else if (board.status === "public" && (userIdFromApiKey || session)) {
+      } else if (board.status === "public") {
         writeAccess = true;
       }
 
       if (writeAccess) {
+        // CRITICAL FIX: Use authenticated userId instead of body user
         // Create new comment
         const [result] = await db.execute(
           "INSERT INTO comments (card, user, content) VALUES (?, ?, ?)",
-          [card, user, content],
+          [card, userId, content],
         );
 
         // Fetch the created comment with user information using a LEFT JOIN
@@ -223,13 +233,13 @@ export default defineEventHandler(async (event) => {
           card,
         ]);
 
-        for (const userId of usersToNotify) {
-          if (userId !== user) {
-            // Don't notify the user who created the comment
+        for (const notifyUserId of usersToNotify) {
+          if (notifyUserId !== userId) {
+            // Don't notify the authenticated user who created the comment
             await db.execute(
               "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
               [
-                userId,
+                notifyUserId,
                 "comment",
                 boardId,
                 card,
@@ -244,6 +254,94 @@ export default defineEventHandler(async (event) => {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }
+    } else if (method === "DELETE") {
+      // Handle DELETE request to remove a comment by its creator
+      const { commentId } = getQuery(event);
+
+      // Validate commentId is a positive integer
+      if (!commentId || isNaN(Number(commentId)) || Number(commentId) <= 0) {
+        event.res.statusCode = 400;
+        return { error: "Invalid comment ID" };
+      }
+
+      // Fetch the comment with card reference
+      const [commentRows] = await db.execute(
+        "SELECT c.*, card FROM comments c WHERE c.id = ?",
+        [commentId],
+      );
+      const comment = commentRows[0];
+
+      if (!comment) {
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
+      }
+
+      // Verify card exists to prevent orphaned references
+      const [cardRows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
+        comment.card,
+      ]);
+      const card = cardRows[0];
+
+      if (!card) {
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
+      }
+
+      // Verify board exists and check access (defense in depth)
+      const [boardRows] = await db.execute(
+        "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
+        [card.area],
+      );
+      const board = boardRows[0];
+
+      if (!board) {
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
+      }
+
+      // Check board read access (defense in depth - creator should have access)
+      let hasAccess = false;
+      if (board.status === "private" && board.user !== userId) {
+        const [invitationRows] = await db.execute(
+          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+          [board.id, userId],
+        );
+
+        if (invitationRows.length > 0) {
+          hasAccess = true;
+        }
+      } else if (board.user === userId) {
+        hasAccess = true;
+      } else if (board.status === "public") {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
+
+      // Only allow deletion by the comment creator
+      if (comment.user !== userId) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
+
+      // Delete the comment
+      await db.execute("DELETE FROM comments WHERE id = ?", [commentId]);
+
+      // Emit socket event for comment deletion (API calls only)
+      if (userIdFromApiKey) {
+        const serverSocket = getServerSocket();
+        if (serverSocket) {
+          serverSocket.to(`card-${comment.card}`).emit("deleteComment", {
+            commentId: Number(commentId),
+            cardID: comment.card,
+          });
+        }
+      }
+
+      return { success: true };
     } else {
       event.res.statusCode = 405;
       return { error: "Method not allowed" };
@@ -251,6 +349,6 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     console.error("Database error:", error);
     event.res.statusCode = 500;
-    return { error: "Internal server error", details: error };
+    return { error: "Internal server error" };
   }
 });

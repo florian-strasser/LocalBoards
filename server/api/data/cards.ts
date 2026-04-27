@@ -23,7 +23,20 @@ export default defineEventHandler(async (event) => {
 
   const session = await getSession(event);
 
+  // CRITICAL FIX: Early auth check - block unauthenticated access
+  if (!userIdFromApiKey && !session) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
+
+  // CRITICAL FIX: Use authenticated userId consistently
   const userId = userIdFromApiKey || session?.user.id;
+
+  // CRITICAL FIX: Ensure userId is defined (defense in depth)
+  if (!userId) {
+    event.res.statusCode = 403;
+    return { error: "Unauthorized access" };
+  }
 
   try {
     // Initialize database
@@ -34,9 +47,10 @@ export default defineEventHandler(async (event) => {
       const query = getQuery(event);
       const areaId = query.areaId;
 
-      if (!areaId) {
+      // HIGH FIX: Validate areaId is a positive integer
+      if (!areaId || isNaN(Number(areaId)) || Number(areaId) <= 0) {
         event.res.statusCode = 400;
-        return { error: "Area ID is required for GET requests" };
+        return { error: "Invalid area ID" };
       }
 
       const [boardRows] = await db.execute(
@@ -46,16 +60,13 @@ export default defineEventHandler(async (event) => {
       const board = boardRows[0];
 
       if (!board) {
+        // HIGH FIX: Generic error to prevent board enumeration
         event.res.statusCode = 404;
-        return { error: "Board not found" };
+        return { error: "Resource not found" };
       }
 
       let readAccess = false;
       if (board.status === "private" && board.user !== userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         const [invitationRows] = await db.execute(
           "SELECT permission FROM invitations WHERE board = ? AND user = ?",
           [board.id, userId],
@@ -65,10 +76,6 @@ export default defineEventHandler(async (event) => {
           readAccess = true;
         }
       } else if (board.user === userId) {
-        if (!userIdFromApiKey && !session) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
         readAccess = true;
       } else if (board.status === "public") {
         readAccess = true;
