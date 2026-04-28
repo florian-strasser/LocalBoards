@@ -1,3 +1,8 @@
+## v0.11.2
+
+### Security Fixes
+- **XSS Protection**: Strengthened URL scheme validation for user profile images in `server/api/auth/update-user.ts` to block `javascript:`, `vbscript:`, and non-image `data:` URIs (e.g., `data:text/html`). Only `http:`, `https:`, `data:image/*`, and relative paths are now permitted. Addresses Dependabot security advisory regarding executable URL schemes.
+
 ## v0.11.1
 
 ### Hotfix

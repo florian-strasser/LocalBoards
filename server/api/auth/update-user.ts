@@ -30,14 +30,20 @@ export default defineEventHandler(async (event) => {
 
     // MEDIUM FIX: Validate image field - must be valid URL, base64, relative path, or null
     if (image && typeof image === "string") {
-      // Block potentially dangerous schemes (XSS protection)
-      if (image.trim().toLowerCase().startsWith("javascript:")) {
+      const lowerImage = image.trim().toLowerCase();
+      // Block dangerous schemes (XSS protection)
+      if (
+        lowerImage.startsWith("javascript:") ||
+        lowerImage.startsWith("vbscript:") ||
+        (lowerImage.startsWith("data:") &&
+          !lowerImage.startsWith("data:image/"))
+      ) {
         event.res.statusCode = 400;
         return { error: "Invalid input" };
       }
-      // Allow http, https, data URI, relative paths (/, ./, ../), or empty
+      // Allow http, https, image data URIs, relative paths (/, ./, ../), or empty
       const isUrl = image.startsWith("http://") || image.startsWith("https://");
-      const isBase64 = image.startsWith("data:");
+      const isBase64 = image.startsWith("data:image/");
       const isRelativePath =
         image.startsWith("/") ||
         image.startsWith("./") ||
