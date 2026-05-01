@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const method = event.req.method;
   if (method !== "POST") {
     event.res.statusCode = 405;
-    return { error: "Method not allowed" };
+    return { error: "method_not_allowed" };
   }
 
   try {
@@ -16,20 +16,20 @@ export default defineEventHandler(async (event) => {
     // HIGH FIX: Validate input with generic message
     if (!email || !password) {
       event.res.statusCode = 400;
-      return { error: "Required fields are missing" };
+      return { error: "required_fields_missing" };
     }
 
     // HIGH FIX: Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       event.res.statusCode = 400;
-      return { error: "Invalid credentials" };
+      return { error: "invalid_credentials" };
     }
 
     // HIGH FIX: Validate password length (min 8 chars)
     if (typeof password !== "string" || password.length < 8) {
       event.res.statusCode = 400;
-      return { error: "Invalid credentials" };
+      return { error: "invalid_credentials" };
     }
 
     // Initialize the database
@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
       const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
       await bcrypt.compare(password, fakeHash);
       event.res.statusCode = 401;
-      return { error: "INVALID_EMAIL_OR_PASSWORD" };
+      return { error: "invalid_email_or_password" };
     }
 
     const user = users[0];
@@ -63,7 +63,7 @@ export default defineEventHandler(async (event) => {
       const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
       await bcrypt.compare(password, fakeHash);
       event.res.statusCode = 401;
-      return { error: "INVALID_EMAIL_OR_PASSWORD" };
+      return { error: "invalid_email_or_password" };
     }
 
     const account = accounts[0];
@@ -73,7 +73,7 @@ export default defineEventHandler(async (event) => {
 
     if (!isPasswordValid) {
       event.res.statusCode = 401;
-      return { error: "INVALID_EMAIL_OR_PASSWORD" };
+      return { error: "invalid_email_or_password" };
     }
 
     // Create a session for the user
@@ -82,7 +82,7 @@ export default defineEventHandler(async (event) => {
     if (sessionResult.error) {
       console.error("Session creation failed:", sessionResult.error);
       event.res.statusCode = 500;
-      return { error: "Authentication failed" };
+      return { error: "authentication_failed" };
     }
 
     // Return success response with user details and session token
@@ -103,6 +103,6 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     console.error("Sign-in error:", error);
     event.res.statusCode = 500;
-    return { error: "Internal server error" };
+    return { error: "internal_server_error" };
   }
 });

@@ -6,7 +6,11 @@ const props = defineProps({
     userID: String,
 });
 
-const emits = defineEmits(["comment-created", "comment-deleted"]);
+const emits = defineEmits([
+    "comment-created",
+    "comment-deleted",
+    "comment-updated",
+]);
 
 const onConnect = () => {
     if (props.cardID) {
@@ -19,6 +23,9 @@ const onConnect = () => {
     });
     socket.on("deleteComment", ({ comment, cardID }) => {
         if (props.cardID * 1 === cardID) emits("comment-deleted", comment);
+    });
+    socket.on("updateComment", ({ comment, cardID }) => {
+        if (props.cardID * 1 === cardID) emits("comment-updated", comment);
     });
 };
 

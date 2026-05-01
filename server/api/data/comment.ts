@@ -254,6 +254,120 @@ export default defineEventHandler(async (event) => {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }
+    } else if (method === "PUT") {
+      // Handle PUT request to update a comment by its creator
+      const { id, content } = await readBody(event);
+
+      // Validate required fields
+      if (!id || !content) {
+        event.res.statusCode = 400;
+        return { error: "Required fields are missing" };
+      }
+
+      // Validate id is a positive integer
+      if (isNaN(Number(id)) || Number(id) <= 0) {
+        event.res.statusCode = 400;
+        return { error: "Invalid comment ID" };
+      }
+
+      // Fetch the comment with card reference
+      const [commentRows] = await db.execute(
+        "SELECT c.*, card FROM comments c WHERE c.id = ?",
+        [id],
+      );
+      const comment = commentRows[0];
+
+      if (!comment) {
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
+      }
+
+      // Verify card exists
+      const [cardRows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
+        comment.card,
+      ]);
+      const card = cardRows[0];
+
+      if (!card) {
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
+      }
+
+      // Verify board exists and check access
+      const [boardRows] = await db.execute(
+        "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
+        [card.area],
+      );
+      const board = boardRows[0];
+
+      if (!board) {
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
+      }
+
+      // Check board access
+      let hasAccess = false;
+      if (board.status === "private" && board.user !== userId) {
+        const [invitationRows] = await db.execute(
+          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+          [board.id, userId],
+        );
+
+        if (invitationRows.length > 0) {
+          hasAccess = true;
+        }
+      } else if (board.user === userId) {
+        hasAccess = true;
+      } else if (board.status === "public") {
+        hasAccess = true;
+      }
+
+      if (!hasAccess) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
+
+      // Only allow update by the comment creator
+      if (comment.user !== userId) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
+
+      // Update the comment content
+      await db.execute("UPDATE comments SET content = ? WHERE id = ?", [
+        content,
+        id,
+      ]);
+
+      // Fetch the updated comment with user information
+      const [rows] = await db.execute(
+        "SELECT comments.*, user.name AS userName, user.image AS userImage FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.id = ?",
+        [id],
+      );
+      const updatedComment = rows[0]
+        ? {
+            id: rows[0].id,
+            card: rows[0].card,
+            user: rows[0].user,
+            userImage: rows[0].userImage,
+            userName: rows[0].userName || "Unknown User",
+            content: rows[0].content,
+            date: rows[0].date,
+          }
+        : null;
+
+      // Emit socket event for comment update (API calls only)
+      if (userIdFromApiKey) {
+        const serverSocket = getServerSocket();
+        if (serverSocket) {
+          serverSocket.to(`card-${comment.card}`).emit("updateComment", {
+            comment: updatedComment,
+            cardID: comment.card,
+          });
+        }
+      }
+
+      return { comment: updatedComment };
     } else if (method === "DELETE") {
       // Handle DELETE request to remove a comment by its creator
       const { commentId } = getQuery(event);

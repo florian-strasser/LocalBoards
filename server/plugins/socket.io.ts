@@ -54,6 +54,19 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
         });
     });
 
+    // CommentUpdated
+    socket.on("commentUpdated", async ({ cardID, comment }) => {
+      console.log(
+        `Kommentar ${comment.id} wurde auf Card ${cardID} aktualisiert (user-${socket.id})`,
+      );
+      io.except(`user-${socket.id}`)
+        .to(`card-${cardID}`)
+        .emit("updateComment", {
+          comment,
+          cardID,
+        });
+    });
+
     // BoardUpdated
     socket.on(
       "boardUpdated",
