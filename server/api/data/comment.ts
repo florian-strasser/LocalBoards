@@ -347,7 +347,7 @@ export default defineEventHandler(async (event) => {
       // Validate that only data-checked attributes have changed
       // The frontend sends only the taskList element, so we need to extract it from the old content
       const oldTaskListMatch = comment.content.match(
-        /<ul data-type="taskList"[^>]*>(?:[^<]*(?:<(?!li data-type="taskItem"|\/ul>)[^<]*)*<li data-type="taskItem"[^>]*>[\s\S]*?<\/li>)*[^<]*(?:<(?!\/ul>)[^<]*)*<\/ul>/,
+        /<ul data-type="taskList"[^>]*>(?:[^<]|<(?!\/ul>))+<\/ul>/,
       );
       const oldTaskList = oldTaskListMatch ? oldTaskListMatch[0] : null;
 

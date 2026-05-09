@@ -1,3 +1,8 @@
+## v0.12.2 - Security Hotfix
+
+### Security Fixes
+- Fixed new ReDoS vulnerability in comment checklist validation by using a non-ambiguous regex pattern that prevents catastrophic backtracking (https://github.com/florian-strasser/LocalBoards/security/code-scanning/4)
+
 ## v0.12.1 - Security Hotfix
 
 ### Security Fixes
