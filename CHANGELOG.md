@@ -1,3 +1,8 @@
+## v0.12.1 - Security Hotfix
+
+### Security Fixes
+- Fixed ReDoS vulnerability in comment checklist validation by replacing ambiguous nested regex quantifiers with a safer pattern that prevents catastrophic backtracking (https://github.com/florian-strasser/LocalBoards/security/code-scanning/2, https://github.com/florian-strasser/LocalBoards/security/code-scanning/3)
+
 ## v0.12.0
 
 ### New Features
