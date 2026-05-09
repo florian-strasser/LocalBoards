@@ -32,9 +32,12 @@
                                     <Pen class="size-3" />
                                 </button>
                             </div>
-                            <div
-                                class="wysiwyg-wrapper"
-                                v-html="comment.content"
+                            <CommentContent
+                                :content="comment.content"
+                                :commentId="comment.id"
+                                :cardId="props.cardID"
+                                :boardId="getBoardId()"
+                                :writeAccess="props.writeAccess"
                             />
                         </div>
                         <div class="flex mt-2 items-center gap-x-2 flex-wrap">
@@ -138,12 +141,17 @@ import type { PropType } from "vue";
 
 const props = defineProps({
     cardID: Number,
+    boardID: Number,
     writeAccess: Boolean,
     initialComments: {
         type: Array as PropType<Comment[]>,
         default: () => [],
     },
 });
+
+const getBoardId = () => {
+    return props.boardID;
+};
 
 const emits = defineEmits([
     "comment-created",

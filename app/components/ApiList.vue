@@ -4,7 +4,7 @@
             asH2
             :tooltip="$t('createNewKey')"
             asButton
-            @sectionHeaderButtonClicked="createKey = true"
+            @sectionHeaderButtonClicked="openCreateKey"
             >{{ $t("settingsApiKeys") }}</SectionHeader
         >
         <div v-if="keyList?.length > 0" class="space-y-1">
@@ -35,6 +35,11 @@ if (data.value?.apiKeys) {
 } else {
     keyList.value = [];
 }
+
+const openCreateKey = () => {
+    createKey.value = true;
+    document.body.style.overflow = "hidden";
+};
 
 const handleKeyDeleted = async (id) => {
     const keyToDelete = keyList.value.find((key) => key.id === id);

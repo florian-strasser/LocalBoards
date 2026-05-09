@@ -1,3 +1,22 @@
+## v0.12.0
+
+### New Features
+- Added support for toggling checklist item states in comments — users can now check/uncheck task items, with the API validating that only the checked state (`data-checked` and `checked` attributes) has changed
+
+### Improvements
+- Disabled scroll on body when `ModalWindow` is activated
+- Added a hover state for links within card description or comments
+- Removed footer with copyright information, since it steals space especially on the board pages
+
+### Bug Fixes
+- `/api/auth/api-key/create`: Returns now correctly the generated `key`
+
+### Dependencies
+- Upgraded: @nuxtjs/mcp-toolkit, tailwindcss, @tailwindcss/vite, @tiptap/extension-emoji, @tiptap/extension-file-handler, @tiptap/extension-image, @tiptap/pm, @tiptap/starter-kit, @tiptap/vue-3
+
+### Docs
+- Added PUT, PATCH and DELETE method documentation for comment API endpoint in `docs/content/api/comment.md`
+
 ## v0.11.3
 
 ### New Features

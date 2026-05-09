@@ -5,13 +5,13 @@
             <SectionHeader
                 :tooltip="$t('createNewBoard')"
                 asButton
-                @sectionHeaderButtonClicked="createBoard = true"
+                @sectionHeaderButtonClicked="openCreateBoard"
                 >{{ $t("yourBoards") }}</SectionHeader
             >
             <YourBoards
                 v-if="session"
                 :userID="session.data.user.id"
-                @newBoardButtonClicked="createBoard = true"
+                @newBoardButtonClicked="openCreateBoard"
             />
             <SharedBoards v-if="session" :userID="session.data.user.id" />
         </ContentWrapper>
@@ -78,7 +78,6 @@
                 </form>
             </div>
         </ModalWindow>
-        <AppFooter />
     </div>
 </template>
 <script setup lang="ts">
@@ -98,6 +97,11 @@ const newBoardStyle = ref("kanban");
 const newBoardStatus = ref("private");
 const newBoardImage = ref(null);
 
+const openCreateBoard = () => {
+    createBoard.value = true;
+    document.body.style.overflow = "hidden";
+};
+
 const saveBoard = async () => {
     const newName = newBoardName.value.trim();
     if (!newName) return;
@@ -114,6 +118,7 @@ const saveBoard = async () => {
                 status: newBoardStatus.value,
             },
         });
+        document.body.style.overflow = "auto";
         if (!data) {
             await nuxtApp.callHook("app:toast", {
                 message: $t("error_creating_board"),

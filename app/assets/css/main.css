@@ -44,11 +44,8 @@ body {
 }
 
 .hide-scrollbar {
-    -ms-overflow-style: none; /* Internet Explorer 10+ */
-    scrollbar-width: none;
-}
-.hide-scrollbar::-webkit-scrollbar {
-    display: none;
+    overflow-y: hidden;
+    overflow-x: auto;
 }
 
 .fade-enter-active,
@@ -136,6 +133,11 @@ body {
     padding: 1rem 1.25rem;
     background: var(--color-slate);
     border-radius: var(--radius-xl);
+}
+.tiptap a:hover,
+.wysiwyg-wrapper a:hover {
+    color: var(--color-secondary);
+    cursor: pointer;
 }
 .tiptap img,
 .wysiwyg-wrapper img {

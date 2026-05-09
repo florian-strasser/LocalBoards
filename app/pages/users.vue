@@ -9,7 +9,6 @@
                 <UserList />
             </ContentBox>
         </ContentWrapper>
-        <AppFooter />
     </div>
 </template>
 <script setup lang="ts">

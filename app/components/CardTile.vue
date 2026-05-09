@@ -4,7 +4,7 @@
         :data-card-id="props.card.id"
         type="button"
         class="bg-dark/10 dark:bg-white/10 text-dark dark:text-white text-left p-2 rounded-md w-full"
-        @click="cardModal = props.card.id"
+        @click="openModal(props.card.id)"
     >
         <div class="flex gap-x-2">
             <div
@@ -51,4 +51,8 @@ const cardModal = defineModel();
 const props = defineProps({
     card: Object,
 });
+const openModal = (modalId) => {
+    cardModal.value = modalId;
+    document.body.style.overflow = "hidden";
+};
 </script>

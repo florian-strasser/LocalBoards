@@ -254,6 +254,168 @@ export default defineEventHandler(async (event) => {
         event.res.statusCode = 403;
         return { error: "Unauthorized access" };
       }
+    } else if (method === "PATCH") {
+      // Handle PATCH request to update checklist state in a comment
+      // This allows any user with write access to the board to toggle checkboxes
+      const { id, content, cardId } = await readBody(event);
+
+      // Validate required fields
+      if (!id || !content || !cardId) {
+        event.res.statusCode = 400;
+        return { error: "Required fields are missing" };
+      }
+
+      // Validate id and cardId are positive integers
+      if (
+        isNaN(Number(id)) ||
+        Number(id) <= 0 ||
+        isNaN(Number(cardId)) ||
+        Number(cardId) <= 0
+      ) {
+        event.res.statusCode = 400;
+        return { error: "Invalid ID" };
+      }
+
+      // Fetch the comment
+      const [commentRows] = await db.execute(
+        "SELECT c.*, card FROM comments c WHERE c.id = ?",
+        [id],
+      );
+      const comment = commentRows[0];
+
+      if (!comment) {
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
+      }
+
+      // Verify comment belongs to the specified card
+      if (comment.card !== Number(cardId)) {
+        event.res.statusCode = 400;
+        return { error: "Comment does not belong to specified card" };
+      }
+
+      // Verify card exists
+      const [cardRows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
+        comment.card,
+      ]);
+      const card = cardRows[0];
+
+      if (!card) {
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
+      }
+
+      // Verify board exists and check write access
+      const [boardRows] = await db.execute(
+        "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
+        [card.area],
+      );
+      const board = boardRows[0];
+
+      if (!board) {
+        event.res.statusCode = 404;
+        return { error: "Resource not found" };
+      }
+
+      // Check write access (same logic as POST method)
+      let writeAccess = false;
+      if (board.status === "private" && board.user !== userId) {
+        // Check if the user has an invitation
+        const [invitationRows] = await db.execute(
+          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+          [board.id, userId],
+        );
+
+        if (invitationRows.length === 0) {
+          event.res.statusCode = 403;
+          return { error: "Unauthorized access" };
+        }
+        // Determine write access based on invitation permission
+        writeAccess = invitationRows[0].permission === "edit";
+      } else if (board.user === userId) {
+        // User is the creator of the board, so they have write access
+        writeAccess = true;
+      } else if (board.status === "public") {
+        writeAccess = true;
+      }
+
+      if (!writeAccess) {
+        event.res.statusCode = 403;
+        return { error: "Unauthorized access" };
+      }
+
+      // Validate that only data-checked attributes have changed
+      // The frontend sends only the taskList element, so we need to extract it from the old content
+      const oldTaskListMatch = comment.content.match(
+        /<ul data-type="taskList"[^>]*>(?:[\s\S]*?<li data-type="taskItem"[^>]*>[\s\S]*?<\/li>)*[\s\S]*?<\/ul>/,
+      );
+      const oldTaskList = oldTaskListMatch ? oldTaskListMatch[0] : null;
+
+      if (!oldTaskList) {
+        event.res.statusCode = 400;
+        return { error: "No task list found in original comment" };
+      }
+
+      // Extract checkbox states from both old and new taskList
+      const oldCheckboxMatches =
+        oldTaskList.match(/data-checked="([^"]*)"/g) || [];
+      const newCheckboxMatches = content.match(/data-checked="([^"]*)"/g) || [];
+
+      // Check if the list structure is the same (same number of checkboxes)
+      if (oldCheckboxMatches.length !== newCheckboxMatches.length) {
+        event.res.statusCode = 400;
+        return { error: "Invalid content structure" };
+      }
+
+      // Simpler: compare content ignoring only the checked state attributes
+      const oldWithoutCheckState = oldTaskList
+        .replace(/data-checked="(true|false)"/g, "")
+        .replace(/\s*checked="checked"/g, "");
+      const newWithoutCheckState = content
+        .replace(/data-checked="(true|false)"/g, "")
+        .replace(/\s*checked="checked"/g, "");
+
+      // If everything else is identical, only checkbox state changed
+      if (oldWithoutCheckState !== newWithoutCheckState) {
+        event.res.statusCode = 400;
+        return { error: "Only checkbox states can be modified" };
+      }
+
+      // Update the comment content
+      await db.execute("UPDATE comments SET content = ? WHERE id = ?", [
+        content,
+        id,
+      ]);
+
+      // Fetch the updated comment with user information
+      const [rows] = await db.execute(
+        "SELECT comments.*, user.name AS userName, user.image AS userImage FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.id = ?",
+        [id],
+      );
+      const updatedComment = rows[0]
+        ? {
+            id: rows[0].id,
+            card: rows[0].card,
+            user: rows[0].user,
+            userImage: rows[0].userImage,
+            userName: rows[0].userName || "Unknown User",
+            content: rows[0].content,
+            date: rows[0].date,
+          }
+        : null;
+
+      // Emit socket event for comment update (API calls only)
+      if (userIdFromApiKey) {
+        const serverSocket = getServerSocket();
+        if (serverSocket) {
+          serverSocket.to(`card-${comment.card}`).emit("updateComment", {
+            comment: updatedComment,
+            cardID: comment.card,
+          });
+        }
+      }
+
+      return { comment: updatedComment };
     } else if (method === "PUT") {
       // Handle PUT request to update a comment by its creator
       const { id, content } = await readBody(event);

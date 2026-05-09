@@ -77,6 +77,7 @@ const handleNewKey = async () => {
         });
 
         if (response.success) {
+            console.log(response);
             createdKey.value = response.key;
             emits("key-created", {
                 id: response.id,

@@ -7,7 +7,6 @@
             </h1>
             <NewUserForm />
         </ContentWrapper>
-        <AppFooter />
     </div>
 </template>
 <script setup lang="ts">

@@ -113,6 +113,7 @@
                 </div>
                 <CommentSection
                     :cardID="props.cardID"
+                    :boardID="props.boardID"
                     :writeAccess="props.writeAccess"
                     :initialComments="comments"
                     @comment-created="handleCommentCreated"
@@ -347,6 +348,7 @@ const deleteCard = async () => {
             message: $t("cardDeleted"),
         });
         boxOpen.value = false;
+        document.body.style.overflow = "auto";
         emits("card-deleted", cardData.value.card);
         socket.emit("cardDeleted", {
             boardId: props.boardID,

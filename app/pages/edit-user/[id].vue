@@ -11,7 +11,6 @@
             </h2>
             <EditUserPassword :id="userID" />
         </ContentWrapper>
-        <AppFooter />
     </div>
 </template>
 <script setup lang="ts">

@@ -70,5 +70,6 @@ const deleteUser = async () => {
     }
 
     deleteModal.value = false;
+    document.body.style.overflow = "auto";
 };
 </script>

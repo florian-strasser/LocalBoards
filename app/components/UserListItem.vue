@@ -12,7 +12,7 @@
         </div>
         <div class="flex shrink-0 grow-0 gap-x-3">
             <button
-                @click="model = props.id"
+                @click="openDeleteModal"
                 type="button"
                 v-tooltip="$t('delete')"
                 class="size-12 rounded-full flex bg-primary hover:bg-secondary text-white justify-center items-center cursor-pointer"
@@ -38,4 +38,8 @@ const props = defineProps({
     email: String,
     index: Number,
 });
+const openDeleteModal = () => {
+    model.value = props.id;
+    document.body.style.overflow = "hidden";
+};
 </script>

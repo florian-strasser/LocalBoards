@@ -2,6 +2,22 @@
     <div class="min-h-svh flex flex-col justify-between">
         <AppHeader />
         <div class="w-full pt-12 pb-7 grow-0 shrink-0">
+            <Connection
+                :userID="userID"
+                :boardID="boardID"
+                @board-updated="handleBoardUpdated"
+                @board-deleted="handleBoardDeleted"
+                @areas-updated="handleAreasUpdated"
+                @card-created="handleCardCreated"
+                @card-updated="handleCardUpdated"
+                @card-moved="handleCardMoved"
+                @card-orderd="handleCardOrderd"
+                @card-deleted="handleCardDeleted"
+                @area-created="handleNewArea"
+                @area-updated="handleAreaUpdated"
+                @area-deleted="handleDeleteArea"
+                @comment-count-updated="handleCommentCountUpdated"
+            />
             <div class="container">
                 <div
                     v-if="accessError"
@@ -27,14 +43,14 @@
                             <Pencil class="size-5" />
                         </button>
                         <button
-                            @click="inviteModal = true"
+                            @click="openInviteModal"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
                             v-tooltip="$t('inviteUsers')"
                         >
                             <UserRoundPlus class="size-5" />
                         </button>
                         <button
-                            @click="deleteModal = true"
+                            @click="openDeleteBoard"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
                             v-tooltip="$t('deleteBoard')"
                         >
@@ -44,7 +60,9 @@
                 </div>
             </div>
         </div>
-        <div class="w-full grow shrink-0 pb-5 overflow-scroll hide-scrollbar">
+        <div
+            class="w-full grow shrink-0 pb-5 overflow-scroll hide-scrollbar bg-slate dark:bg-dark"
+        >
             <div class="container">
                 <div
                     v-if="!accessError"
@@ -74,7 +92,7 @@
                             />
                             <button
                                 v-if="writeAccess"
-                                @click="deleteAreaModal = area.id"
+                                @click="openDeleteAreaModal(area.id)"
                                 class="text-primary hover:text-secondary shrink-0 grow-0"
                                 v-tooltip="$t('delete')"
                             >
@@ -146,24 +164,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="container pb-12 grow-0 shrink-0">
-            <Connection
-                :userID="userID"
-                :boardID="boardID"
-                @board-updated="handleBoardUpdated"
-                @board-deleted="handleBoardDeleted"
-                @areas-updated="handleAreasUpdated"
-                @card-created="handleCardCreated"
-                @card-updated="handleCardUpdated"
-                @card-moved="handleCardMoved"
-                @card-orderd="handleCardOrderd"
-                @card-deleted="handleCardDeleted"
-                @area-created="handleNewArea"
-                @area-updated="handleAreaUpdated"
-                @area-deleted="handleDeleteArea"
-                @comment-count-updated="handleCommentCountUpdated"
-            />
         </div>
         <ModalWindow v-model="optionsActive">
             <div>
@@ -269,14 +269,13 @@
                 @comment-count-updated="handleCommentCountUpdated"
             />
         </ModalWindow>
-        <AppFooter />
     </div>
 </template>
 <script setup lang="ts">
 import { socket } from "~/lib/socket";
 import Sortable from "sortablejs";
 import { Pencil, UserRoundPlus, Trash2, X } from "lucide-vue-next";
-import { Plus, FolderPlus } from "lucide-vue-next";
+import { Plus } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
 
@@ -517,7 +516,7 @@ const deleteArea = async (areaId) => {
         // Remove the cards for the area
         delete cards.value[areaId];
         deleteAreaModal.value = false;
-
+        document.body.style.overflow = "auto";
         socket.emit("areaDeleted", {
             boardId: boardID.value,
             area: areaId,
@@ -537,6 +536,15 @@ const openModal = () => {
     newBoardStatus.value = boardStatus.value;
     newBoardImage.value = boardImage.value;
     optionsActive.value = true;
+    document.body.style.overflow = "hidden";
+};
+const openDeleteAreaModal = (id) => {
+    deleteAreaModal.value = id;
+    document.body.style.overflow = "hidden";
+};
+const openInviteModal = () => {
+    inviteModal.value = true;
+    document.body.style.overflow = "hidden";
 };
 
 // Save board name with debounce
@@ -564,7 +572,7 @@ const saveBoard = async () => {
             boardStatus.value = newBoardStatus.value;
             boardImage.value = newBoardImage.value;
             optionsActive.value = false;
-
+            document.body.style.overflow = "auto";
             socket.emit("boardUpdated", {
                 boardID: boardID.value,
                 boardName: boardName.value,
@@ -623,6 +631,11 @@ const handleCommentCountUpdated = ({ cardId, commentCount }) => {
     }
 };
 
+const openDeleteBoard = () => {
+    deleteModal.value = true;
+    document.body.style.overflow = "hidden";
+};
+
 const deleteBoard = async () => {
     try {
         const data = await $fetch(
@@ -643,6 +656,7 @@ const deleteBoard = async () => {
             socket.emit("boardDeleted", {
                 boardID: boardID.value,
             });
+            document.body.style.overflow = "auto";
             await navigateTo("/dashboard/");
         }
     } catch (err) {

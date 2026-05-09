@@ -74,6 +74,7 @@ export default defineEventHandler(async (event) => {
       message: "API_KEY_CREATED_SUCCESSFULLY",
       id: keyId,
       name: name.trim(),
+      key: apiKey,
       start: keyStart,
       expiresAt: expiresAt,
     };

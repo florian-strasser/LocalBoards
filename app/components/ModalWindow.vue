@@ -5,13 +5,10 @@
     >
         <div
             class="absolute top-0 left-0 w-full h-full bg-black/50"
-            @click="open = false"
+            @click="closeModal"
         />
         <div class="relative w-full max-h-full py-8 overflow-auto">
-            <div
-                class="fixed top-0 left-0 w-full h-full"
-                @click="open = false"
-            />
+            <div class="fixed top-0 left-0 w-full h-full" @click="closeModal" />
             <div
                 class="relative w-full max-w-lg mx-auto bg-white dark:bg-slate shadow-xl p-8 rounded-lg text-gray text-center"
             >
@@ -20,7 +17,7 @@
                 >
                     <button
                         type="button"
-                        @click="open = false"
+                        @click="closeModal"
                         class="flex justify-center items-center bg-primary text-white hover:bg-secondary size-12 rounded-full"
                     >
                         <X class="size-5" stroke-width="2" />
@@ -42,8 +39,13 @@ const open = defineModel();
 
 const handleEscKey = (event) => {
     if (event.key === "Escape") {
-        open.value = false;
+        closeModal();
     }
+};
+
+const closeModal = () => {
+    document.body.style.overflow = "auto";
+    open.value = false;
 };
 
 onMounted(() => {

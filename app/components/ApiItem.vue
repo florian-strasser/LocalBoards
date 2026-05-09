@@ -17,7 +17,7 @@
                 <button
                     type="button"
                     class="size-12 bg-primary text-white hover:bg-secondary rounded-full flex justify-center items-center"
-                    @click="deleteKeyModal = true"
+                    @click="openDeleteKeyModal"
                     v-tooltip="$t('delete')"
                 >
                     <Trash2 class="size-5" />
@@ -65,6 +65,11 @@ const formattedExpires = computed(() => {
     }).format(props.expires);
 });
 
+const openDeleteKeyModal = () => {
+    deleteKeyModal.value = true;
+    document.body.style.overflow = "hidden";
+};
+
 const deleteKey = async () => {
     const keyId = props.id;
     try {
@@ -77,6 +82,7 @@ const deleteKey = async () => {
 
         if (response.success) {
             deleteKeyModal.value = false;
+            document.body.style.overflow = "auto";
             emits("key-deleted", keyId);
             await nuxtApp.callHook("app:toast", {
                 message: $t("keyDeleted"),
