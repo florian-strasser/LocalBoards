@@ -17,7 +17,8 @@ const textList = {
     clickHereToViewYourNotifications: "Click here to view your notifications",
     notificationInvitedToBoard: "You have been invited to the board",
     notificationNewComment: 'New comment by "{username}" on card:',
-    notificationNewCard: "New card created",
+    notificationNewCard:
+      '"{username}" created a new card "{cardName}" on board "{boardName}"',
     notificationCardMoved: "Card",
     notificationCardMovedFrom: " moved from ",
     notificationCardMovedTo: " to ",
@@ -34,7 +35,8 @@ const textList = {
       "Klicke hier, um deine Benachrichtigungen anzuzeigen",
     notificationInvitedToBoard: "Du wurdest zum Board eingeladen",
     notificationNewComment: 'Neuer Kommentar von "{username}" auf Karte',
-    notificationNewCard: "Neue Karte erstellt",
+    notificationNewCard:
+      '"{username}" hat eine neue Karte "{cardName}" auf dem Board "{boardName}" erstellt',
     notificationCardMoved: "Karte",
     notificationCardMovedFrom: " bewegt von ",
     notificationCardMovedTo: " nach ",
@@ -51,7 +53,8 @@ const textList = {
     notificationInvitedToBoard: "Vous avez été invité au tableau",
     notificationNewComment:
       'Nouveau commentaire de "{username}" sur la carte :',
-    notificationNewCard: "Nouvelle carte créée",
+    notificationNewCard:
+      '"{username}" a créé une nouvelle carte "{cardName}" sur le tableau "{boardName}"',
     notificationCardMoved: "Carte",
     notificationCardMovedFrom: " déplacée de ",
     notificationCardMovedTo: " à ",
@@ -68,7 +71,8 @@ const textList = {
       "Haz clic aquí para ver tus notificaciones",
     notificationInvitedToBoard: "Has sido invitado al tablero",
     notificationNewComment: 'Nuevo comentario de "{username}" en la tarjeta:',
-    notificationNewCard: "Nueva tarjeta creada",
+    notificationNewCard:
+      '"{username}" creó una nueva tarjeta "{cardName}" en el tablero "{boardName}"',
     notificationCardMoved: "Tarjeta",
     notificationCardMovedFrom: " movida de ",
     notificationCardMovedTo: " a ",
@@ -84,7 +88,8 @@ const textList = {
     clickHereToViewYourNotifications: "Clicca qui per vedere le tue notifiche",
     notificationInvitedToBoard: "Sei stato invitato alla bacheca",
     notificationNewComment: 'Nuovo commento di "{username}" sulla carta:',
-    notificationNewCard: "Nuova carta creata",
+    notificationNewCard:
+      '"{username}" ha creato una nuova carta "{cardName}" sulla bacheca "{boardName}"',
     notificationCardMoved: "Carta",
     notificationCardMovedFrom: " spostata da ",
     notificationCardMovedTo: " a ",
@@ -100,7 +105,8 @@ const textList = {
     clickHereToViewYourNotifications: "Klik hier om je meldingen te bekijken",
     notificationInvitedToBoard: "Je bent uitgenodigd voor het bord",
     notificationNewComment: 'Nieuwe reactie van "{username}" op kaart:',
-    notificationNewCard: "Nieuwe kaart gemaakt",
+    notificationNewCard:
+      '"{username}" heeft een nieuwe kaart "{cardName}" gemaakt op het bord "{boardName}"',
     notificationCardMoved: "Kaart",
     notificationCardMovedFrom: " verplaatst van ",
     notificationCardMovedTo: " naar ",
@@ -117,7 +123,8 @@ const textList = {
       "Kliknij tutaj, aby zobaczyć swoje powiadomienia",
     notificationInvitedToBoard: "Zostałeś zaproszony do tablicy",
     notificationNewComment: 'Nowy komentarz od "{username}" do karty:',
-    notificationNewCard: "Nowa karta utworzona",
+    notificationNewCard:
+      '"{username}" utworzył nową kartę "{cardName}" na tablicy "{boardName}"',
     notificationCardMoved: "Karta",
     notificationCardMovedFrom: " przeniesiona z ",
     notificationCardMovedTo: " do ",
@@ -187,11 +194,30 @@ const translateNotification = (message: string): string => {
     return `<p>${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}</p>`;
   }
 
+  // Handle new card notification format: "username" created a new card "cardName" on board "boardName"
+  if (message.includes(" created a new card ")) {
+    const usernameMatch = message.match(/^"([^"]+)" created a new card/);
+    const cardNameMatch = message.match(/created a new card "([^"]+)"/);
+    const boardNameMatch = message.match(/on board "([^"]+)"$/);
+
+    const username = usernameMatch ? usernameMatch[1] : "";
+    const cardName = cardNameMatch ? cardNameMatch[1] : "";
+    const boardName = boardNameMatch ? boardNameMatch[1] : "";
+
+    const translatedMessage = translateText("notificationNewCard");
+    return `<p>${translatedMessage.replace("{username}", username).replace("{cardName}", cardName).replace("{boardName}", boardName)}</p>`;
+  }
+
+  // Handle old card notification format: New card created: cardName
+  if (message.startsWith("New card created:")) {
+    const cardName = message.slice("New card created:".length).trim();
+    return `<p>${translateText("notificationNewCard")}</p><p>${cardName}</p>`;
+  }
+
   // Map the static part to a translation key
   const translationKeyMap = {
     "You have been invited to the board": "notificationInvitedToBoard",
     'New comment by "': "notificationNewComment",
-    "New card created": "notificationNewCard",
   };
 
   // Extract the static part of the message for other notification types
@@ -220,12 +246,6 @@ const translateNotification = (message: string): string => {
       // Translate the static parts while preserving the format
       const translatedMessage = translateText("notificationNewComment");
       return `<p>${translatedMessage.replace("{username}", username)} "${cardName}":</p><div class="comment">${comment.replace(/<img src="/g, '<img src="' + baseURL).replace(/<img/g, '<img style="max-width:100%; display:block;"')}</div>`;
-    } else if (
-      translationKey === "notificationNewCard" ||
-      translationKey === "notificationInvitedToBoard"
-    ) {
-      const dynamicPart = message.slice(staticPart.length).trim();
-      return `<p>${translateText(translationKey)}${dynamicPart}</p>`;
     } else {
       // Replace the static part with the translated text
       const dynamicPart = message.slice(staticPart.length).trim();
@@ -272,7 +292,7 @@ const sendNotification = async () => {
     for (const userId of Object.keys(notificationsByUser)) {
       const userNotifications = notificationsByUser[userId];
       const notificationMessages = userNotifications.map((notification) => {
-        return `<li style='margin-bottom:0.125em; padding:0.8em 1.5em 0.33em 1.5em; background:rgba(0,0,0,0.1); border-radius:0.5em;'>${translateNotification(notification.message)}</li>`;
+        return `<li style='margin-bottom:0.4em; padding:0.8em 1.5em 0.33em 1.5em; background:rgba(0,0,0,0.1); border-radius:0.5em;'>${translateNotification(notification.message)}</li>`;
       });
 
       // Fetch the user's email address from the user table

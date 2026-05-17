@@ -336,6 +336,23 @@ const newAreaInput = ref(null);
 
 const writeAccess = ref(false);
 
+const router = useRouter();
+
+// Sync cardModal with query param
+if (route.query.card) {
+    cardModal.value = route.query.card * 1;
+}
+
+// Watch for modal changes and update URL
+watch(cardModal, (newVal) => {
+    if (newVal) {
+        router.push({ query: { ...route.query, card: newVal } });
+    } else {
+        const { card, ...rest } = route.query;
+        router.push({ query: rest });
+    }
+});
+
 const createNewArea = async () => {
     newAreaName.value = "";
     newAreaCreation.value = true;
@@ -837,6 +854,9 @@ if (!accessError.value) {
     }
 }
 onMounted(() => {
+    if (route.query.card) {
+        document.body.style.overflow = "hidden";
+    }
     initSort();
 });
 </script>

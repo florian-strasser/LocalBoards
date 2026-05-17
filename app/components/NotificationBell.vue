@@ -19,7 +19,7 @@
         </div>
         <div
             v-if="showNotifications"
-            class="absolute right-0 mt-8 w-78 bg-white dark:bg-slate rounded-lg shadow-lg z-30"
+            class="absolute right-0 mt-8 w-78 bg-white dark:bg-slate rounded-lg overflow-clip shadow-lg z-30"
         >
             <div class="p-4 border-b dark:border-gray/30">
                 <h3 class="text-lg font-semibold">
@@ -27,10 +27,15 @@
                 </h3>
             </div>
             <div class="max-h-96 overflow-y-auto">
-                <div
+                <NuxtLink
                     v-for="notification in notifications"
                     :key="notification.id"
-                    class="p-4 border-b dark:border-gray/30"
+                    :to="
+                        notification.cardId
+                            ? `/board/${notification.boardId}?card=${notification.cardId}`
+                            : `/board/${notification.boardId}`
+                    "
+                    class="p-4 block w-full border-b dark:border-gray/30 hover:bg-black/10 dark:hover:bg-white/10"
                 >
                     <div
                         class="text-sm"
@@ -39,7 +44,7 @@
                     <p class="text-xs text-gray-500 mt-1">
                         {{ formatDate(notification.createdAt) }}
                     </p>
-                </div>
+                </NuxtLink>
             </div>
         </div>
     </div>
@@ -156,11 +161,29 @@ const translateNotification = (message: string): string => {
         return `${translatedMessage} "${cardName}":<div class='mt-2 rounded-md bg-dark/10 dark:bg-white/10 wysiwyg-wrapper px-4 py-3'>${comment}</div>`;
     }
 
+    // Handle new card notification format: "username" created a new card "cardName" on board "boardName"
+    if (message.includes(" created a new card ")) {
+        const usernameMatch = message.match(/^"([^"]+)" created a new card/);
+        const cardNameMatch = message.match(/created a new card "([^"]+)"/);
+        const boardNameMatch = message.match(/on board "([^"]+)"$/);
+
+        const username = usernameMatch ? usernameMatch[1] : "";
+        const cardName = cardNameMatch ? cardNameMatch[1] : "";
+        const boardName = boardNameMatch ? boardNameMatch[1] : "";
+
+        return $t("notificationNewCard", { username, cardName, boardName });
+    }
+
+    // Handle old card notification format: New card created: cardName
+    if (message.startsWith("New card created:")) {
+        const cardName = message.slice("New card created:".length).trim();
+        return $t("notificationNewCardOld", { cardName });
+    }
+
     // Map the static part to a translation key
     const translationKeyMap = {
         "You have been invited to the board": "notificationInvitedToBoard",
         "New comment on card": "notificationNewComment",
-        "New card created": "notificationNewCard",
     };
 
     // Extract the static part of the message for other notification types

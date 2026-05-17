@@ -1,3 +1,16 @@
+## v0.13.0
+
+### New Features
+- Added `card` URL parameter on board pages to directly open a specific card when the page loads
+- Added direct links to boards and cards from notifications in `NotificationBell`
+
+### Improvements
+- Enhanced new card notifications to include the creator's username and the board name
+- Increased spacing between individual notifications in notification emails
+
+### Dependencies
+- Upgraded: nuxt, @tiptap/extension-emoji, @tiptap/extension-file-handler, @tiptap/extension-image, @tiptap/pm @tiptap/starter-kit, @tiptap/vue-3
+
 ## v0.12.2 - Security Hotfix
 
 ### Security Fixes

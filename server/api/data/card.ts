@@ -198,7 +198,7 @@ export default defineEventHandler(async (event) => {
 
         // Fetch all users who have access to the board (owner and invited users)
         const [boardRows] = await db.execute(
-          "SELECT user, id AS boardId FROM boards WHERE id = (SELECT board FROM areas WHERE id = ?)",
+          "SELECT user, id AS boardId, name FROM boards WHERE id = (SELECT board FROM areas WHERE id = ?)",
           [areaId],
         );
         const boardOwner = boardRows[0]?.user;
@@ -216,6 +216,15 @@ export default defineEventHandler(async (event) => {
           ...invitedUsers.map((inv) => inv.user),
         ].filter(Boolean);
 
+        // Get the creating user's name and board name for the notification
+        const [userRows]: any = await db.execute(
+          "SELECT name FROM user WHERE id = ?",
+          [userId],
+        );
+        const username = userRows[0]?.name || "Unknown user";
+
+        const boardName = boardRows[0]?.name || "Unknown board";
+
         for (const notifyUserId of usersToNotify) {
           if (notifyUserId !== userId) {
             // Don't notify the authenticated user who created the card
@@ -226,7 +235,7 @@ export default defineEventHandler(async (event) => {
                 "card_created",
                 boardId,
                 card.id,
-                `New card created: ${card.name}`,
+                `"${username}" created a new card "${card.name}" on board "${boardName}"`,
               ],
             );
           }
