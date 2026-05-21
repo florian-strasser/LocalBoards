@@ -1,3 +1,11 @@
+## v0.13.1
+
+### Bug Fixes
+- Set scheduldedTask back to once an hour at minute "0". Was set to "12" in last version for testing reasons.
+
+### Dependencies
+- Upgraded: nuxt, @nuxtjs/i18n, @nuxtjs/mcp-toolkit, @tiptap/extension-emoji, @tiptap/extension-file-handler, @tiptap/extension-image, @tiptap/pm, @tiptap/starter-kit, @tiptap/vue-3
+
 ## v0.13.0
 
 ### New Features

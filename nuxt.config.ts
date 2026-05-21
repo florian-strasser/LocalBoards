@@ -83,7 +83,7 @@ export default defineNuxtConfig({
     },
     scheduledTasks: {
       // Run `notification` task every hour
-      "12 * * * *": ["notification"],
+      "0 * * * *": ["notification"],
     },
   },
   vite: {
