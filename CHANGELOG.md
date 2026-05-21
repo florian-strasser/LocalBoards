@@ -1,3 +1,8 @@
+## v0.13.2
+
+### Dependencies
+- Docs dependencies upgraded: nuxt, @nuxt/content, better-sqlite3
+
 ## v0.13.1
 
 ### Bug Fixes
