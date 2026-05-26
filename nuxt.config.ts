@@ -1,6 +1,9 @@
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
+  features: {
+    inlineStyles: true,
+  },
   compatibilityDate: "2025-07-15",
   devtools: { enabled: false },
   modules: ["@nuxtjs/i18n", "@nuxtjs/mcp-toolkit"],
@@ -43,13 +46,26 @@ export default defineNuxtConfig({
   },
   mcp: {
     name: process.env.NUXT_APP_NAME || "LocalBoards",
-    version: "0.6.0",
+    version: "0.14.0",
     enabled: process.env.NUXT_MCP || true,
   },
   runtimeConfig: {
     public: {
       privacyUrl: process.env.NUXT_PUBLIC_PRIVACY_URL || "/privacy-policy/",
       signup: process.env.NUXT_PUBLIC_SIGNUP || true,
+      colorPrimary: process.env.NUXT_PUBLIC_COLOR_PRIMARY || "#004632",
+      colorPrimaryDark: process.env.NUXT_PUBLIC_COLOR_PRIMARY_DARK || "#0a846e",
+      colorSecondary: process.env.NUXT_PUBLIC_COLOR_SECONDARY || "#b33e04",
+      colorSecondaryDark:
+        process.env.NUXT_PUBLIC_COLOR_SECONDARY_DARK || "#e04a05",
+      colorWhite: process.env.NUXT_PUBLIC_COLOR_WHITE || "#ffffff",
+      colorGray: process.env.NUXT_PUBLIC_COLOR_GRAY || "#3d5e59",
+      colorGrayDark: process.env.NUXT_PUBLIC_COLOR_GRAY_DARK || "#b6c8c8",
+      colorSlate: process.env.NUXT_PUBLIC_COLOR_SLATE || "#eef5ee",
+      colorSlateDark: process.env.NUXT_PUBLIC_COLOR_SLATE_DARK || "#1f2524",
+      colorBlack: process.env.NUXT_PUBLIC_COLOR_BLACK || "#000000",
+      colorDark: process.env.NUXT_PUBLIC_COLOR_DARK || "#101514",
+      colorDarkDark: process.env.NUXT_PUBLIC_COLOR_DARK_DARK || "#101514",
     },
     appName: process.env.NUXT_APP_NAME || "LocalBoards",
     language: process.env.NUXT_LANGUAGE || "en",

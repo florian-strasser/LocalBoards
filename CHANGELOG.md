@@ -1,3 +1,11 @@
+## v0.14.0
+
+### New Features
+- Added customizable colors via environment variables — see [color customization documentation](https://localboards.de/docs/adjust-colors)
+
+### Dependencies
+- Upgraded: mysql2, nodemailer
+
 ## v0.13.2
 
 ### Dependencies
