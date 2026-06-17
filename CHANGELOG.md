@@ -1,3 +1,9 @@
+## v0.15.1 - Security Hotfix
+
+### Security Fixes
+- Pinned `esbuild` to `0.28.1` via npm `overrides` (app and docs) to resolve [GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr) — arbitrary file read via the dev server on Windows, affecting `0.27.3`–`0.28.0`. Dependabot flagged the nested `esbuild@0.27.7` copies that older sub-dependencies pinned in `docs/package-lock.json`. (esbuild is a build/dev-time dependency and is not part of the production server output.)
+- Pinned `ws` to `8.21.0` via npm `overrides` (app and docs) to resolve [GHSA-96hv-2xvq-fx4p](https://github.com/advisories/GHSA-96hv-2xvq-fx4p) — memory-exhaustion DoS, affecting the nested `ws@8.20.1` pulled in via `engine.io-client` in `docs/package-lock.json`. Both projects now report zero npm audit vulnerabilities.
+
 ## v0.15.0
 
 ### New Features
