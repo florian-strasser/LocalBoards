@@ -1,8 +1,8 @@
 <template>
     <div>
-        <div v-if="cardData" class="card-modal text-left">
+        <div v-if="card" class="card-modal text-left">
             <div v-if="deleteModal" class="w-full">
-                <h2 class="text-4xl text-primary text-center mb-4">
+                <h2 class="text-4xl text-dark dark:text-white text-center mb-4">
                     {{ $t("deleteCardTitle") }}
                 </h2>
                 <button
@@ -56,7 +56,7 @@
                             ref="cardTitle"
                             contenteditable="plaintext-only"
                             @blur="saveCard"
-                            class="text-2xl font-bold text-primary dark:text-white w-full"
+                            class="text-2xl font-bold text-dark dark:text-white w-full"
                         >
                             {{ name }}
                         </div>
@@ -73,8 +73,32 @@
                     </div>
                 </div>
                 <div class="mb-4">
-                    <CardEditor v-if="writeAccess" v-model="content" />
-                    <div v-else class="wysiwyg-wrapper" v-html="content" />
+                    <template v-if="writeAccess && editingDescription">
+                        <CardEditor v-model="content" />
+                        <button
+                            type="button"
+                            class="mt-2 bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
+                            @click="editingDescription = false"
+                        >
+                            {{ $t("save") }}
+                        </button>
+                    </template>
+                    <template v-else>
+                        <div
+                            v-if="content"
+                            class="wysiwyg-wrapper"
+                            v-html="content"
+                        />
+                        <button
+                            v-if="writeAccess"
+                            type="button"
+                            class="mt-2 bg-primary hover:bg-secondary px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
+                            @click="editingDescription = true"
+                        >
+                            <Pencil class="size-5" />
+                            <span>{{ $t("editDescription") }}</span>
+                        </button>
+                    </template>
                 </div>
                 <div v-if="writeAccess" class="mb-4">
                     <button
@@ -90,7 +114,7 @@
                 </div>
                 <div v-if="attachments.length > 0" class="mb-4">
                     <h3
-                        class="text-xl font-bold text-primary dark:text-white mb-2"
+                        class="text-xl font-bold text-dark dark:text-white mb-2"
                     >
                         {{ $t("attachments") }}
                     </h3>
@@ -115,23 +139,28 @@
                     :cardID="props.cardID"
                     :boardID="props.boardID"
                     :writeAccess="props.writeAccess"
+                    :currentUserId="props.userID"
                     :initialComments="comments"
                     @comment-created="handleCommentCreated"
                     @comment-deleted="handleCommentDeleted"
                 />
             </div>
         </div>
-        <div v-else-if="cardError">Error loading card: {{ cardError }}</div>
-        <div v-else-if="!cardData">Loading...</div>
+        <div v-else>Loading...</div>
     </div>
 </template>
 <script setup lang="ts">
 import { socket } from "~/lib/socket";
-import { Check, Trash2, Paperclip, Download, X } from "lucide-vue-next";
+import { Check, Trash2, Paperclip, Download, X, Pencil } from "lucide-vue-next";
 const props = defineProps({
+    card: Object,
     cardID: Number,
     boardID: Number,
     writeAccess: Boolean,
+    userID: String,
+    // True only when opening a freshly created card for the first time, so the
+    // editor is shown immediately instead of the read-only view.
+    openInEditMode: Boolean,
 });
 
 const nuxtApp = useNuxtApp();
@@ -143,38 +172,30 @@ const emits = defineEmits([
 
 const boxOpen = defineModel();
 
-const { data: cardData, error: cardError } = await useFetch(
-    `/api/data/card?cardID=${props.cardID}`,
-);
-const { data: commentsData, error: commentsError } = await useFetch(
-    `/api/data/comment/?cardID=${props.cardID}`,
-);
-
-const name = ref(cardData.value.card.name);
-const content = ref(cardData.value.card.content);
-const currentStatus = ref(cardData.value.card.status);
+// The card (incl. comments and attachment metadata) is prefetched on the
+// board and passed in as a prop, so the modal renders instantly without an
+// extra round trip.
+const name = ref(props.card.name);
+const content = ref(props.card.content);
+const currentStatus = ref(!!props.card.status);
 
 const cardTitle = ref(null);
 const deleteModal = ref(false);
 const addAttachments = ref(false);
-const attachments = ref(
-    (cardData.value.attachments || []).map((attachment) => ({
-        ...attachment,
-        isUrl:
-            attachment.isUrl ||
-            (attachment.filedata &&
-                (attachment.filedata.startsWith("http") ||
-                    attachment.filedata.startsWith("/"))),
-    })),
-);
+// Write-access users see the read-only description with an "edit description"
+// button by default; the editor is only shown right away for a freshly created
+// card opened for the first time.
+const editingDescription = ref(!!props.openInEditMode);
+const attachments = ref([...(props.card.attachments || [])]);
 const newAttachments = ref([]);
-const comments = ref(commentsData.value?.comments || []);
+const comments = ref(props.card.comments || []);
 
 const handleCommentCreated = (newComment) => {
     comments.value.unshift(newComment);
     emits("comment-count-updated", {
         cardId: props.cardID,
         commentCount: comments.value.length,
+        comments: comments.value,
     });
     socket.emit("commentCountUpdated", {
         boardId: props.boardID,
@@ -188,6 +209,7 @@ const handleCommentDeleted = (deletedCommentId) => {
     emits("comment-count-updated", {
         cardId: props.cardID,
         commentCount: comments.value.length,
+        comments: comments.value,
     });
     socket.emit("commentCountUpdated", {
         boardId: props.boardID,
@@ -276,25 +298,32 @@ const handleDrop = async (event) => {
     addAttachments.value = false;
 };
 
-// Function to download an attachment
-const downloadAttachment = (attachment) => {
-    // Handle both URL-based and base64-based attachments
-    if (
-        attachment.isUrl ||
-        (attachment.filedata &&
-            (attachment.filedata.startsWith("http") ||
-                attachment.filedata.startsWith("/")))
-    ) {
-        // If it's a URL, open it in a new tab for download
-        window.open(attachment.filedata, "_blank");
-    } else {
-        // If it's base64, use the data URL approach
-        const link = document.createElement("a");
-        link.href = `data:${attachment.filetype};base64,${attachment.filedata}`;
-        link.download = attachment.filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+// Function to download an attachment. The file payload (filedata) is not
+// included in the prefetched card data to keep the board response lean, so it
+// is fetched on demand here.
+const downloadAttachment = async (attachment) => {
+    try {
+        const file = await $fetch(`/api/data/attachment?id=${attachment.id}`);
+        const filedata = file.filedata;
+
+        // Handle both URL-based and base64-based attachments
+        if (
+            filedata &&
+            (filedata.startsWith("http") || filedata.startsWith("/"))
+        ) {
+            // If it's a URL, open it in a new tab for download
+            window.open(filedata, "_blank");
+        } else {
+            // If it's base64, use the data URL approach
+            const link = document.createElement("a");
+            link.href = `data:${file.filetype};base64,${filedata}`;
+            link.download = file.filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    } catch (error) {
+        console.error("Failed to download attachment:", error);
     }
 };
 
@@ -321,7 +350,16 @@ const saveCard = async () => {
             newAttachments.value = []; // Clear new attachments after saving
         }
 
-        emits("card-updated", response.card);
+        // Include the prefetched comments and attachment metadata so the
+        // board keeps a complete card object and the modal can be reopened
+        // without a layout shift.
+        emits("card-updated", {
+            ...response.card,
+            comments: comments.value,
+            attachments: attachments.value.map(
+                ({ filedata, ...meta }) => meta,
+            ),
+        });
         socket.emit("cardUpdated", {
             boardId: props.boardID,
             attachments: attachments.value,
@@ -349,10 +387,10 @@ const deleteCard = async () => {
         });
         boxOpen.value = false;
         document.body.style.overflow = "auto";
-        emits("card-deleted", cardData.value.card);
+        emits("card-deleted", props.card);
         socket.emit("cardDeleted", {
             boardId: props.boardID,
-            card: cardData.value.card,
+            card: props.card,
         });
     } catch (err) {
         console.error("Failed to deleted card:", err);

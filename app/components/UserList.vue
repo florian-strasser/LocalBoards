@@ -12,7 +12,7 @@
             </li>
         </ul>
         <ModalWindow v-model="deleteModal">
-            <h2 class="text-4xl text-primary mb-6">
+            <h2 class="text-4xl text-dark dark:text-white mb-6">
                 {{ $t("deleteUserMessage") }}
             </h2>
             <button

@@ -49,10 +49,6 @@ const emit = defineEmits(["Comment-created"]);
 const newCommentCreation = ref(false);
 const newComment = ref("");
 
-const { data: session } = await useFetch("/api/auth/get-session");
-
-const userID = session.value.data.user.id;
-
 const createNewComment = () => {
     newComment.value = "";
     newCommentCreation.value = true;
@@ -65,7 +61,6 @@ const createComment = async (e) => {
             body: {
                 card: props.cardID,
                 content: newComment.value,
-                user: userID,
             },
         });
         if (data.comment) {

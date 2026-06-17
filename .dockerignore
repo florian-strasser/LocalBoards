@@ -1,0 +1,16 @@
+# .dockerignore
+node_modules
+docs
+.env
+.env.local
+package-lock.json
+.git
+.output
+logs
+*.log
+.DS_Store
+.idea
+.vscode
+*.swp
+*.swo
+coverage

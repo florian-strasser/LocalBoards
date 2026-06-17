@@ -27,7 +27,7 @@
                 </div>
                 <div v-else class="flex justify-between flex-wrap gap-4">
                     <h1
-                        class="text-5xl text-primary dark:text-white transform -translate-y-1"
+                        class="text-5xl text-dark dark:text-white transform -translate-y-1"
                     >
                         {{ boardName }}
                     </h1>
@@ -115,7 +115,7 @@
                             :boardID="boardID * 1"
                             :areaID="area.id"
                             :userID="userID"
-                            @card-created="handleCardCreated"
+                            @card-created="handleLocalCardCreated"
                         />
                     </div>
                     <div
@@ -229,7 +229,7 @@
             </div>
         </ModalWindow>
         <ModalWindow v-if="userID === boardUser" v-model="deleteModal">
-            <h2 class="text-4xl text-primary mb-3">
+            <h2 class="text-4xl text-dark dark:text-white mb-3">
                 {{ $t("deleteBoardTitle") }}
             </h2>
             <p class="mb-6">{{ $t("deleteBoardText") }}</p>
@@ -245,7 +245,7 @@
             <InviteModal :boardID="boardID" :invitations="invitations" />
         </ModalWindow>
         <ModalWindow v-model="deleteAreaModal">
-            <h2 class="text-4xl text-primary mb-3">
+            <h2 class="text-4xl text-dark dark:text-white mb-3">
                 {{ $t("deleteAreaHeadline") }}
             </h2>
             <p class="mb-6">{{ $t("deleteAreaText") }}</p>
@@ -259,10 +259,13 @@
         </ModalWindow>
         <ModalWindow v-model="cardModal" :hideClose="true">
             <CardModal
-                v-if="cardModal"
+                v-if="cardModal && selectedCard"
+                :card="selectedCard"
                 :cardID="cardModal"
                 :boardID="boardID * 1"
                 :writeAccess="writeAccess"
+                :userID="userID"
+                :openInEditMode="editCardId === cardModal"
                 v-model="cardModal"
                 @card-updated="handleCardUpdated"
                 @card-deleted="handleCardDeleted"
@@ -330,6 +333,23 @@ const cards = ref({});
 
 const cardModal = ref(false);
 
+// Id of a card just created in this session that should open directly in edit
+// mode the first time it is opened. Cleared once that card's modal is closed.
+const editCardId = ref(null);
+
+// The currently opened card, resolved from the already-loaded board data so
+// the modal can render instantly without refetching.
+const selectedCard = computed(() => {
+    if (!cardModal.value) return null;
+    for (const areaId in cards.value) {
+        const found = cards.value[areaId].find(
+            (card) => card.id === cardModal.value,
+        );
+        if (found) return found;
+    }
+    return null;
+});
+
 const newAreaName = ref("");
 const newAreaCreation = ref(false);
 const newAreaInput = ref(null);
@@ -344,12 +364,17 @@ if (route.query.card) {
 }
 
 // Watch for modal changes and update URL
-watch(cardModal, (newVal) => {
+watch(cardModal, (newVal, oldVal) => {
     if (newVal) {
         router.push({ query: { ...route.query, card: newVal } });
     } else {
         const { card, ...rest } = route.query;
         router.push({ query: rest });
+        // Once the freshly created card has been opened and closed, subsequent
+        // opens should show the normal read-only view.
+        if (oldVal && oldVal === editCardId.value) {
+            editCardId.value = null;
+        }
     }
 });
 
@@ -364,12 +389,16 @@ const createNewArea = async () => {
 };
 
 const handleCardUpdated = (updatedCard) => {
-    const cardIndex = cards.value[updatedCard.area].findIndex(
+    const areaCards = cards.value[updatedCard.area];
+    if (!areaCards) return;
+    const cardIndex = areaCards.findIndex(
         (card) => card.id === updatedCard.id,
     );
     if (cardIndex !== -1) {
-        // Update the card in the `cards` array
-        cards.value[updatedCard.area][cardIndex] = updatedCard;
+        // Merge instead of replace so the prefetched comments/attachments are
+        // preserved when an update payload (e.g. from a socket event) doesn't
+        // include them.
+        areaCards[cardIndex] = { ...areaCards[cardIndex], ...updatedCard };
     }
 };
 
@@ -614,7 +643,28 @@ const handleCardCreated = (card) => {
     if (typeof card.status === "undefined") {
         card.status = false;
     }
+    // Guard against the same card being inserted more than once (e.g. a socket
+    // signal received multiple times): update it in place if it already exists,
+    // otherwise append it.
+    const existingIndex = cards.value[card.area].findIndex(
+        (existing) => existing.id === card.id,
+    );
+    if (existingIndex !== -1) {
+        cards.value[card.area][existingIndex] = {
+            ...cards.value[card.area][existingIndex],
+            ...card,
+        };
+        return;
+    }
     cards.value[card.area].push(card);
+};
+
+// A card created locally (via the new-card form) should open directly in edit
+// mode the first time it is opened. Cards arriving via socket from other users
+// go through handleCardCreated and do not get this treatment.
+const handleLocalCardCreated = (card) => {
+    editCardId.value = card.id;
+    handleCardCreated(card);
 };
 
 const handleBoardUpdated = (board) => {
@@ -635,7 +685,7 @@ const handleBoardDeleted = async () => {
     await navigateTo("/dashboard/");
 };
 
-const handleCommentCountUpdated = ({ cardId, commentCount }) => {
+const handleCommentCountUpdated = ({ cardId, commentCount, comments }) => {
     // Find the card and update its comment count
     for (const areaId in cards.value) {
         const cardIndex = cards.value[areaId].findIndex(
@@ -643,6 +693,11 @@ const handleCommentCountUpdated = ({ cardId, commentCount }) => {
         );
         if (cardIndex !== -1) {
             cards.value[areaId][cardIndex].commentCount = commentCount;
+            // When the full comments list is provided (modal interactions),
+            // keep the prefetched card in sync so reopening shows no shift.
+            if (comments) {
+                cards.value[areaId][cardIndex].comments = [...comments];
+            }
             break;
         }
     }
@@ -855,7 +910,13 @@ if (!accessError.value) {
 }
 onMounted(() => {
     if (route.query.card) {
-        document.body.style.overflow = "hidden";
+        // Clear a deep-linked card that isn't part of the loaded board data,
+        // otherwise the modal would open empty and (with hideClose) be stuck.
+        if (!selectedCard.value) {
+            cardModal.value = false;
+        } else {
+            document.body.style.overflow = "hidden";
+        }
     }
     initSort();
 });

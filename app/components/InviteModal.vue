@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h2 class="text-4xl text-primary text-left mb-3">
+        <h2 class="text-4xl text-dark dark:text-white text-left mb-3">
             {{ $t("permissions") }}
         </h2>
         <div

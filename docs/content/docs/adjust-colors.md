@@ -8,13 +8,13 @@ All colors support both light and dark mode variants. For dark mode colors, appe
 
 | Variable | Default (Light) | Default (Dark) |
 |----------|----------------|----------------|
-| `NUXT_PUBLIC_COLOR_PRIMARY` | `#004632` | `#0a846e` |
-| `NUXT_PUBLIC_COLOR_SECONDARY` | `#b33e04` | `#e04a05` |
+| `NUXT_PUBLIC_COLOR_PRIMARY` | `#0066CC` | `#0F72DE` |
+| `NUXT_PUBLIC_COLOR_SECONDARY` | `#004C99` | `#1C84EC` |
 | `NUXT_PUBLIC_COLOR_WHITE` | `#ffffff` | `#ffffff` |
-| `NUXT_PUBLIC_COLOR_GRAY` | `#3d5e59` | `#b6c8c8` |
-| `NUXT_PUBLIC_COLOR_SLATE` | `#eef5ee` | `#1f2524` |
+| `NUXT_PUBLIC_COLOR_GRAY` | `#4E4E52` | `#AEAEB2` |
+| `NUXT_PUBLIC_COLOR_SLATE` | `#F5F5F7` | `#2C2C2E` |
 | `NUXT_PUBLIC_COLOR_BLACK` | `#000000` | `#000000` |
-| `NUXT_PUBLIC_COLOR_DARK` | `#101514` | `#101514` |
+| `NUXT_PUBLIC_COLOR_DARK` | `#1C1C1E` | `#1C1C1E` |
 
 ## .env File
 Modify your `.env` file:

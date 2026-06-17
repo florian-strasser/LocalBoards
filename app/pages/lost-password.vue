@@ -28,7 +28,7 @@
                 v-else
                 class="max-w-md mx-auto px-8 pb-8 pt-7 bg-white dark:bg-slate rounded-xl text-center"
             >
-                <h2 class="text-4xl text-primary mb-6">
+                <h2 class="text-4xl text-dark dark:text-white mb-6">
                     {{ $t("requestedNewPasswordCheckYourInbox") }}
                 </h2>
             </div>

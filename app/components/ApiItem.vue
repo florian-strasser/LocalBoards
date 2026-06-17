@@ -25,7 +25,7 @@
             </div>
         </div>
         <ModalWindow v-model="deleteKeyModal">
-            <h2 class="text-4xl text-primary mb-3">
+            <h2 class="text-4xl text-dark dark:text-white mb-3">
                 {{ $t("deleteKeyHeadline") }}
             </h2>
             <p class="mb-6">{{ $t("deleteKeyText") }}</p>

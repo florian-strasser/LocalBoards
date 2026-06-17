@@ -30,7 +30,7 @@
                     @click="editor.chain().focus().toggleBold().run()"
                     :disabled="!editor.can().chain().focus().toggleBold().run()"
                     class="block hover:text-secondary"
-                    :class="{ 'text-secondary': editor.isActive('bold') }"
+                    :class="{ 'text-primary': editor.isActive('bold') }"
                     v-tooltip="$t('editorBold')"
                 >
                     <Bold class="size-5" />
@@ -44,7 +44,7 @@
                         !editor.can().chain().focus().toggleItalic().run()
                     "
                     class="block hover:text-secondary"
-                    :class="{ 'text-secondary': editor.isActive('italic') }"
+                    :class="{ 'text-primary': editor.isActive('italic') }"
                     v-tooltip="$t('editorItalic')"
                 >
                     <Italic class="size-5" />
@@ -58,7 +58,7 @@
                         !editor.can().chain().focus().toggleStrike().run()
                     "
                     class="block hover:text-secondary"
-                    :class="{ 'text-secondary': editor.isActive('strike') }"
+                    :class="{ 'text-primary': editor.isActive('strike') }"
                     v-tooltip="$t('editorStrike')"
                 >
                     <Strikethrough class="size-5" />
@@ -69,7 +69,7 @@
                     type="button"
                     @click="editor.chain().focus().toggleBulletList().run()"
                     class="block hover:text-secondary"
-                    :class="{ 'text-secondary': editor.isActive('bulletList') }"
+                    :class="{ 'text-primary': editor.isActive('bulletList') }"
                     v-tooltip="$t('editorBulletList')"
                 >
                     <List class="size-5" />
@@ -81,7 +81,7 @@
                     @click="editor.chain().focus().toggleOrderedList().run()"
                     class="block hover:text-secondary"
                     :class="{
-                        'text-secondary': editor.isActive('orderedList'),
+                        'text-primary': editor.isActive('orderedList'),
                     }"
                     v-tooltip="$t('editorOrderedList')"
                 >
@@ -94,7 +94,7 @@
                     @click="editor.chain().focus().toggleTaskList().run()"
                     class="block hover:text-secondary"
                     :class="{
-                        'text-secondary': editor.isActive('taskList'),
+                        'text-primary': editor.isActive('taskList'),
                     }"
                     v-tooltip="$t('editorCheckList')"
                 >
@@ -106,7 +106,7 @@
                     type="button"
                     @click="addImage"
                     class="block hover:text-secondary"
-                    :class="{ 'text-secondary': editor.isActive('image') }"
+                    :class="{ 'text-primary': editor.isActive('image') }"
                     v-tooltip="$t('editorImage')"
                 >
                     <FileImage class="size-5" />
@@ -117,7 +117,7 @@
                     type="button"
                     @click="editor.chain().focus().toggleCodeBlock().run()"
                     class="block hover:text-secondary"
-                    :class="{ 'text-secondary': editor.isActive('codeBlock') }"
+                    :class="{ 'text-primary': editor.isActive('codeBlock') }"
                     v-tooltip="$t('editorCodeblock')"
                 >
                     <Code class="size-5" />

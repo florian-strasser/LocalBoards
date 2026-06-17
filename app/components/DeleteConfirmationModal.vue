@@ -1,6 +1,6 @@
 <template>
     <ModalWindow v-model="isOpen">
-        <h2 class="text-4xl text-primary mb-3">
+        <h2 class="text-4xl text-dark dark:text-white mb-3">
             {{ title }}
         </h2>
         <p class="mb-6">{{ message }}</p>

@@ -2,7 +2,7 @@
     <label class="block w-full space-y-1">
         <div class="text-sm">
             {{ props.label
-            }}<span v-if="props.required" class="text-secondary ml-1">*</span>
+            }}<span v-if="props.required" class="text-primary ml-1">*</span>
         </div>
         <input
             :type="props.type"

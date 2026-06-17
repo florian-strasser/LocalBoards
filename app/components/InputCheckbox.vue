@@ -30,7 +30,7 @@
         </div>
         <div class="grow shrink">
             <span v-html="props.label" />
-            <span v-if="props.required" class="text-secondary ml-1">*</span>
+            <span v-if="props.required" class="text-primary ml-1">*</span>
         </div>
     </label>
 </template>

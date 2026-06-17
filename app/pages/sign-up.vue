@@ -46,7 +46,7 @@
                             <InputCheckbox
                                 :label="
                                     $t('signUpHintBefore') +
-                                    ' <a class=\'text-secondary\' href=\'' +
+                                    ' <a class=\'text-primary hover:text-secondary\' href=\'' +
                                     privacyURL +
                                     '\'>' +
                                     $t('privacyPolicy') +

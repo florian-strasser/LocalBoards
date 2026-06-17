@@ -87,6 +87,59 @@ export default defineEventHandler(async (event) => {
           [areaId],
         );
 
+        // Prefetch comments and attachment metadata for every card so the
+        // card modal can render instantly without an extra round trip. The
+        // attachment file payload (filedata) is intentionally excluded here to
+        // keep the board response lean — it is fetched on download via
+        // /api/data/attachment.
+        if (cards.length > 0) {
+          const cardIds = cards.map((card) => card.id);
+          const placeholders = cardIds.map(() => "?").join(",");
+
+          const [commentRows] = await db.execute(
+            `SELECT comments.id AS id, comments.card AS card, comments.user AS user, user.name AS userName, user.image AS userImage, comments.content AS content, comments.date AS date FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.card IN (${placeholders}) ORDER BY comments.date DESC`,
+            cardIds,
+          );
+
+          const [attachmentRows] = await db.execute(
+            `SELECT id, card, filename, filetype, filesize FROM attachments WHERE card IN (${placeholders})`,
+            cardIds,
+          );
+
+          const commentsByCard = new Map();
+          for (const row of commentRows) {
+            const comment = {
+              id: row.id,
+              card: row.card,
+              user: row.user,
+              userImage: row.userImage,
+              userName: row.userName || "Unknown User",
+              content: row.content,
+              date: row.date,
+            };
+            if (!commentsByCard.has(row.card)) commentsByCard.set(row.card, []);
+            commentsByCard.get(row.card).push(comment);
+          }
+
+          const attachmentsByCard = new Map();
+          for (const row of attachmentRows) {
+            if (!attachmentsByCard.has(row.card))
+              attachmentsByCard.set(row.card, []);
+            attachmentsByCard.get(row.card).push({
+              id: row.id,
+              filename: row.filename,
+              filetype: row.filetype,
+              filesize: row.filesize,
+            });
+          }
+
+          for (const card of cards) {
+            card.status = !!card.status;
+            card.comments = commentsByCard.get(card.id) || [];
+            card.attachments = attachmentsByCard.get(card.id) || [];
+          }
+        }
+
         return { cards };
       } else {
         event.res.statusCode = 403;

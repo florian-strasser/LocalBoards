@@ -3,11 +3,11 @@
         <div class="relative">
             <div
                 :class="{ 'opacity-0': unreadCount === 0 }"
-                class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 rounded-full bg-secondary pointer-events-none z-20"
+                class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 rounded-full bg-primary pointer-events-none z-20"
             ></div>
             <div
                 :class="{ 'opacity-0': unreadCount === 0 }"
-                class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-secondary pointer-events-none z-20"
+                class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-primary pointer-events-none z-20"
             ></div>
             <button
                 @click="toggleNotifications"

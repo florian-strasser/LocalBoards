@@ -12,31 +12,46 @@ const emits = defineEmits([
     "comment-updated",
 ]);
 
-const onConnect = () => {
+const isThisCard = (cardID) => props.cardID * 1 === cardID;
+
+// (Re)join the card room on every (re)connect, but register the event
+// listeners only once so they don't stack up across reconnects or repeated
+// card-modal opens (which previously caused comment signals to be handled
+// multiple times).
+const joinCard = () => {
     if (props.cardID) {
         socket.emit("joinCard", {
             cardID: props.cardID,
         });
     }
-    socket.on("addComment", ({ comment, cardID }) => {
-        if (props.cardID * 1 === cardID) emits("comment-created", comment);
-    });
-    socket.on("deleteComment", ({ comment, cardID }) => {
-        if (props.cardID * 1 === cardID) emits("comment-deleted", comment);
-    });
-    socket.on("updateComment", ({ comment, cardID }) => {
-        if (props.cardID * 1 === cardID) emits("comment-updated", comment);
-    });
 };
 
+const onAddComment = ({ comment, cardID }) => {
+    if (isThisCard(cardID)) emits("comment-created", comment);
+};
+
+const onDeleteComment = ({ comment, cardID }) => {
+    if (isThisCard(cardID)) emits("comment-deleted", comment);
+};
+
+const onUpdateComment = ({ comment, cardID }) => {
+    if (isThisCard(cardID)) emits("comment-updated", comment);
+};
+
+socket.on("connect", joinCard);
+socket.on("addComment", onAddComment);
+socket.on("deleteComment", onDeleteComment);
+socket.on("updateComment", onUpdateComment);
+
 if (socket.connected) {
-    onConnect();
+    joinCard();
 }
 
-socket.on("connect", onConnect);
-
 onBeforeUnmount(() => {
-    socket.off("connect", onConnect);
+    socket.off("connect", joinCard);
+    socket.off("addComment", onAddComment);
+    socket.off("deleteComment", onDeleteComment);
+    socket.off("updateComment", onUpdateComment);
 });
 </script>
 <template><div></div></template>

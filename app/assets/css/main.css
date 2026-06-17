@@ -2,13 +2,16 @@
 
 @theme {
     --color-*: initial;
-    --color-primary: #004632;
-    --color-secondary: #b33e04;
+    --color-primary: #0066cc;
+    --color-secondary: #004c99;
     --color-white: #ffffff;
-    --color-gray: #3d5e59;
-    --color-slate: #eef5ee;
+    --color-gray: #4e4e52;
+    --color-slate: #f5f5f7;
     --color-black: #000000;
-    --color-dark: #101514;
+    --color-dark: #1c1c1e;
+    --color-code-bg: #e8e8ed;
+    --color-code-text: #1d1d1f;
+    --color-code-border: #d2d2d7;
 }
 html,
 body {
@@ -17,10 +20,13 @@ body {
 }
 @media (prefers-color-scheme: dark) {
     :root {
-        --color-primary: #0a846e;
-        --color-secondary: #e04a05;
-        --color-gray: #b6c8c8;
-        --color-slate: #1f2524;
+        --color-primary: #0f72de;
+        --color-secondary: #1c84ec;
+        --color-gray: #aeaeb2;
+        --color-slate: #2c2c2e;
+        --color-code-bg: #161618;
+        --color-code-text: #e6e6ea;
+        --color-code-border: #3a3a3c;
     }
     html,
     body {
@@ -131,8 +137,27 @@ body {
 .wysiwyg-wrapper > pre {
     margin-top: 1rem;
     padding: 1rem 1.25rem;
-    background: var(--color-slate);
+    background: var(--color-code-bg);
+    color: var(--color-code-text);
+    border: 1px solid var(--color-code-border);
     border-radius: var(--radius-xl);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+    font-size: 0.875em;
+}
+.tiptap :not(pre) > code,
+.wysiwyg-wrapper :not(pre) > code {
+    background: var(--color-code-bg);
+    color: var(--color-code-text);
+    border: 1px solid var(--color-code-border);
+    border-radius: 0.375rem;
+    padding: 0.15em 0.4em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+    font-size: 0.875em;
 }
 .tiptap a:hover,
 .wysiwyg-wrapper a:hover {

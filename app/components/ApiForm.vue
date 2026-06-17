@@ -1,6 +1,6 @@
 <template>
     <div v-if="createdKey">
-        <h2 class="text-4xl text-primary mb-3">
+        <h2 class="text-4xl text-dark dark:text-white mb-3">
             {{ $t("createdKeyHeadline") }}
         </h2>
         <div class="relative mb-3">

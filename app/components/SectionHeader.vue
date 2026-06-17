@@ -1,9 +1,9 @@
 <template>
     <div class="flex justify-between mb-8">
-        <h1 v-if="!props.asH2" class="text-5xl text-primary dark:text-white">
+        <h1 v-if="!props.asH2" class="text-5xl text-dark dark:text-white">
             <slot />
         </h1>
-        <h2 v-else class="text-5xl text-primary dark:text-white"><slot /></h2>
+        <h2 v-else class="text-5xl text-dark dark:text-white"><slot /></h2>
         <button
             v-if="props.asButton"
             type="button"

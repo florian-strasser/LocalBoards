@@ -15,7 +15,7 @@
                 rows="2"
                 ref="newCardInput"
                 :placeholder="$t('enterAnCardName')"
-                class="font-bold text-primary dark:text-white resize-none focus:outline-none w-full p-2 rounded-md bg-primary/10 dark:bg-white/10"
+                class="font-bold text-dark dark:text-white resize-none focus:outline-none w-full p-2 rounded-md bg-primary/10 dark:bg-white/10"
             />
             <div class="flex gap-x-1 mt-2">
                 <input

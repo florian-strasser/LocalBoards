@@ -13,7 +13,6 @@ const emits = defineEmits([
     "area-created",
     "area-updated",
     "area-deleted",
-    ,
     "card-created",
     "card-updated",
     "card-moved",
@@ -22,85 +21,107 @@ const emits = defineEmits([
     "comment-count-updated",
 ]);
 
-const onConnect = () => {
+const isThisBoard = (boardId) => props.boardID * 1 === boardId * 1;
+
+// (Re)join the board room. This must run on every (re)connect, but the event
+// listeners below are registered only once so they don't stack up across
+// reconnects (which previously caused signals to be handled multiple times).
+const joinBoard = () => {
     if (props.boardID) {
         socket.emit("joinBoard", {
             boardId: props.boardID,
         });
     }
-
-    socket.on(
-        "updateBoard",
-        ({ boardID, boardName, boardStatus, boardStyle }) => {
-            if (props.boardID * 1 === boardID * 1)
-                emits("board-updated", {
-                    boardID,
-                    boardName,
-                    boardStatus,
-                    boardStyle,
-                });
-        },
-    );
-
-    socket.on("deletedBoard", ({ boardID }) => {
-        if (props.boardID * 1 === boardID * 1) emits("board-deleted", boardID);
-    });
-
-    socket.on("updateAreas", ({ areas, boardId }) => {
-        if (props.boardID * 1 === boardId * 1) emits("areas-updated", areas);
-    });
-
-    socket.on("addCard", ({ card, boardId }) => {
-        if (props.boardID * 1 === boardId * 1) emits("card-created", card);
-    });
-
-    socket.on("updateCard", ({ card, boardId }) => {
-        if (props.boardID * 1 === boardId) emits("card-updated", card);
-    });
-
-    socket.on(
-        "movedCard",
-        ({ cardId, fromAreaId, toAreaId, newIndex, boardId }) => {
-            if (props.boardID * 1 === boardId * 1)
-                emits("card-moved", { cardId, fromAreaId, toAreaId, newIndex });
-        },
-    );
-
-    socket.on("deletedCard", ({ boardId, card }) => {
-        if (props.boardID * 1 === boardId) emits("card-deleted", card);
-    });
-
-    socket.on("orderdCard", ({ cardId, areaId, newIndex, boardId }) => {
-        if (props.boardID * 1 === boardId * 1)
-            emits("card-orderd", { cardId, areaId, newIndex });
-    });
-
-    socket.on("addArea", ({ area, boardId }) => {
-        if (props.boardID * 1 === boardId * 1) emits("area-created", area);
-    });
-
-    socket.on("updateArea", ({ area, boardId }) => {
-        if (props.boardID * 1 === boardId * 1) emits("area-updated", area);
-    });
-
-    socket.on("deleteArea", ({ area, boardId }) => {
-        if (props.boardID * 1 === boardId * 1) emits("area-deleted", area);
-    });
-
-    socket.on("commentCountUpdated", ({ cardId, commentCount, boardId }) => {
-        if (props.boardID * 1 === boardId * 1)
-            emits("comment-count-updated", { cardId, commentCount });
-    });
 };
 
+const onUpdateBoard = ({ boardID, boardName, boardStatus, boardStyle }) => {
+    if (isThisBoard(boardID))
+        emits("board-updated", { boardID, boardName, boardStatus, boardStyle });
+};
+
+const onDeletedBoard = ({ boardID }) => {
+    if (isThisBoard(boardID)) emits("board-deleted", boardID);
+};
+
+const onUpdateAreas = ({ areas, boardId }) => {
+    if (isThisBoard(boardId)) emits("areas-updated", areas);
+};
+
+const onAddCard = ({ card, boardId }) => {
+    if (isThisBoard(boardId)) emits("card-created", card);
+};
+
+const onUpdateCard = ({ card, boardId }) => {
+    if (isThisBoard(boardId)) emits("card-updated", card);
+};
+
+const onMovedCard = ({ cardId, fromAreaId, toAreaId, newIndex, boardId }) => {
+    if (isThisBoard(boardId))
+        emits("card-moved", { cardId, fromAreaId, toAreaId, newIndex });
+};
+
+const onDeletedCard = ({ boardId, card }) => {
+    if (isThisBoard(boardId)) emits("card-deleted", card);
+};
+
+const onOrderdCard = ({ cardId, areaId, newIndex, boardId }) => {
+    if (isThisBoard(boardId))
+        emits("card-orderd", { cardId, areaId, newIndex });
+};
+
+const onAddArea = ({ area, boardId }) => {
+    if (isThisBoard(boardId)) emits("area-created", area);
+};
+
+const onUpdateArea = ({ area, boardId }) => {
+    if (isThisBoard(boardId)) emits("area-updated", area);
+};
+
+const onDeleteArea = ({ area, boardId }) => {
+    if (isThisBoard(boardId)) emits("area-deleted", area);
+};
+
+const onCommentCountUpdated = ({ cardId, commentCount, boardId }) => {
+    if (isThisBoard(boardId))
+        emits("comment-count-updated", { cardId, commentCount });
+};
+
+// Register each listener exactly once. Using named handlers means a reconnect
+// re-runs joinBoard (via the "connect" event) without re-adding these, and
+// they can be cleanly removed on unmount.
+socket.on("connect", joinBoard);
+socket.on("updateBoard", onUpdateBoard);
+socket.on("deletedBoard", onDeletedBoard);
+socket.on("updateAreas", onUpdateAreas);
+socket.on("addCard", onAddCard);
+socket.on("updateCard", onUpdateCard);
+socket.on("movedCard", onMovedCard);
+socket.on("deletedCard", onDeletedCard);
+socket.on("orderdCard", onOrderdCard);
+socket.on("addArea", onAddArea);
+socket.on("updateArea", onUpdateArea);
+socket.on("deleteArea", onDeleteArea);
+socket.on("commentCountUpdated", onCommentCountUpdated);
+
+// Join immediately if the socket is already connected.
 if (socket.connected) {
-    onConnect();
+    joinBoard();
 }
 
-socket.on("connect", onConnect);
-
 onBeforeUnmount(() => {
-    socket.off("connect", onConnect);
+    socket.off("connect", joinBoard);
+    socket.off("updateBoard", onUpdateBoard);
+    socket.off("deletedBoard", onDeletedBoard);
+    socket.off("updateAreas", onUpdateAreas);
+    socket.off("addCard", onAddCard);
+    socket.off("updateCard", onUpdateCard);
+    socket.off("movedCard", onMovedCard);
+    socket.off("deletedCard", onDeletedCard);
+    socket.off("orderdCard", onOrderdCard);
+    socket.off("addArea", onAddArea);
+    socket.off("updateArea", onUpdateArea);
+    socket.off("deleteArea", onDeleteArea);
+    socket.off("commentCountUpdated", onCommentCountUpdated);
 });
 </script>
 <template><div></div></template>

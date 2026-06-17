@@ -1,3 +1,38 @@
+## v0.15.0
+
+### New Features
+- Open images in comments or card description on click in the new `ImageWindow.vue` component
+- Created a `Dockerfile` file
+- Created a `.dockerignore` file
+- Created a `docker-entrypoint.sh`
+
+### Improvements
+- Changed the `NotificationBell` unread indicator dot from `secondary` to `primary`
+- Headlines no longer use the accent color (`text-primary`); they now render in a neutral near-black/white (`text-dark dark:text-white`). The accent `text-secondary` color is now used exclusively for hover states (required-field markers, error text, editor active-state, and inline links switched to `text-primary`)
+- Replaced the default green color scheme with a neutral, Apple-style palette (blue accent, true-gray surfaces, light-gray `slate`) for both light and dark mode, with WCAG-checked contrast. Defaults updated in `nuxt.config.ts`, `app/assets/css/main.css`, and the `adjust-colors` docs; colors remain overridable via the `NUXT_PUBLIC_COLOR_*` environment variables
+- Card descriptions now show a read-only view with an "edit description" button for write-access users instead of always showing the editor; the editor only opens immediately for a freshly created card opened for the first time (new `editDescription` translation added for all languages)
+- Eliminated the layout shift when opening a card: `/api/data/cards` now prefetches each card's comments and attachment metadata, and `CardModal` renders instantly from the already-loaded board data instead of fetching on open
+- Added a `/api/data/attachment` endpoint to fetch a single attachment's file payload on download, keeping the board response lean
+- Removed the remaining modal shift by dropping the `await useFetch("/api/auth/get-session")` from `CommentSection` and `NewCommentForm` (which made them render a tick late); the current user id is now passed down from the board
+
+### Bug Fixes
+- Fixed duplicated cards/areas/comments from real-time updates: `Connection` and `CommentConnection` registered their socket listeners inside the `connect` handler, so every reconnect (and every card-modal open) stacked another set that was never removed. Listeners are now registered once and cleaned up on unmount
+- Added an idempotency guard in the board's `card-created` handler so a card received more than once is updated in place instead of inserted again
+- Code blocks in `CardEditor` now wrap long lines instead of overflowing the modal
+- Code blocks (and inline code) are now visually highlighted with dedicated colors in both light and dark mode
+
+### Improvements
+- `Dockerfile` now pins its build stage to `$BUILDPLATFORM` so the build toolchain (esbuild/Vite) runs natively when cross-building, instead of under QEMU emulation (which crashed with random segfaults); only the final runtime image targets the requested platform
+
+### Documentation
+- Added a "Run with Docker" section to the README covering the Docker Hub image (`localboards/localboards`), a `docker run` example, and a Docker Compose setup that includes MySQL
+- Updated the README Docker section to build images with `docker buildx --platform`, fixing the `Exec format error` that occurs when an `arm64` image (e.g. built on Apple Silicon) is deployed to an `amd64` server
+
+### Dependencies
+- Upgraded: nuxt, @tiptap/extension-emoji, @tiptap/extension-file-handler, @tiptap/extension-image, @tiptap/pm, @tiptap/starter-kit, @tiptap/vue-3, mysql2, nodemailer
+- Droped: sass-embedded
+- Upgraded docs: nuxt, @nuxtjs/seo
+
 ## v0.14.0
 
 ### New Features

@@ -1,6 +1,6 @@
 <template>
     <div v-if="props.writeAccess || comments.length > 0">
-        <h3 class="text-xl font-bold text-primary dark:text-white">
+        <h3 class="text-xl font-bold text-dark dark:text-white">
             {{ $t("commentsAndActivity") }}
         </h3>
         <NewCommentForm
@@ -143,6 +143,7 @@ const props = defineProps({
     cardID: Number,
     boardID: Number,
     writeAccess: Boolean,
+    currentUserId: String,
     initialComments: {
         type: Array as PropType<Comment[]>,
         default: () => [],
@@ -159,9 +160,6 @@ const emits = defineEmits([
     "comment-updated",
     "comment-count-updated",
 ]);
-
-const { data: session } = await useFetch("/api/auth/get-session");
-const currentUserId = session.value?.data?.user?.id;
 
 // Local state for comments to handle additions and deletions
 const comments = ref<Comment[]>([...props.initialComments]);

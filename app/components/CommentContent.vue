@@ -1,11 +1,20 @@
 <template>
-    <div
-        class="wysiwyg-wrapper"
-        v-html="props.content"
-        @change="handleCheckboxChange"
-    />
+    <div class="comment-content-container">
+        <div
+            class="wysiwyg-wrapper"
+            v-html="props.content"
+            @change="handleCheckboxChange"
+            @click="handleContentClick"
+        />
+        <ImageWindow v-model="imageModalOpen" bare>
+            <img
+                :src="selectedImageSrc"
+                class="w-full h-full object-contain max-h-[calc(100vh-4rem)]"
+                :alt="selectedImageAlt || 'Enlarged image'"
+            />
+        </ImageWindow>
+    </div>
 </template>
-
 <script setup lang="ts">
 const props = defineProps({
     content: String,
@@ -14,6 +23,20 @@ const props = defineProps({
     boardId: Number,
     writeAccess: Boolean,
 });
+
+const imageModalOpen = ref(false);
+const selectedImageSrc = ref("");
+const selectedImageAlt = ref("");
+
+const handleContentClick = (event: MouseEvent) => {
+    const target = event.target as HTMLElement;
+    if (target.tagName === "IMG") {
+        event.preventDefault();
+        selectedImageSrc.value = target.getAttribute("src") || "";
+        selectedImageAlt.value = target.getAttribute("alt") || "";
+        imageModalOpen.value = true;
+    }
+};
 
 const handleCheckboxChange = async (event: Event) => {
     const target = event.target as HTMLElement;
@@ -67,3 +90,8 @@ const handleCheckboxChange = async (event: Event) => {
     }
 };
 </script>
+<style>
+.wysiwyg-wrapper img {
+    cursor: pointer;
+}
+</style>

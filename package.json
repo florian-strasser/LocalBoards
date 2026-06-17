@@ -12,25 +12,22 @@
   "dependencies": {
     "@nuxtjs/i18n": "^10.4.0",
     "@nuxtjs/mcp-toolkit": "^0.17.2",
-    "@tailwindcss/vite": "^4.3.0",
-    "@tiptap/extension-emoji": "^3.23.6",
-    "@tiptap/extension-file-handler": "^3.23.6",
-    "@tiptap/extension-image": "^3.23.6",
-    "@tiptap/pm": "^3.23.6",
-    "@tiptap/starter-kit": "^3.23.6",
-    "@tiptap/vue-3": "^3.23.6",
+    "@tailwindcss/vite": "^4.3.1",
+    "@tiptap/extension-emoji": "^3.27.0",
+    "@tiptap/extension-file-handler": "^3.27.0",
+    "@tiptap/extension-image": "^3.27.0",
+    "@tiptap/pm": "^3.27.0",
+    "@tiptap/starter-kit": "^3.27.0",
+    "@tiptap/vue-3": "^3.27.0",
     "bcryptjs": "^3.0.3",
     "lucide-vue-next": "^1.0.0",
-    "mysql2": "^3.22.4",
-    "nodemailer": "^8.0.9",
-    "nuxt": "^4.4.6",
+    "mysql2": "^3.22.5",
+    "nodemailer": "^9.0.1",
+    "nuxt": "^4.4.8",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "sortablejs": "^1.15.7",
-    "tailwindcss": "^4.3.0",
+    "tailwindcss": "^4.3.1",
     "uuid": "^14.0.0"
-  },
-  "devDependencies": {
-    "sass-embedded": "^1.98.0"
   }
 }

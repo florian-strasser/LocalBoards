@@ -1,6 +1,6 @@
 <template>
     <div v-if="data.boards.length > 0" class="mt-12">
-        <h2 class="text-5xl text-primary dark:text-white mb-5">
+        <h2 class="text-5xl text-dark dark:text-white mb-5">
             {{ $t("sharedBoards") }}
         </h2>
         <div
