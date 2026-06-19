@@ -42,6 +42,14 @@ ENV HOST=0.0.0.0 NODE_ENV=production NODE_OPTIONS=--max-old-space-size=4096
 # Create non-root user for security
 RUN groupadd -r nodejs && \
     useradd -r -g nodejs nodejs
+
+# Create the uploads directory and make it writable by the non-root user, then
+# mark it as a volume so uploaded files persist across container recreations
+# (instead of living only in the ephemeral container layer).
+RUN mkdir -p /app/public/uploads && \
+    chown -R nodejs:nodejs /app/public/uploads
+VOLUME ["/app/public/uploads"]
+
 USER nodejs
 
 # Expose the port the application will run on

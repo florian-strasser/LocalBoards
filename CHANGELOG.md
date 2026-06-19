@@ -1,3 +1,17 @@
+## v0.15.2
+
+### New Features
+- Added optional TLS for the MySQL connection via `NUXT_MYSQL_SSL=true` (required by managed/external databases such as Mittwald). Certificate verification stays on by default; set `NUXT_MYSQL_SSL_REJECT_UNAUTHORIZED=false` for servers whose certificate can't be verified against a public CA
+
+### Bug Fixes
+- Fixed the page title showing `undefined` (e.g. "Board | undefined"): the `titleTemplate` in `nuxt.config.ts` was built from `process.env.NUXT_APP_NAME` at build time (when the env var isn't set) and had an operator-precedence bug that defeated its fallback. The title is now driven entirely by a runtime `titleTemplate` in `app.vue` sourced from `runtimeConfig` (`NUXT_APP_NAME`) — so a custom app name applies at runtime, pages render as "<page> | <appName>", and title-less pages fall back to just "<appName>". The duplicate `app.head` block was also removed
+- Removed a duplicate `site` block in `nuxt.config.ts` that hardcoded a specific domain/locale and silently overrode the env-based one; the remaining `site` config now derives from `NUXT_BOARDS_URL` / `NUXT_APP_NAME` / `NUXT_LANGUAGE`
+- The `Dockerfile` now declares `/app/public/uploads` as a volume and makes it writable by the non-root user, so uploaded files persist across container recreations and no longer hit a permission error when written by the `nodejs` user
+- The Docker container now applies configuration from a mounted `/app/.env` file at runtime. Nuxt's production server only reads real environment variables (it does not auto-load `.env` like the dev server), so a mounted `.env` was previously ignored and the app fell back to the image's baked defaults. Real environment variables still take precedence over the file. Set `ENV_FILE` to use a different path
+
+### Documentation
+- Expanded the docs "Getting started" page with the `NUXT_MYSQL_SSL` env variable and a "Run with Docker" section covering the Docker Hub image, building from the `Dockerfile` with `docker buildx`, and how configuration is applied at runtime
+
 ## v0.15.1 - Security Hotfix
 
 ### Security Fixes

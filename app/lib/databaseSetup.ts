@@ -5,12 +5,24 @@ const mysqlUser = runtimeConfig.mysqlUser;
 const mysqlPassword = runtimeConfig.mysqlPassword;
 const mysqlDatabase = runtimeConfig.mysqlDatabase;
 
+// Enable TLS when the database server requires it (e.g. managed/external MySQL
+// such as Mittwald). Opt-in via NUXT_MYSQL_SSL=true so local/compose MySQL
+// without TLS keeps working. Certificate verification stays on by default;
+// set NUXT_MYSQL_SSL_REJECT_UNAUTHORIZED=false only if the server presents a
+// certificate that can't be verified against a public CA.
+const mysqlSsl = String(runtimeConfig.mysqlSsl).toLowerCase() === "true";
+const mysqlSslRejectUnauthorized =
+  String(runtimeConfig.mysqlSslRejectUnauthorized).toLowerCase() !== "false";
+
 const db = createPool({
   host: mysqlHost,
   user: mysqlUser,
   password: mysqlPassword,
   database: mysqlDatabase,
   timezone: "Z", // Important to ensure consistent timezone values
+  ...(mysqlSsl
+    ? { ssl: { rejectUnauthorized: mysqlSslRejectUnauthorized } }
+    : {}),
 });
 
 export function setupDatabase() {

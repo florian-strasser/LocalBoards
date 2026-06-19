@@ -8,7 +8,22 @@
 <script setup lang="ts">
 const nuxtApp = useNuxtApp();
 const config = nuxtApp.$config.public;
+
+// The app name lives in the (server-only) runtimeConfig so it can be set via
+// NUXT_APP_NAME at runtime. useState carries the resolved value to the client
+// so the title is correct both during SSR and on client-side navigation.
+const appName = useState(
+    "appName",
+    () => useRuntimeConfig().appName || "LocalBoards",
+);
+
 useHead({
+    // Only define the template. Pages set their own title chunk (e.g. a board
+    // name) which becomes "<chunk> | <appName>"; pages without a title fall
+    // back to just "<appName>". No static title is set here or in the config,
+    // otherwise it would be wrapped into "<appName> | <appName>".
+    titleTemplate: (titleChunk) =>
+        titleChunk ? `${titleChunk} | ${appName.value}` : appName.value,
     style: [
         {
             innerHTML: `

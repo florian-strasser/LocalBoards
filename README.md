@@ -44,6 +44,10 @@ NUXT_MYSQL_HOST=localhost
 NUXT_MYSQL_USER=root
 NUXT_MYSQL_PASSWORD=root1234
 NUXT_MYSQL_DATABASE=root
+# Set NUXT_MYSQL_SSL=true if your database requires a TLS connection
+# (common for managed/external MySQL). Optionally set
+# NUXT_MYSQL_SSL_REJECT_UNAUTHORIZED=false if its certificate can't be
+# verified against a public CA.
 
 # Email Configuration
 NUXT_EMAIL_HOST=mail.yourserver.de
@@ -152,6 +156,23 @@ Start it with:
 ```bash
 docker compose up -d
 ```
+
+### How configuration is applied
+
+LocalBoards reads its configuration from **environment variables at runtime** —
+there is no need to rebuild the image to change settings. Provide them in any of
+these ways:
+
+- Real environment variables — `docker run --env-file .env …`, the compose
+  `environment:` block above, or your hosting panel's env-var settings.
+- A mounted `.env` file at `/app/.env` (e.g. `-v /path/to/.env:/app/.env:ro`).
+  The container entrypoint loads it on start; real environment variables always
+  take precedence over the file.
+
+> Note: the production server does **not** auto-read a project `.env` the way the
+> dev server does — that is why the entrypoint loads `/app/.env` explicitly. The
+> `.env` used during development is excluded from the image (`.dockerignore`), so
+> no secrets are baked into the build.
 
 > Building and publishing the image is documented under
 > [Build the Docker image and push to Docker Hub](#build-the-docker-image-and-push-to-docker-hub).

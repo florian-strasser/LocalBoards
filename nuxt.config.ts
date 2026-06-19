@@ -9,20 +9,11 @@ export default defineNuxtConfig({
   modules: ["@nuxtjs/i18n", "@nuxtjs/mcp-toolkit"],
   app: {
     head: {
-      title: process.env.NUXT_APP_NAME || "LocalBoards",
-      htmlAttrs: {
-        lang: process.env.NUXT_LANGUAGE || "en",
-      },
-      link: [
-        { rel: "icon", href: "/touchicon.png" },
-        { rel: "apple-touch-icon", href: "/touchicon.png" },
-      ],
-    },
-    head: {
       charset: "utf-8",
       viewport: "width=device-width, initial-scale=1",
-      title: process.env.NUXT_APP_NAME || "LocalBoards",
-      titleTemplate: "%s | " + process.env.NUXT_APP_NAME || "LocalBoards",
+      // The title and titleTemplate are set at runtime in app.vue from
+      // runtimeConfig (NUXT_APP_NAME); see the note there. No static title is
+      // set here on purpose, so the runtime template fully controls it.
       htmlAttrs: {
         lang: process.env.NUXT_LANGUAGE || "en",
       },
@@ -46,7 +37,7 @@ export default defineNuxtConfig({
   },
   mcp: {
     name: process.env.NUXT_APP_NAME || "LocalBoards",
-    version: "0.14.0",
+    version: "0.15.2",
     enabled: process.env.NUXT_MCP || true,
   },
   runtimeConfig: {
@@ -74,6 +65,9 @@ export default defineNuxtConfig({
     mysqlDatabase: process.env.NUXT_MYSQL_DATABASE || "root",
     mysqlUser: process.env.NUXT_MYSQL_USER || "root",
     mysqlPassword: process.env.NUXT_MYSQL_PASSWORD || "root1234",
+    mysqlSsl: process.env.NUXT_MYSQL_SSL || "",
+    mysqlSslRejectUnauthorized:
+      process.env.NUXT_MYSQL_SSL_REJECT_UNAUTHORIZED || "",
     emailHost: process.env.NUXT_EMAIL_HOST || "mail.yourserver.de",
     emailPort: process.env.NUXT_EMAIL_PORT || 465,
     emailSecure: process.env.NUXT_EMAIL_SECURE || true,
@@ -104,12 +98,6 @@ export default defineNuxtConfig({
   },
   vite: {
     plugins: [tailwindcss()],
-  },
-  site: {
-    url: "https://boards.florian-strasser.de",
-    name: "LocalBoards",
-    trailingSlash: true,
-    defaultLocale: "de",
   },
   ssr: true,
   telemetry: false,
