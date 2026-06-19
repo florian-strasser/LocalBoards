@@ -17,7 +17,17 @@ const appName = useState(
     () => useRuntimeConfig().appName || "LocalBoards",
 );
 
+// Same runtime story as the app name: the language comes from NUXT_LANGUAGE and
+// is shared with the i18n plugin via the "language" state key.
+const language = useState(
+    "language",
+    () => useRuntimeConfig().language || "en",
+);
+
 useHead({
+    htmlAttrs: {
+        lang: language.value,
+    },
     // Only define the template. Pages set their own title chunk (e.g. a board
     // name) which becomes "<chunk> | <appName>"; pages without a title fall
     // back to just "<appName>". No static title is set here or in the config,

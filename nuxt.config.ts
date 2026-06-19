@@ -11,11 +11,11 @@ export default defineNuxtConfig({
     head: {
       charset: "utf-8",
       viewport: "width=device-width, initial-scale=1",
-      // The title and titleTemplate are set at runtime in app.vue from
-      // runtimeConfig (NUXT_APP_NAME); see the note there. No static title is
-      // set here on purpose, so the runtime template fully controls it.
+      // The title/titleTemplate and the html lang attribute are set at runtime
+      // in app.vue from runtimeConfig (NUXT_APP_NAME / NUXT_LANGUAGE); see the
+      // notes there. The values here are only static fallbacks.
       htmlAttrs: {
-        lang: process.env.NUXT_LANGUAGE || "en",
+        lang: "en",
       },
       meta: [
         { charset: "utf-8" },
@@ -33,7 +33,6 @@ export default defineNuxtConfig({
     url: process.env.NUXT_BOARDS_URL || "http://localhost:3000",
     name: process.env.NUXT_APP_NAME || "LocalBoards",
     trailingSlash: true,
-    defaultLocale: process.env.NUXT_LANGUAGE || "en",
   },
   mcp: {
     name: process.env.NUXT_APP_NAME || "LocalBoards",
@@ -76,13 +75,22 @@ export default defineNuxtConfig({
   },
   css: ["~/assets/css/main.css"],
   i18n: {
-    strategy: "prefix_except_default",
-    defaultLocale: process.env.NUXT_LANGUAGE || "en",
+    // Bundle every locale and pick the active one at runtime from
+    // NUXT_LANGUAGE (see app/plugins/i18n-locale.ts). The config is evaluated
+    // at build time when the env variable isn't available, so we can't select
+    // the language here. "no_prefix" keeps URLs unprefixed (as before, since
+    // the single default locale was never prefixed).
+    strategy: "no_prefix",
+    defaultLocale: "en",
+    detectBrowserLanguage: false,
     locales: [
-      {
-        code: process.env.NUXT_LANGUAGE || "en",
-        file: (process.env.NUXT_LANGUAGE || "en") + ".json",
-      },
+      { code: "en", file: "en.json" },
+      { code: "de", file: "de.json" },
+      { code: "fr", file: "fr.json" },
+      { code: "es", file: "es.json" },
+      { code: "it", file: "it.json" },
+      { code: "nl", file: "nl.json" },
+      { code: "pl", file: "pl.json" },
     ],
   },
   nitro: {

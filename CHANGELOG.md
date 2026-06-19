@@ -1,3 +1,9 @@
+## v0.15.3
+
+### Bug Fixes
+- The UI language (`NUXT_LANGUAGE`) is now applied at runtime instead of being baked at build time, so it works in the Docker image (where the env isn't set during the build) — previously the app was always English regardless of the variable. All locales are now bundled and the active one (plus the `<html lang>` attribute) is selected at startup from `NUXT_LANGUAGE` via `app/plugins/i18n-locale.ts`
+- Removed the leftover build-time `site.defaultLocale` from `nuxt.config.ts`
+
 ## v0.15.2
 
 ### New Features
