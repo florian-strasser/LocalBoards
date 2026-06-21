@@ -94,6 +94,14 @@ export default defineNuxtConfig({
     ],
   },
   nitro: {
+    // Pre-compress static assets (JS/CSS/etc.) at build time. The node server
+    // serves the .br/.gz variant when the client's Accept-Encoding allows,
+    // which is a big win for the large client bundle. Uses Node's built-in
+    // zlib, so no extra dependency.
+    compressPublicAssets: {
+      gzip: true,
+      brotli: true,
+    },
     experimental: {
       tasks: true,
       websocket: true,

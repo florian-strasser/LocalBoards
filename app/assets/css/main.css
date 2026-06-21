@@ -18,16 +18,28 @@ body {
     background: var(--color-slate);
     color: var(--color-gray);
 }
-@media (prefers-color-scheme: dark) {
-    :root {
-        --color-primary: #0f72de;
-        --color-secondary: #1c84ec;
-        --color-gray: #aeaeb2;
-        --color-slate: #2c2c2e;
-        --color-code-bg: #161618;
-        --color-code-text: #e6e6ea;
-        --color-code-border: #3a3a3c;
+/* Static dark-mode color tokens live in a cascade layer so the runtime color
+ * overrides injected in app.vue (from NUXT_PUBLIC_COLOR_*_DARK) take
+ * precedence — unlayered styles always beat layered ones, regardless of source
+ * order. Without this, these definitions (which come later in the bundle) would
+ * override the runtime colors in dark mode. Non-customizable tokens (the code
+ * colors) simply keep these values. */
+@layer app-theme {
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --color-primary: #0f72de;
+            --color-secondary: #1c84ec;
+            --color-gray: #aeaeb2;
+            --color-slate: #2c2c2e;
+            --color-code-bg: #161618;
+            --color-code-text: #e6e6ea;
+            --color-code-border: #3a3a3c;
+        }
     }
+}
+/* The html/body background stays unlayered so it still wins over the light
+ * background rule in dark mode. */
+@media (prefers-color-scheme: dark) {
     html,
     body {
         background: var(--color-dark);

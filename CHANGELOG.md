@@ -1,3 +1,11 @@
+## v0.15.4
+
+### Improvements
+- Responses are now compressed with brotli (falling back to gzip) based on the client's `Accept-Encoding`. A `beforeResponse` server plugin compresses dynamic responses — notably the large API JSON for populated boards (hundreds of areas/cards) — and `nitro.compressPublicAssets` pre-compresses static assets at build time (the ~1 MB client bundle drops to ~200 KB brotli). Socket.IO traffic and binary downloads are left untouched
+
+### Bug Fixes
+- Custom colors (`NUXT_PUBLIC_COLOR_*`) now apply in dark mode. The static dark-mode color tokens in `main.css` were unlayered and overrode the runtime colors injected in `app.vue`; they are now placed in a cascade layer (`@layer app-theme`) so the runtime (unlayered) values win. Light mode already worked, so custom colors were silently ignored only in dark mode — most visible in the Docker image, where colors come entirely from runtime env variables
+
 ## v0.15.3
 
 ### Bug Fixes
