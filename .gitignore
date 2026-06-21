@@ -6,7 +6,6 @@
 .cache
 dist
 public/uploads
-package-lock.json
 
 # Node dependencies
 node_modules
