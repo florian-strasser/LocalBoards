@@ -5,36 +5,13 @@ export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
 
-  // Extract API key from headers
-  const apiKey = event.headers.get("x-api-key");
-
-  // Validate API key if provided
-  let userIdFromApiKey = null;
-  if (apiKey) {
-    const data = await verifyApiKey(apiKey);
-
-    if (data.error) {
-      event.res.statusCode = 403;
-      return { error: "Unauthorized access" };
-    } else {
-      userIdFromApiKey = data.key.userId;
-    }
+  // Resolve the authenticated user (API key or session).
+  const auth = await resolveUserId(event);
+  if (!auth.ok) {
+    event.res.statusCode = auth.status;
+    return { error: auth.error };
   }
-
-  const session = await getSession(event);
-
-  // Early auth check - block unauthenticated access
-  if (!userIdFromApiKey && !session) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
-
-  const userId = userIdFromApiKey || session?.user.id;
-
-  if (!userId) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
+  const userId = auth.userId;
 
   if (method !== "GET") {
     event.res.statusCode = 405;
@@ -88,25 +65,10 @@ export default defineEventHandler(async (event) => {
       return { error: "Resource not found" };
     }
 
-    let readAccess = false;
-    if (board.status === "private" && board.user !== userId) {
-      const [invitationRows] = await db.execute(
-        "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-        [board.id, userId],
-      );
-
-      if (invitationRows.length > 0) {
-        readAccess = true;
-      }
-    } else if (board.user === userId) {
-      readAccess = true;
-    } else if (board.status === "public") {
-      readAccess = true;
-    }
-
-    if (!readAccess) {
-      event.res.statusCode = 403;
-      return { error: "Unauthorized access" };
+    const decision = await authorizeBoard(db, board, userId, "read");
+    if (!decision.ok) {
+      event.res.statusCode = decision.status;
+      return { error: decision.error };
     }
 
     return {

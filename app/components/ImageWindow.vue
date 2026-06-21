@@ -15,6 +15,7 @@
                     'max-w-2xl shadow-xl rounded-lg': !props.bare,
                     'max-w-none rounded-none': props.bare,
                 }"
+                @click="closeModal"
             >
                 <slot />
             </div>

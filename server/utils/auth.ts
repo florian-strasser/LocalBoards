@@ -2,6 +2,7 @@ import { setupDatabase } from "../../app/lib/databaseSetup";
 import { v4 as uuidv4 } from "uuid";
 import { setCookie } from "h3";
 import bcrypt from "bcryptjs";
+import { resolveBoardAccess, type BoardAccess } from "./boardAccess";
 
 // UUID v4 regex for validation
 const uuidRegex =
@@ -162,4 +163,152 @@ export async function getApiKeyUser(event: any) {
     console.error("getApiKeyUser error:", error);
     return null;
   }
+}
+
+// A failed authorization check carries the HTTP status and a (deliberately
+// generic) error message the caller should return verbatim.
+export type AuthFailure = { ok: false; status: number; error: string };
+
+const UNAUTHORIZED: AuthFailure = { ok: false, status: 403, error: "Unauthorized access" };
+
+export type UserResolution =
+  | AuthFailure
+  | { ok: true; userId: string; viaApiKey: boolean };
+
+/**
+ * Resolve the authenticated user from either an `x-api-key` header or the
+ * session cookie. This is the boilerplate every data endpoint used to repeat
+ * inline. Returns the userId and whether it came from an API key (some
+ * endpoints emit socket events only for API-key calls).
+ */
+export async function resolveUserId(event: any): Promise<UserResolution> {
+  const apiKey = event.headers.get("x-api-key");
+
+  let userIdFromApiKey: string | null = null;
+  if (apiKey) {
+    const data = await verifyApiKey(apiKey);
+    if (data.error) return UNAUTHORIZED;
+    userIdFromApiKey = data.key.userId;
+  }
+
+  const session = await getSession(event);
+
+  if (!userIdFromApiKey && !session) return UNAUTHORIZED;
+
+  const userId = userIdFromApiKey || session?.user?.id;
+  if (!userId) return UNAUTHORIZED;
+
+  return { ok: true, userId: String(userId), viaApiKey: !!userIdFromApiKey };
+}
+
+export type AccessDecision =
+  | AuthFailure
+  | { ok: true; access: Exclude<BoardAccess, "none"> };
+
+// Options for the strictness of an "edit" check.
+export interface BoardAccessOptions {
+  // When false, a `public` board does NOT grant write access — only the owner
+  // or an `edit` invitation does. Defaults to true (public boards are writable
+  // by anyone), matching the predominant endpoint behaviour. The board-record
+  // update (board.ts POST) and area deletion use `publicWrite: false`.
+  publicWrite?: boolean;
+}
+
+/**
+ * Decide access for an already-loaded board row. This is the reusable core for
+ * endpoints that reach the board via a join (card → area → board) and therefore
+ * don't have a boardId up front. It loads the user's invitation only when it can
+ * matter and returns the exact status/message to return on denial.
+ *
+ * @param required  "read" allows owner/invited/public; "edit" requires write.
+ */
+export async function authorizeBoard(
+  db: any,
+  board: any,
+  userId: string,
+  required: "read" | "edit",
+  opts: BoardAccessOptions = {},
+): Promise<AccessDecision> {
+  const publicWrite = opts.publicWrite !== false;
+  const isOwner = !!userId && board.user === userId;
+
+  // Load the invitation for non-owners whenever it could affect the outcome:
+  // for private boards (always), and for strict edit checks (where an `edit`
+  // invitation is the only non-owner path to write access).
+  let invitation = null;
+  if (!isOwner) {
+    const needInvitation =
+      board.status === "private" || (required === "edit" && !publicWrite);
+    if (needInvitation) {
+      const [invitationRows]: any = await db.execute(
+        "SELECT permission FROM invitations WHERE board = ? AND user = ?",
+        [board.id, userId],
+      );
+      invitation = invitationRows[0] || null;
+    }
+  }
+
+  // Strict edit (no public write): owner or an `edit` invitation only.
+  if (required === "edit" && !publicWrite) {
+    if (isOwner || invitation?.permission === "edit") {
+      return { ok: true, access: "edit" };
+    }
+    return UNAUTHORIZED;
+  }
+
+  const access = resolveBoardAccess(board, userId, invitation);
+  if (access === "none") return UNAUTHORIZED;
+  if (required === "edit" && access !== "edit") return UNAUTHORIZED;
+  return { ok: true, access };
+}
+
+export type BoardAccessResolution =
+  | AuthFailure
+  | {
+      ok: true;
+      userId: string;
+      viaApiKey: boolean;
+      board: any;
+      access: Exclude<BoardAccess, "none">;
+    };
+
+/**
+ * Resolve the user, load the board by id, and decide access via
+ * `authorizeBoard`. For endpoints that already have a boardId. Returns
+ * `ok: false` with the exact status/message the endpoint should return.
+ */
+export async function requireBoardAccess(
+  event: any,
+  boardId: any,
+  required: "read" | "edit",
+  opts: BoardAccessOptions = {},
+): Promise<BoardAccessResolution> {
+  // Validate the board id is a positive integer.
+  if (!boardId || isNaN(Number(boardId)) || Number(boardId) <= 0) {
+    return { ok: false, status: 400, error: "Invalid board ID" };
+  }
+
+  const auth = await resolveUserId(event);
+  if (!auth.ok) return auth;
+
+  const db = setupDatabase();
+
+  const [rows]: any = await db.execute("SELECT * FROM boards WHERE id = ?", [
+    boardId,
+  ]);
+  const board = rows[0];
+
+  // Generic 404 to avoid board enumeration.
+  if (!board) return { ok: false, status: 404, error: "Resource not found" };
+
+  const decision = await authorizeBoard(db, board, auth.userId, required, opts);
+  if (!decision.ok) return decision;
+
+  return {
+    ok: true,
+    userId: auth.userId,
+    viaApiKey: auth.viaApiKey,
+    board,
+    access: decision.access,
+  };
 }

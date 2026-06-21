@@ -2,37 +2,14 @@ import { defineEventHandler, readBody, getQuery } from "h3";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 
 export default defineEventHandler(async (event) => {
-  const apiKey = event.headers.get("x-api-key");
-
-  // CRITICAL FIX: Check auth before reading body
-  let userIdFromApiKey = null;
-  if (apiKey) {
-    const data = await verifyApiKey(apiKey);
-
-    if (data.error) {
-      event.res.statusCode = 403;
-      return { error: "Unauthorized access" };
-    } else {
-      userIdFromApiKey = data.key.userId;
-    }
+  // Resolve the authenticated user (API key or session). Boards are
+  // user-scoped (own or shared-with), so queries are filtered by this userId.
+  const auth = await resolveUserId(event);
+  if (!auth.ok) {
+    event.res.statusCode = auth.status;
+    return { error: auth.error };
   }
-
-  const session = await getSession(event);
-
-  // CRITICAL FIX: Early auth check
-  if (!userIdFromApiKey && !session) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
-
-  // CRITICAL FIX: Use authenticated userId consistently
-  const userId = userIdFromApiKey || session?.user.id;
-
-  // CRITICAL FIX: Ensure userId is defined (defense in depth)
-  if (!userId) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
+  const userId = auth.userId;
 
   // Read body for shared parameter
   const { shared } = await readBody(event);

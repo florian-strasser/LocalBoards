@@ -88,6 +88,7 @@
                             v-if="content"
                             class="wysiwyg-wrapper"
                             v-html="content"
+                            @click="handleDescriptionClick"
                         />
                         <button
                             v-if="writeAccess"
@@ -144,6 +145,13 @@
                     @comment-created="handleCommentCreated"
                     @comment-deleted="handleCommentDeleted"
                 />
+                <ImageWindow v-model="imageModalOpen" bare>
+                    <img
+                        :src="selectedImageSrc"
+                        class="w-full h-full object-contain max-h-[calc(100vh-4rem)]"
+                        :alt="selectedImageAlt || 'Enlarged image'"
+                    />
+                </ImageWindow>
             </div>
         </div>
         <div v-else>Loading...</div>
@@ -189,6 +197,22 @@ const editingDescription = ref(!!props.openInEditMode);
 const attachments = ref([...(props.card.attachments || [])]);
 const newAttachments = ref([]);
 const comments = ref(props.card.comments || []);
+
+// Click-to-enlarge for images in the read-only description, mirroring the
+// behaviour of images in comments (CommentContent.vue).
+const imageModalOpen = ref(false);
+const selectedImageSrc = ref("");
+const selectedImageAlt = ref("");
+
+const handleDescriptionClick = (event) => {
+    const target = event.target;
+    if (target.tagName === "IMG") {
+        event.preventDefault();
+        selectedImageSrc.value = target.getAttribute("src") || "";
+        selectedImageAlt.value = target.getAttribute("alt") || "";
+        imageModalOpen.value = true;
+    }
+};
 
 const handleCommentCreated = (newComment) => {
     comments.value.unshift(newComment);

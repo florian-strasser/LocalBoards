@@ -19,38 +19,13 @@ export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
 
-  // Extract API key from headers
-  const apiKey = event.headers.get("x-api-key");
-
-  // Validate API key if provided
-  let userIdFromApiKey = null;
-  if (apiKey) {
-    const data = await verifyApiKey(apiKey);
-
-    if (data.error) {
-      event.res.statusCode = 403;
-      return { error: "Unauthorized access" };
-    } else {
-      userIdFromApiKey = data.key.userId;
-    }
+  // Resolve the authenticated user (API key or session).
+  const auth = await resolveUserId(event);
+  if (!auth.ok) {
+    event.res.statusCode = auth.status;
+    return { error: auth.error };
   }
-
-  const session = await getSession(event);
-
-  // CRITICAL FIX: Early auth check - block unauthenticated access
-  if (!userIdFromApiKey && !session) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
-
-  // CRITICAL FIX: Use authenticated userId consistently
-  const userId = userIdFromApiKey || session?.user.id;
-
-  // CRITICAL FIX: Ensure userId is defined (defense in depth)
-  if (!userId) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
+  const userId = auth.userId;
 
   try {
     // Initialize database
@@ -91,23 +66,12 @@ export default defineEventHandler(async (event) => {
         return { error: "Resource not found" };
       }
 
-      let readAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length > 0) {
-          readAccess = true;
-        }
-      } else if (board.user === userId) {
-        readAccess = true;
-      } else if (board.status === "public") {
-        readAccess = true;
+      const decision = await authorizeBoard(db, board, userId, "read");
+      if (!decision.ok) {
+        event.res.statusCode = decision.status;
+        return { error: decision.error };
       }
-
-      if (readAccess) {
+      {
         // Convert status from number to boolean
         card.status = !!card.status;
 
@@ -125,9 +89,6 @@ export default defineEventHandler(async (event) => {
         }));
 
         return { card, attachments };
-      } else {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
     } else if (method === "POST") {
       // Handle POST request to create a new card
@@ -157,28 +118,12 @@ export default defineEventHandler(async (event) => {
         return { error: "Resource not found" };
       }
 
-      let writeAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
-      } else if (board.user === userId) {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
+      const writeDecision = await authorizeBoard(db, board, userId, "edit");
+      if (!writeDecision.ok) {
+        event.res.statusCode = writeDecision.status;
+        return { error: writeDecision.error };
       }
-
-      if (writeAccess) {
+      {
         const [crows] = await db.execute("SELECT * FROM cards WHERE area = ?", [
           areaId,
         ]);
@@ -242,7 +187,7 @@ export default defineEventHandler(async (event) => {
         }
 
         // Emit socket event for card creation (only for API calls, not frontend)
-        if (apiKey) {
+        if (auth.viaApiKey) {
           const serverSocket = getServerSocket();
           serverSocket.to(`board-${boardRows[0]?.boardId}`).emit("addCard", {
             boardId: boardRows[0]?.boardId,
@@ -251,9 +196,6 @@ export default defineEventHandler(async (event) => {
         }
 
         return { card };
-      } else {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
     } else if (method === "PUT") {
       // Handle PUT request to update an existing card
@@ -295,28 +237,12 @@ export default defineEventHandler(async (event) => {
         return { error: "Resource not found" };
       }
 
-      let writeAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
-      } else if (board.user === userId) {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
+      const writeDecision = await authorizeBoard(db, board, userId, "edit");
+      if (!writeDecision.ok) {
+        event.res.statusCode = writeDecision.status;
+        return { error: writeDecision.error };
       }
-
-      if (writeAccess) {
+      {
         // Fetch the original card to check if status changed
         const [originalCardRows] = await db.execute(
           "SELECT * FROM cards WHERE id = ?",
@@ -415,7 +341,7 @@ export default defineEventHandler(async (event) => {
         }
 
         // Emit socket event for card update (only for API calls, not frontend)
-        if (apiKey) {
+        if (auth.viaApiKey) {
           const serverSocket = getServerSocket();
           serverSocket.to(`board-${boardRows[0]?.boardId}`).emit("updateCard", {
             boardId: boardRows[0]?.boardId,
@@ -425,9 +351,6 @@ export default defineEventHandler(async (event) => {
         }
 
         return { card, attachments };
-      } else {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
     } else if (method === "DELETE") {
       // Handle DELETE request to delete a card
@@ -463,28 +386,12 @@ export default defineEventHandler(async (event) => {
         return { error: "Resource not found" };
       }
 
-      let writeAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
-      } else if (board.user === userId) {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
+      const writeDecision = await authorizeBoard(db, board, userId, "edit");
+      if (!writeDecision.ok) {
+        event.res.statusCode = writeDecision.status;
+        return { error: writeDecision.error };
       }
-
-      if (writeAccess) {
+      {
         // Delete notifications
         await db.execute("DELETE FROM comments WHERE card = ?", [cardID]);
 
@@ -505,7 +412,7 @@ export default defineEventHandler(async (event) => {
         }
 
         // Emit socket event for card deletion (only for API calls, not frontend)
-        if (apiKey) {
+        if (auth.viaApiKey) {
           const serverSocket = getServerSocket();
           serverSocket.to(`board-${boardRows[0]?.id}`).emit("deletedCard", {
             boardId: boardRows[0]?.id,
@@ -514,9 +421,6 @@ export default defineEventHandler(async (event) => {
         }
 
         return { message: "Card deleted successfully", card: card };
-      } else {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
     } else {
       event.res.statusCode = 405;

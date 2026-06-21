@@ -1,3 +1,16 @@
+## v0.15.5
+
+### Internal
+- Added a test runner (Vitest) with `npm test` / `npm run test:watch` scripts — the first automated tests in the project
+- Added integration tests for `authorizeBoard` (10 cases) driving it with a fake DB connection, covering invitation-lookup conditions and the `publicWrite: false` strict-edit mode — including the assertion that strict mode looks up an invitation even on a public board, and that the owner/standard-public paths skip the lookup entirely
+- Added a GitHub Actions CI workflow (`.github/workflows/ci.yml`) that runs on pushes and PRs to `master`: installs with `npm ci` (Node 22), runs the test suite and the production build, and runs `npm audit` as a non-blocking step
+- Extracted the board access-control decision (owner / public / invitation → none/read/edit), previously re-implemented inline in every data endpoint, into a single pure `resolveBoardAccess` helper in `server/utils/boardAccess.ts`, covered by exhaustive unit tests
+- Added `resolveUserId`, `authorizeBoard`, and `requireBoardAccess` helpers in `server/utils/auth.ts` that centralize the per-endpoint "verify API key / session → load board + invitation → decide access" boilerplate (`authorizeBoard` works on an already-loaded board for endpoints that reach it via a `card → area → board` join). Migrated **all** data endpoints to them: `board.ts`, `boards.ts`, `area.ts`, `areas.ts`, `card.ts`, `cards.ts`, `cardMove.ts`, `cardOrder.ts`, `comment.ts`, `invite.ts`, `notifications.ts`, `attachment.ts`. Access behaviour is unchanged, including the stricter paths that do **not** grant write via a `public` status (board-record update, area deletion) and the owner-only paths (board deletion, all invite operations), which now use an explicit `publicWrite: false` option or inline owner checks
+
+### Bug Fixes
+- Images in a card's description (in `CardModal`) now open enlarged in an image modal on click, matching the existing behaviour for images in comments. Previously only comment images were clickable
+- Clicking the dimmed area of the image lightbox now closes it. The enlarged image uses `object-contain`, so its `<img>` element still covered the full box (including the visually empty letterbox margins) and sat on top of the background close handlers, swallowing the click. The `ImageWindow` content wrapper now closes on click, so clicking anywhere — the image or the surrounding space — dismisses the modal
+
 ## v0.15.4
 
 ### Improvements

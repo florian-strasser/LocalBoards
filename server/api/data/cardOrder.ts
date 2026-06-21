@@ -5,38 +5,13 @@ import { getServerSocket } from "../../utils/socket";
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
 
-  // Extract API key from headers
-  const apiKey = event.headers.get("x-api-key");
-
-  // Validate API key if provided
-  let userIdFromApiKey = null;
-  if (apiKey) {
-    const data = await verifyApiKey(apiKey);
-
-    if (data.error) {
-      event.res.statusCode = 403;
-      return { error: "Unauthorized access" };
-    } else {
-      userIdFromApiKey = data.key.userId;
-    }
+  // Resolve the authenticated user (API key or session).
+  const auth = await resolveUserId(event);
+  if (!auth.ok) {
+    event.res.statusCode = auth.status;
+    return { error: auth.error };
   }
-
-  const session = await getSession(event);
-
-  // CRITICAL FIX: Early auth check - block unauthenticated access
-  if (!userIdFromApiKey && !session) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
-
-  // CRITICAL FIX: Use authenticated userId consistently
-  const userId = userIdFromApiKey || session?.user.id;
-
-  // CRITICAL FIX: Ensure userId is defined (defense in depth)
-  if (!userId) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
+  const userId = auth.userId;
 
   try {
     const db = setupDatabase();
@@ -87,28 +62,13 @@ export default defineEventHandler(async (event) => {
         return { error: "Resource not found" };
       }
 
-      let writeAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
-      } else if (board.user === userId) {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
+      const writeDecision = await authorizeBoard(db, board, userId, "edit");
+      if (!writeDecision.ok) {
+        event.res.statusCode = writeDecision.status;
+        return { error: writeDecision.error };
       }
 
-      if (writeAccess) {
+      {
         try {
           // Update sort order of other cards in the destination area
           await db.execute(
@@ -125,7 +85,7 @@ export default defineEventHandler(async (event) => {
           await renumberSortValues(areaId);
 
           // Emit socket event for card reordering (API calls only)
-          if (userIdFromApiKey) {
+          if (auth.viaApiKey) {
             const serverSocket = getServerSocket();
             if (serverSocket) {
               serverSocket.to(`board-${board.id}`).emit("orderdCard", {
@@ -144,9 +104,6 @@ export default defineEventHandler(async (event) => {
           event.res.statusCode = 500;
           return { error: "Internal server error" };
         }
-      } else {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
     } else {
       event.res.statusCode = 405;

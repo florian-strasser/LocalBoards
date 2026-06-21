@@ -6,38 +6,13 @@ export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
 
-  // Extract API key from headers
-  const apiKey = event.headers.get("x-api-key");
-
-  // Validate API key if provided
-  let userIdFromApiKey = null;
-  if (apiKey) {
-    const data = await verifyApiKey(apiKey);
-
-    if (data.error) {
-      event.res.statusCode = 403;
-      return { error: "Unauthorized access" };
-    } else {
-      userIdFromApiKey = data.key.userId;
-    }
+  // Resolve the authenticated user (API key or session).
+  const auth = await resolveUserId(event);
+  if (!auth.ok) {
+    event.res.statusCode = auth.status;
+    return { error: auth.error };
   }
-
-  const session = await getSession(event);
-
-  // CRITICAL FIX: Early auth check - block unauthenticated access
-  if (!userIdFromApiKey && !session) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
-
-  // CRITICAL FIX: Use authenticated userId consistently
-  const userId = userIdFromApiKey || session?.user.id;
-
-  // CRITICAL FIX: Ensure userId is defined (defense in depth)
-  if (!userId) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
+  const userId = auth.userId;
 
   try {
     // Initialize database
@@ -76,23 +51,12 @@ export default defineEventHandler(async (event) => {
         return { error: "Resource not found" };
       }
 
-      let readAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length > 0) {
-          readAccess = true;
-        }
-      } else if (board.user === userId) {
-        readAccess = true;
-      } else if (board.status === "public") {
-        readAccess = true;
+      const decision = await authorizeBoard(db, board, userId, "read");
+      if (!decision.ok) {
+        event.res.statusCode = decision.status;
+        return { error: decision.error };
       }
-
-      if (readAccess) {
+      {
         // Fetch comments for the card with user information using a LEFT JOIN
         const [rows] = await db.execute(
           "SELECT comments.id AS id, comments.card AS card, comments.user AS user, user.name AS userName, user.image AS image, comments.content AS content, comments.date AS date FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.card = ? ORDER BY comments.date DESC",
@@ -109,9 +73,6 @@ export default defineEventHandler(async (event) => {
         }));
 
         return { comments: comments };
-      } else {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
     } else if (method === "POST") {
       // Handle POST request to create a new comment
@@ -152,28 +113,12 @@ export default defineEventHandler(async (event) => {
         return { error: "Resource not found" };
       }
 
-      let writeAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
-      } else if (board.user === userId) {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
+      const writeDecision = await authorizeBoard(db, board, userId, "edit");
+      if (!writeDecision.ok) {
+        event.res.statusCode = writeDecision.status;
+        return { error: writeDecision.error };
       }
-
-      if (writeAccess) {
+      {
         // CRITICAL FIX: Use authenticated userId instead of body user
         // Create new comment
         const [result] = await db.execute(
@@ -199,7 +144,7 @@ export default defineEventHandler(async (event) => {
           : null;
 
         // Emit socket event for new comment (API calls only)
-        if (userIdFromApiKey) {
+        if (auth.viaApiKey) {
           const serverSocket = getServerSocket();
           if (serverSocket) {
             serverSocket.to(`card-${card}`).emit("addComment", {
@@ -250,9 +195,6 @@ export default defineEventHandler(async (event) => {
         }
 
         return { comment };
-      } else {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
     } else if (method === "PATCH") {
       // Handle PATCH request to update checklist state in a comment
@@ -318,30 +260,10 @@ export default defineEventHandler(async (event) => {
       }
 
       // Check write access (same logic as POST method)
-      let writeAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
-      } else if (board.user === userId) {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
-      }
-
-      if (!writeAccess) {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
+      const writeDecision = await authorizeBoard(db, board, userId, "edit");
+      if (!writeDecision.ok) {
+        event.res.statusCode = writeDecision.status;
+        return { error: writeDecision.error };
       }
 
       // Validate that only data-checked attributes have changed
@@ -405,7 +327,7 @@ export default defineEventHandler(async (event) => {
         : null;
 
       // Emit socket event for comment update (API calls only)
-      if (userIdFromApiKey) {
+      if (auth.viaApiKey) {
         const serverSocket = getServerSocket();
         if (serverSocket) {
           serverSocket.to(`card-${comment.card}`).emit("updateComment", {
@@ -467,26 +389,11 @@ export default defineEventHandler(async (event) => {
         return { error: "Resource not found" };
       }
 
-      // Check board access
-      let hasAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length > 0) {
-          hasAccess = true;
-        }
-      } else if (board.user === userId) {
-        hasAccess = true;
-      } else if (board.status === "public") {
-        hasAccess = true;
-      }
-
-      if (!hasAccess) {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
+      // Check board access (defense in depth — creator should have access)
+      const accessDecision = await authorizeBoard(db, board, userId, "read");
+      if (!accessDecision.ok) {
+        event.res.statusCode = accessDecision.status;
+        return { error: accessDecision.error };
       }
 
       // Only allow update by the comment creator
@@ -519,7 +426,7 @@ export default defineEventHandler(async (event) => {
         : null;
 
       // Emit socket event for comment update (API calls only)
-      if (userIdFromApiKey) {
+      if (auth.viaApiKey) {
         const serverSocket = getServerSocket();
         if (serverSocket) {
           serverSocket.to(`card-${comment.card}`).emit("updateComment", {
@@ -576,25 +483,10 @@ export default defineEventHandler(async (event) => {
       }
 
       // Check board read access (defense in depth - creator should have access)
-      let hasAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length > 0) {
-          hasAccess = true;
-        }
-      } else if (board.user === userId) {
-        hasAccess = true;
-      } else if (board.status === "public") {
-        hasAccess = true;
-      }
-
-      if (!hasAccess) {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
+      const accessDecision = await authorizeBoard(db, board, userId, "read");
+      if (!accessDecision.ok) {
+        event.res.statusCode = accessDecision.status;
+        return { error: accessDecision.error };
       }
 
       // Only allow deletion by the comment creator
@@ -607,7 +499,7 @@ export default defineEventHandler(async (event) => {
       await db.execute("DELETE FROM comments WHERE id = ?", [commentId]);
 
       // Emit socket event for comment deletion (API calls only)
-      if (userIdFromApiKey) {
+      if (auth.viaApiKey) {
         const serverSocket = getServerSocket();
         if (serverSocket) {
           serverSocket.to(`card-${comment.card}`).emit("deleteComment", {

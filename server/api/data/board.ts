@@ -6,39 +6,6 @@ export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
 
-  // Extract API key from headers
-  const apiKey = event.headers.get("x-api-key");
-
-  // Validate API key if provided
-  let userIdFromApiKey = null;
-  if (apiKey) {
-    const data = await verifyApiKey(apiKey);
-
-    if (data.error) {
-      event.res.statusCode = 403;
-      return { error: "Unauthorized access" };
-    } else {
-      userIdFromApiKey = data.key.userId;
-    }
-  }
-
-  const session = await getSession(event);
-
-  // CRITICAL FIX: Early auth check - block unauthenticated access
-  if (!userIdFromApiKey && !session) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
-
-  // CRITICAL FIX: Use authenticated userId consistently
-  const userId = userIdFromApiKey || session?.user.id;
-
-  // CRITICAL FIX: Ensure userId is defined (defense in depth)
-  if (!userId) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
-
   try {
     // Initialize database
     const db = setupDatabase();
@@ -48,47 +15,15 @@ export default defineEventHandler(async (event) => {
       const query = getQuery(event);
       const id = query.id;
 
-      // HIGH FIX: Validate boardId is a positive integer
-      if (!id || isNaN(Number(id)) || Number(id) <= 0) {
-        event.res.statusCode = 400;
-        return { error: "Invalid board ID" };
+      // Resolve auth + access in one place (validates id, loads board, decides
+      // read/edit/none).
+      const auth = await requireBoardAccess(event, id, "read");
+      if (!auth.ok) {
+        event.res.statusCode = auth.status;
+        return { error: auth.error };
       }
 
-      const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
-        id,
-      ]);
-      const board = rows[0];
-
-      if (!board) {
-        // HIGH FIX: Generic error to prevent board enumeration
-        event.res.statusCode = 404;
-        return { error: "Resource not found" };
-      }
-
-      // Check if the user has access to this board
-
-      let writeAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [id, userId],
-        );
-
-        if (invitationRows.length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
-      } else if (board.user === userId) {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
-      }
-
-      return { board, writeAccess };
+      return { board: auth.board, writeAccess: auth.access === "edit" };
     } else if (method === "POST") {
       // Get the board data from the request body
       const {
@@ -99,6 +34,14 @@ export default defineEventHandler(async (event) => {
         image,
         status,
       } = await readBody(event);
+
+      // Resolve the authenticated user.
+      const auth = await resolveUserId(event);
+      if (!auth.ok) {
+        event.res.statusCode = auth.status;
+        return { error: auth.error };
+      }
+      const userId = auth.userId;
 
       // HIGH FIX: Validate required fields with generic message
       if (!bodyUserId || !name || !style || !status) {
@@ -132,24 +75,18 @@ export default defineEventHandler(async (event) => {
           return { error: "Resource not found" };
         }
 
-        let writeAccess = false;
-
-        if (board.user !== userId) {
-          // Check if the user has an invitation with edit permission
-          const [invitationRows] = await db.execute(
-            "SELECT permission FROM invitations WHERE board = ? AND user = ? AND permission = 'edit'",
-            [id, userId],
-          );
-
-          if (invitationRows.length === 0) {
-            event.res.statusCode = 403;
-            return { error: "Unauthorized access" };
-          }
-          writeAccess = invitationRows[0].permission === "edit";
-        } else if (board.user === userId) {
-          writeAccess = true;
+        // NOTE: editing the board *record* (name/style/status) is intentionally
+        // stricter than general board access — it requires ownership or an
+        // explicit `edit` invitation, and is NOT granted by a `public` status
+        // (hence publicWrite: false).
+        const decision = await authorizeBoard(db, board, userId, "edit", {
+          publicWrite: false,
+        });
+        if (!decision.ok) {
+          event.res.statusCode = decision.status;
+          return { error: decision.error };
         }
-        if (writeAccess) {
+        {
           // Update existing board
           const [result] = await db.execute(
             "UPDATE boards SET name = ?, style = ?, image = ?, status = ? WHERE id = ? AND user = ?",
@@ -169,7 +106,7 @@ export default defineEventHandler(async (event) => {
           board = rows[0];
 
           // Emit socket event for board update (API calls only)
-          if (userIdFromApiKey) {
+          if (auth.viaApiKey) {
             const serverSocket = getServerSocket();
             if (serverSocket) {
               serverSocket.to(`board-${id}`).emit("updateBoard", {
@@ -180,9 +117,6 @@ export default defineEventHandler(async (event) => {
               });
             }
           }
-        } else {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
         }
       } else {
         // Create new board
@@ -204,6 +138,15 @@ export default defineEventHandler(async (event) => {
       // Handle DELETE request to delete a board
       const query = getQuery(event);
       const id = query.id;
+
+      // Deleting a board is owner-only, so resolve the user and check ownership
+      // directly rather than using the general access helper.
+      const auth = await resolveUserId(event);
+      if (!auth.ok) {
+        event.res.statusCode = auth.status;
+        return { error: auth.error };
+      }
+      const userId = auth.userId;
 
       // HIGH FIX: Validate boardId is a positive integer
       if (!id || isNaN(Number(id)) || Number(id) <= 0) {
@@ -256,7 +199,7 @@ export default defineEventHandler(async (event) => {
       }
 
       // Emit socket event for board deletion (API calls only)
-      if (userIdFromApiKey) {
+      if (auth.viaApiKey) {
         const serverSocket = getServerSocket();
         if (serverSocket) {
           serverSocket.to(`board-${id}`).emit("deletedBoard", {
@@ -270,56 +213,19 @@ export default defineEventHandler(async (event) => {
       // Handle PATCH request to update area order
       const { boardId, areas } = await readBody(event);
 
-      // HIGH FIX: Validate boardId and areas
-      if (
-        !boardId ||
-        isNaN(Number(boardId)) ||
-        Number(boardId) <= 0 ||
-        !areas ||
-        !Array.isArray(areas)
-      ) {
+      // HIGH FIX: Validate areas (boardId is validated by requireBoardAccess)
+      if (!areas || !Array.isArray(areas)) {
         event.res.statusCode = 400;
         return {
           error: "Invalid request parameters",
         };
       }
 
-      const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
-        boardId,
-      ]);
-      const board = rows[0];
-
-      if (!board) {
-        // HIGH FIX: Generic error to prevent board enumeration
-        event.res.statusCode = 404;
-        return { error: "Resource not found" };
-      }
-
-      // Check if the user has access to this board
-
-      let writeAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
-      } else if (board.user === userId) {
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
-      }
-
-      if (!writeAccess) {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
+      // Reordering areas requires write access (owner / edit-invite / public).
+      const auth = await requireBoardAccess(event, boardId, "edit");
+      if (!auth.ok) {
+        event.res.statusCode = auth.status;
+        return { error: auth.error };
       }
 
       try {
@@ -346,7 +252,7 @@ export default defineEventHandler(async (event) => {
         );
 
         // Emit socket event for area order update (API calls only)
-        if (userIdFromApiKey) {
+        if (auth.viaApiKey) {
           const serverSocket = getServerSocket();
           if (serverSocket) {
             serverSocket.to(`board-${boardId}`).emit("updateAreas", {

@@ -5,38 +5,13 @@ import { getServerSocket } from "../../utils/socket";
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
 
-  // Extract API key from headers
-  const apiKey = event.headers.get("x-api-key");
-
-  // Validate API key if provided
-  let userIdFromApiKey = null;
-  if (apiKey) {
-    const data = await verifyApiKey(apiKey);
-
-    if (data.error) {
-      event.res.statusCode = 403;
-      return { error: "Unauthorized access" };
-    } else {
-      userIdFromApiKey = data.key.userId;
-    }
+  // Resolve the authenticated user (API key or session).
+  const auth = await resolveUserId(event);
+  if (!auth.ok) {
+    event.res.statusCode = auth.status;
+    return { error: auth.error };
   }
-
-  const session = await getSession(event);
-
-  // CRITICAL FIX: Early auth check - block unauthenticated access
-  if (!userIdFromApiKey && !session) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
-
-  // CRITICAL FIX: Use authenticated userId consistently
-  const userId = userIdFromApiKey || session?.user.id;
-
-  // CRITICAL FIX: Ensure userId is defined (defense in depth)
-  if (!userId) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
+  const userId = auth.userId;
 
   try {
     const db = setupDatabase();
@@ -105,53 +80,23 @@ export default defineEventHandler(async (event) => {
         return { error: "Resource not found" };
       }
 
-      let writeAccess = false;
-      // Check source board access
-      if (fromBoard.status === "private" && fromBoard.user !== userId) {
-        // Check if the user has an invitation to source board
-        const [invitationRows] = (await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [fromBoard.id, userId],
-        )) as any[];
-
-        if ((invitationRows as any[]).length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Determine write access based on invitation permission
-        writeAccess = (invitationRows as any[])[0].permission === "edit";
-      } else if (fromBoard.user === userId) {
-        // User is the creator of the source board, so they have write access
-        writeAccess = true;
-      } else if (fromBoard.status === "public") {
-        writeAccess = true;
+      // Require write access to the source board, and (if different) the
+      // destination board too.
+      const fromDecision = await authorizeBoard(db, fromBoard, userId, "edit");
+      if (!fromDecision.ok) {
+        event.res.statusCode = fromDecision.status;
+        return { error: fromDecision.error };
       }
 
-      // If source board access granted, also check destination board access
-      if (writeAccess && toBoard.id !== fromBoard.id) {
-        // Different boards - need to check destination board too
-        if (toBoard.status === "private" && toBoard.user !== userId) {
-          const [toInvitationRows] = (await db.execute(
-            "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-            [toBoard.id, userId],
-          )) as any[];
-
-          if ((toInvitationRows as any[]).length === 0) {
-            event.res.statusCode = 403;
-            return { error: "Unauthorized access" };
-          }
-          writeAccess = (toInvitationRows as any[])[0].permission === "edit";
-        } else if (toBoard.user !== userId) {
-          // Destination is private and user is not the owner
-          if (toBoard.status === "public") {
-            writeAccess = true;
-          } else {
-            writeAccess = false;
-          }
+      if (toBoard.id !== fromBoard.id) {
+        const toDecision = await authorizeBoard(db, toBoard, userId, "edit");
+        if (!toDecision.ok) {
+          event.res.statusCode = toDecision.status;
+          return { error: toDecision.error };
         }
       }
 
-      if (writeAccess) {
+      {
         try {
           // Update sort order of other cards in the destination area
           await db.execute(
@@ -225,7 +170,7 @@ export default defineEventHandler(async (event) => {
           }
 
           // Emit socket event for card move (API calls only)
-          if (userIdFromApiKey) {
+          if (auth.viaApiKey) {
             const serverSocket = getServerSocket();
             if (serverSocket) {
               serverSocket.to(`board-${boardId}`).emit("movedCard", {
@@ -242,9 +187,6 @@ export default defineEventHandler(async (event) => {
         } catch (error) {
           throw error;
         }
-      } else {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
     } else {
       event.res.statusCode = 405;

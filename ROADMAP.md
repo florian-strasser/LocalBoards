@@ -18,25 +18,40 @@ Items are grouped by priority. Checkboxes track progress.
 These are the things that make a 1.0 promise credible.
 
 ### Testing & CI
-- [ ] Add a test runner (Vitest) and a `test` script to `package.json`.
-- [ ] Integration tests for the authorization branches of `server/api/data/*`
-      (private board, owner vs. invited vs. uninvited, `edit` vs. read
-      permission) and `server/api/auth/*`.
-- [ ] GitHub Actions workflow on PRs: `nuxt build`, `npm audit`, and the test
-      suite. Ideally also build the Docker image.
+- [x] Add a test runner (Vitest) and a `test` script to `package.json`.
+- [~] Integration tests for the authorization branches. Done: `authorizeBoard`
+      is covered with a fake DB (invitation-lookup conditions + `publicWrite`
+      strict mode). Still open: end-to-end tests of `resolveUserId` /
+      `requireBoardAccess` and the `server/api/auth/*` endpoints against a
+      throwaway MySQL (or after adding DI seams for `getSession`/`verifyApiKey`).
+- [x] GitHub Actions workflow on PRs: build + test, plus a non-blocking
+      `npm audit` (`.github/workflows/ci.yml`).
+- [ ] Extend CI to also build the Docker image (and consider making `npm audit`
+      blocking once it's consistently clean).
 
 ### Centralize authorization
-- [ ] Extract the duplicated "verify API key → resolve session → resolve userId
-      → re-check board access" logic into a single helper, e.g.
-      `requireBoardAccess(event, boardId, 'read' | 'edit')` in
-      `server/utils/auth.ts`.
-- [ ] Replace the copy-pasted blocks in `board.ts`, `area.ts`, `areas.ts`,
-      `card.ts`, `cards.ts`, `cardMove.ts`, `cardOrder.ts`, `comment.ts`,
-      `invite.ts`, `notifications.ts`, `attachment.ts` with calls to the helper.
-- _Why:_ the same access check is currently re-implemented per endpoint (the
+- [x] Extract the pure access *decision* (owner / public / invitation →
+      none/read/edit) into `resolveBoardAccess` in
+      `server/utils/boardAccess.ts`, covered by exhaustive unit tests.
+- [x] Build a `requireBoardAccess(event, boardId, 'read' | 'edit')` helper in
+      `server/utils/auth.ts` (plus a shared `resolveUserId`) that wraps "verify
+      API key → resolve session → resolve userId → load board + invitation →
+      `resolveBoardAccess`".
+- [x] Replace the copy-pasted blocks in the remaining endpoints with calls to
+      the helper. **Done** — all data endpoints migrated (`board.ts`,
+      `boards.ts`, `area.ts`, `areas.ts`, `card.ts`, `cards.ts`, `cardMove.ts`,
+      `cardOrder.ts`, `comment.ts`, `invite.ts`, `notifications.ts`,
+      `attachment.ts`).
+- _Why:_ the same access check was re-implemented per endpoint (the
   `// CRITICAL FIX` / `// HIGH FIX` comments are remnants of a security audit
   patched file-by-file). Duplicated checks drift, and one endpoint will
   eventually miss a branch.
+- _Inconsistencies surfaced & preserved (decide whether to reconcile):_
+  - **Public boards are fully writable by anyone** for cards/areas(create)/
+    comments, but **board-record update** and **area deletion** are stricter
+    (`publicWrite: false` — owner or `edit` invite only). So on a public board a
+    stranger can create/rename areas but not delete them. Likely an oversight.
+  - **Owner-only** paths: board deletion and all invite operations.
 
 ### Security fixes
 - [ ] **Hash API keys at rest.** `verifyApiKey` currently matches keys in
@@ -52,9 +67,12 @@ These are the things that make a 1.0 promise credible.
       itself per API call. Query the session table directly.
 
 ### Stability
-- [ ] Audit `setupDatabase()` call sites for a missing `await`. `board.ts` uses
-      `const db = setupDatabase()` (no `await`) while `auth.ts` uses
-      `await setupDatabase()`. Make them consistent and correct.
+- [ ] Tidy `setupDatabase()` usage. It is **synchronous** (returns the pool
+      directly), so the mix of `setupDatabase()` and `await setupDatabase()`
+      across files is harmless but inconsistent. More importantly it fires all
+      the `CREATE TABLE IF NOT EXISTS` DDL on *every* call (i.e. every request);
+      run the schema setup once at startup and have request code just grab the
+      pool.
 - [ ] **Decide on a DB migration strategy** before 1.0. Schema is currently
       created at runtime in `app/lib/databaseSetup.ts`, which is fine for a fresh
       install but cannot evolve a populated database safely. A 1.0 implies

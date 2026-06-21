@@ -6,30 +6,13 @@ export default defineEventHandler(async (event) => {
   // Check the HTTP method
   const method = event.req.method;
 
-  // Extract API key from headers
-  const apiKey = event.headers.get("x-api-key");
-
-  // Validate API key if provided
-  let userIdFromApiKey = null;
-  if (apiKey) {
-    const data = await verifyApiKey(apiKey);
-
-    if (data.error) {
-      event.res.statusCode = 403;
-      return { error: "Unauthorized access" };
-    } else {
-      userIdFromApiKey = data.key.userId;
-    }
+  // Resolve the authenticated user (API key or session).
+  const auth = await resolveUserId(event);
+  if (!auth.ok) {
+    event.res.statusCode = auth.status;
+    return { error: auth.error };
   }
-
-  const session = await getSession(event);
-
-  if (!userIdFromApiKey && !session) {
-    event.res.statusCode = 403;
-    return { error: "Unauthorized access" };
-  }
-
-  const userId = userIdFromApiKey || session?.user.id;
+  const userId = auth.userId;
 
   try {
     // Initialize database
@@ -54,26 +37,12 @@ export default defineEventHandler(async (event) => {
         return { error: "Board not found" };
       }
 
-      let writeAccess = false;
-      if (board.status === "private" && (!userId || board.user !== userId)) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [boardId, userId],
-        );
-
-        if (invitationRows.length === 0) {
-          event.res.statusCode = 403;
-          return { error: "Unauthorized access" };
-        }
-        // Determine write access based on invitation permission
-        writeAccess = invitationRows[0].permission === "edit";
-      } else if (board.user === userId) {
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
+      const writeDecision = await authorizeBoard(db, board, userId, "edit");
+      if (!writeDecision.ok) {
+        event.res.statusCode = writeDecision.status;
+        return { error: writeDecision.error };
       }
-      if (writeAccess) {
+      {
         let area;
         if (id) {
           // Update existing area
@@ -95,7 +64,7 @@ export default defineEventHandler(async (event) => {
           );
           area = rows[0];
           // Emit socket event for area update (API calls only)
-          if (userIdFromApiKey) {
+          if (auth.viaApiKey) {
             const serverSocket = getServerSocket();
             if (serverSocket) {
               serverSocket.to(`board-${boardId}`).emit("updateArea", {
@@ -122,7 +91,7 @@ export default defineEventHandler(async (event) => {
           );
           area = rows[0];
           // Emit socket event for area creation (API calls only)
-          if (userIdFromApiKey) {
+          if (auth.viaApiKey) {
             const serverSocket = getServerSocket();
             if (serverSocket) {
               serverSocket.to(`board-${boardId}`).emit("addArea", {
@@ -134,9 +103,6 @@ export default defineEventHandler(async (event) => {
         }
 
         return { area };
-      } else {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
     } else if (method === "DELETE") {
       // Handle DELETE request to delete an area
@@ -160,22 +126,17 @@ export default defineEventHandler(async (event) => {
         return { error: "Board not found" };
       }
 
-      let writeAccess = false;
-      if (!userId || board.user !== userId) {
-        // Check if the user has an invitation with edit permission
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [boardId, userId],
-        );
-        if (invitationRows.length > 0) {
-          writeAccess = invitationRows[0].permission === "edit";
-        }
-      } else {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
+      // NOTE: deleting an area is intentionally stricter than creating/renaming
+      // one (the POST above) — it requires ownership or an `edit` invitation and
+      // is NOT granted by a `public` status (publicWrite: false).
+      const writeDecision = await authorizeBoard(db, board, userId, "edit", {
+        publicWrite: false,
+      });
+      if (!writeDecision.ok) {
+        event.res.statusCode = writeDecision.status;
+        return { error: writeDecision.error };
       }
-
-      if (writeAccess) {
+      {
         const [rows] = await db.execute("SELECT * FROM areas WHERE id = ?", [
           id,
         ]);
@@ -219,7 +180,7 @@ export default defineEventHandler(async (event) => {
         }
 
         // Emit socket event for area deletion (API calls only)
-        if (userIdFromApiKey) {
+        if (auth.viaApiKey) {
           const serverSocket = getServerSocket();
           if (serverSocket) {
             serverSocket.to(`board-${boardId}`).emit("deleteArea", {
@@ -230,9 +191,6 @@ export default defineEventHandler(async (event) => {
         }
 
         return { message: "Area deleted successfully" };
-      } else {
-        event.res.statusCode = 403;
-        return { error: "Unauthorized access" };
       }
     } else {
       event.res.statusCode = 405;
