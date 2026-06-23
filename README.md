@@ -2,7 +2,7 @@
 [![Nuxt](https://img.shields.io/badge/Nuxt-4.4.6-00DC82?style=flat&logo=nuxt)](https://nuxt.com)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.3-25C2A0?style=flat&logo=socketdotio)](https://socket.io)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/florian-strasser/LocalBoards/blob/master/LICENSE)
-[![Version](https://img.shields.io/badge/version-0.15.0-orange)](https://github.com/florian-strasser/LocalBoards/releases)
+[![Version](https://img.shields.io/github/package-json/v/florian-strasser/LocalBoards?label=version&color=orange)](https://github.com/florian-strasser/LocalBoards/releases)
 
 ![LocalBoards Screen](https://raw.githubusercontent.com/florian-strasser/LocalBoards/refs/heads/master/docs/public/images/localboards-screen.webp)
 
@@ -105,6 +105,14 @@ docker run -d \
 
 Then open `http://localhost:3000` (or whatever you set as `NUXT_BOARDS_URL`).
 
+#### Health check
+
+The app exposes a public `GET /api/health` endpoint that returns `200` with
+`{ "status": "ok", "database": "ok" }` when the app is running and can reach its
+database, or `503` if the database is unreachable. The Docker image already
+declares a `HEALTHCHECK` against it, so `docker ps` / orchestrators show the
+container's health automatically — no extra configuration needed.
+
 ### Run with Docker Compose (app + database)
 
 For a self-contained setup including MySQL, use a `compose.yaml` like this:
@@ -177,9 +185,63 @@ these ways:
 > Building and publishing the image is documented under
 > [Build the Docker image and push to Docker Hub](#build-the-docker-image-and-push-to-docker-hub).
 
+## Backup and Restore
+
+LocalBoards keeps all its state in two places, so a complete backup is just
+these two:
+
+1. **The MySQL database** — boards, cards, comments, users, sessions, API keys,
+   etc. (Attachment file contents are also stored in the database.)
+2. **The uploads directory** — `/app/public/uploads`, where uploaded images are
+   written.
+
+### Back up
+
+Database (adjust host/user/database to your config):
+
+```bash
+mysqldump -h "$NUXT_MYSQL_HOST" -u "$NUXT_MYSQL_USER" -p "$NUXT_MYSQL_DATABASE" \
+  > localboards-backup.sql
+```
+
+For the Docker Compose setup, dump from the `db` service:
+
+```bash
+docker compose exec db \
+  mysqldump -u localboards -p localboards > localboards-backup.sql
+```
+
+Uploads — copy the mounted directory or the named volume:
+
+```bash
+# Bind mount / host path:
+cp -r /path/to/uploads localboards-uploads-backup
+
+# Docker named volume (e.g. `localboards_uploads`):
+docker run --rm -v localboards_uploads:/data -v "$PWD":/backup busybox \
+  tar czf /backup/localboards-uploads-backup.tar.gz -C /data .
+```
+
+### Restore
+
+```bash
+# Database:
+mysql -h "$NUXT_MYSQL_HOST" -u "$NUXT_MYSQL_USER" -p "$NUXT_MYSQL_DATABASE" \
+  < localboards-backup.sql
+
+# Uploads (named volume):
+docker run --rm -v localboards_uploads:/data -v "$PWD":/backup busybox \
+  sh -c "cd /data && tar xzf /backup/localboards-uploads-backup.tar.gz"
+```
+
+Restoring into an empty database is fine — on startup the app creates any
+missing tables and applies migrations, then your dump fills in the data. Take
+backups while the app is stopped (or use a consistent dump) to avoid capturing a
+write mid-flight.
+
 ## Contribute
 
-LocalBoards is maintained as a solo project without any monetary incentives. Contributions are highly encouraged! If you encounter any issues or have suggestions for improvements, feel free to open a pull request. There is currently no formal contribution guide, but your help is always welcome.
+LocalBoards is maintained as a solo project without any monetary incentives. Contributions are highly encouraged! If you encounter any issues or have suggestions for improvements, feel free to open a pull request. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up a dev environment, run the tests, and what's expected of a pull request.
 
 ### Running Locally for Development
 

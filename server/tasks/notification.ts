@@ -139,7 +139,7 @@ const translateText = (text: string): string => {
   const languageTexts = textList[language] || textList.en; // Fallback to English
   const translatedText = languageTexts?.[text];
   if (!translatedText) {
-    console.warn(`Translation for key "${text}" not found.`);
+    logger.warn(`Translation for key "${text}" not found.`);
     return text; // Return the original text as a fallback
   }
   return translatedText;
@@ -328,7 +328,7 @@ const sendNotification = async () => {
           [userId],
         );
       } else {
-        console.error(
+        logger.error(
           `User with ID ${userId} not found or has no email address`,
         );
       }
@@ -336,7 +336,7 @@ const sendNotification = async () => {
 
     return { result: "Success" };
   } catch (error) {
-    console.error("Error sending notification emails:", error);
+    logger.error("Error sending notification emails:", error);
     return { result: "Internal server error" };
   }
 };
@@ -347,7 +347,7 @@ export default defineTask({
     description: "Send Email for notifications if necessary",
   },
   run({ payload }) {
-    console.log("Check if a mail should be sent for an unread notification");
+    logger.debug("Check if a mail should be sent for an unread notification");
     sendNotification();
   },
 });

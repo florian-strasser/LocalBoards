@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
     // Stream the file
     return createReadStream(fullPath);
   } catch (error) {
-    console.error("File download error:", error);
+    logger.error("File download error:", error);
     throw createError({
       statusCode: error.statusCode || 500,
       statusMessage: error.statusMessage || "Download failed",

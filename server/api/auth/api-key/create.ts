@@ -1,5 +1,5 @@
 import { setupDatabase } from "../../../../app/lib/databaseSetup";
-import { getSession } from "../../../utils/auth";
+import { getUserSession } from "../../../utils/auth";
 import { v4 as uuidv4 } from "uuid";
 
 export default defineEventHandler(async (event) => {
@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Verify session first
-    const session = await getSession(event);
+    const session = await getUserSession(event);
     if (!session) {
       event.res.statusCode = 401;
       return { error: "UNAUTHORIZED" };
@@ -55,20 +55,22 @@ export default defineEventHandler(async (event) => {
       ? new Date(Date.now() + expiresIn * 1000)
       : null;
 
-    // Create API key in database
+    // Store only the SHA-256 hash of the key, never the plaintext, so a database
+    // leak can't expose usable keys. `start` keeps the first 8 chars for display.
     await db.execute(
       "INSERT INTO `apikey` (`id`, `name`, `start`, `key`, `expiresAt`, `referenceId`) VALUES (?, ?, ?, ?, ?, ?)",
       [
         keyId,
         name.trim(),
         keyStart,
-        apiKey,
+        hashApiKey(apiKey),
         expiresAt,
         session.user.id, // referenceId stores the userId
       ],
     );
 
-    // CRITICAL FIX: Never return full API key secret - only return metadata
+    // Return the plaintext key this one time only — it cannot be recovered later
+    // (the database stores just the hash).
     return {
       success: true,
       message: "API_KEY_CREATED_SUCCESSFULLY",
@@ -79,7 +81,7 @@ export default defineEventHandler(async (event) => {
       expiresAt: expiresAt,
     };
   } catch (error) {
-    console.error("Create API key error:", error);
+    logger.error("Create API key error:", error);
     event.res.statusCode = 500;
     return { error: "INTERNAL_SERVER_ERROR" };
   }

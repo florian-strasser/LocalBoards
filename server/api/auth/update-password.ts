@@ -1,5 +1,5 @@
 import { setupDatabase } from "../../../app/lib/databaseSetup";
-import { getSession } from "../../utils/auth";
+import { getUserSession } from "../../utils/auth";
 import { getCookie } from "h3";
 import bcrypt from "bcryptjs";
 
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
       getCookie(event, "session_token");
 
     // Verify session first
-    const session = await getSession(event);
+    const session = await getUserSession(event);
     if (!session) {
       event.res.statusCode = 401;
       return { error: "UNAUTHORIZED" };
@@ -95,7 +95,7 @@ export default defineEventHandler(async (event) => {
       sessionsRevoked: revokeOtherSessions,
     };
   } catch (error) {
-    console.error("Update password error:", error);
+    logger.error("Update password error:", error);
     event.res.statusCode = 500;
     return { error: "Internal server error" };
   }

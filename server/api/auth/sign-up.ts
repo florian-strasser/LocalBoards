@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
           };
         }
       } catch (error) {
-        console.error("Session check error:", error);
+        logger.error("Session check error:", error);
         // HIGH FIX: Don't fail silently - continue with signup but log
       }
     }
@@ -122,7 +122,7 @@ export default defineEventHandler(async (event) => {
         const sessionResult = await createSession(event, userId);
 
         if (sessionResult.error) {
-          console.error("Session creation failed:", sessionResult.error);
+          logger.error("Session creation failed:", sessionResult.error);
           // Continue without session - user can still log in manually
         }
 
@@ -149,7 +149,7 @@ export default defineEventHandler(async (event) => {
         conn.release();
       }
     } catch (error) {
-      console.error("Signup error:", error);
+      logger.error("Signup error:", error);
       event.res.statusCode = 500;
       return { error: "Internal server error" };
     }

@@ -1,5 +1,5 @@
 import { setupDatabase } from "../../../../app/lib/databaseSetup";
-import { getSession } from "../../../utils/auth";
+import { getUserSession } from "../../../utils/auth";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 
@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Verify session and admin role
-    const session = await getSession(event);
+    const session = await getUserSession(event);
     if (!session) {
       event.res.statusCode = 401;
       return { error: "UNAUTHORIZED" };
@@ -125,7 +125,7 @@ export default defineEventHandler(async (event) => {
       },
     };
   } catch (error) {
-    console.error("Create user error:", error);
+    logger.error("Create user error:", error);
     event.res.statusCode = 500;
     return { error: "INTERNAL_SERVER_ERROR" };
   }

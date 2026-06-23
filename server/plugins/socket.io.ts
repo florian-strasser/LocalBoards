@@ -14,25 +14,25 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
   io.bind(engine);
 
   io.on("connection", (socket) => {
-    console.log("A user connected:", socket.id);
+    logger.debug("A user connected:", socket.id);
 
     // Handle joining a board
     socket.on("joinBoard", ({ boardId }) => {
       socket.join(`board-${boardId}`);
       socket.join(`user-${socket.id}`);
-      console.log(`User ${socket.id} joined board ${boardId}`);
+      logger.debug(`User ${socket.id} joined board ${boardId}`);
     });
 
     // Handle joining a card
     socket.on("joinCard", ({ cardID }) => {
       socket.join(`card-${cardID}`);
       socket.join(`user-${socket.id}`);
-      console.log(`User ${socket.id} joined card ${cardID}`);
+      logger.debug(`User ${socket.id} joined card ${cardID}`);
     });
 
     // CommentCreated
     socket.on("commentCreated", async ({ cardID, comment }) => {
-      console.log(
+      logger.debug(
         `Kommentar ${comment.id} wurde auf Card ${cardID} erstellt (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`).to(`card-${cardID}`).emit("addComment", {
@@ -43,7 +43,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CommentDeleted
     socket.on("commentDeleted", async ({ cardID, commentId }) => {
-      console.log(
+      logger.debug(
         `Kommentar ${commentId} wurde auf Card ${cardID} gelöscht (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`)
@@ -56,7 +56,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CommentUpdated
     socket.on("commentUpdated", async ({ cardID, comment }) => {
-      console.log(
+      logger.debug(
         `Kommentar ${comment.id} wurde auf Card ${cardID} aktualisiert (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`)
@@ -71,7 +71,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
     socket.on(
       "boardUpdated",
       async ({ boardID, boardName, boardStatus, boardStyle }) => {
-        console.log(`Board ${boardID} wurde aktualisiert (user-${socket.id})`);
+        logger.debug(`Board ${boardID} wurde aktualisiert (user-${socket.id})`);
         io.except(`user-${socket.id}`)
           .to(`board-${boardID}`)
           .emit("updateBoard", {
@@ -85,7 +85,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // BoardDeleted
     socket.on("boardDeleted", async ({ boardID }) => {
-      console.log(`Board ${boardID} wurde gelöscht (user-${socket.id})`);
+      logger.debug(`Board ${boardID} wurde gelöscht (user-${socket.id})`);
       io.except(`user-${socket.id}`)
         .to(`board-${boardID}`)
         .emit("deletedBoard", {
@@ -95,7 +95,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // AreasUpdated
     socket.on("areasUpdated", async ({ boardId, areas }) => {
-      console.log(
+      logger.debug(
         `Area-Sortierung wurde auf Board ${boardId} angepasst (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`)
@@ -108,7 +108,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // AreaCreated
     socket.on("areaCreated", async ({ boardId, area }) => {
-      console.log(
+      logger.debug(
         `Area ${area.id} wurde auf Board ${boardId} erstellt (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("addArea", {
@@ -119,7 +119,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // AreaUpdated
     socket.on("areaUpdated", async ({ boardId, area }) => {
-      console.log(
+      logger.debug(
         `Area ${area.id} wurde auf Board ${boardId} aktualisiert (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("updateArea", {
@@ -130,7 +130,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // AreaDeleted
     socket.on("areaDeleted", async ({ boardId, area }) => {
-      console.log(
+      logger.debug(
         `Area ${area} wurde auf Board ${boardId} gelöscht (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("deleteArea", {
@@ -141,7 +141,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CardCreated
     socket.on("cardCreated", async ({ boardId, card }) => {
-      console.log(
+      logger.debug(
         `Karte ${card.id} wurde auf Board ${boardId} erstellt (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("addCard", {
@@ -152,7 +152,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CardUpdated
     socket.on("cardUpdated", async ({ boardId, attachments, card }) => {
-      console.log(
+      logger.debug(
         `Karte ${card.id} wurde auf Board ${boardId} aktualisiert (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("updateCard", {
@@ -166,7 +166,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
     socket.on(
       "cardMoved",
       async ({ boardId, cardId, fromAreaId, toAreaId, newIndex }) => {
-        console.log(
+        logger.debug(
           `Karte ${cardId} wurde von Area #${fromAreaId} zu #${toAreaId} auf Board ${boardId} geschoben (user-${socket.id})`,
         );
         io.except(`user-${socket.id}`)
@@ -183,7 +183,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CardOrderd
     socket.on("cardOrderd", async ({ boardId, cardId, areaId, newIndex }) => {
-      console.log(
+      logger.debug(
         `Karte ${cardId} wurde innerhalb von Area #${areaId} auf Board ${boardId} sortiert (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`).to(`board-${boardId}`).emit("orderdCard", {
@@ -196,7 +196,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CardDeleted
     socket.on("cardDeleted", async ({ boardId, card }) => {
-      console.log(
+      logger.debug(
         `Card ${card.id} wurde auf Board ${boardId} gelöscht (user-${socket.id})`,
       );
       io.except(`user-${socket.id}`)
@@ -211,7 +211,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
     socket.on(
       "commentCountUpdated",
       async ({ boardId, cardId, commentCount }) => {
-        console.log(
+        logger.debug(
           `Comment count updated for card ${cardId} on board ${boardId} (user-${socket.id})`,
         );
         io.except(`user-${socket.id}`)

@@ -1,5 +1,5 @@
 import { setupDatabase } from "../../../../app/lib/databaseSetup";
-import { getSession } from "../../../utils/auth";
+import { getUserSession } from "../../../utils/auth";
 import bcrypt from "bcryptjs";
 
 // UUID v4 regex for userId validation
@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Verify session and admin role
-    const session = await getSession(event);
+    const session = await getUserSession(event);
     if (!session) {
       event.res.statusCode = 401;
       return { error: "UNAUTHORIZED" };
@@ -93,7 +93,7 @@ export default defineEventHandler(async (event) => {
       message: "USER_DELETED_SUCCESSFULLY",
     };
   } catch (error) {
-    console.error("Delete user error:", error);
+    logger.error("Delete user error:", error);
     event.res.statusCode = 500;
     return { error: "INTERNAL_SERVER_ERROR" };
   }

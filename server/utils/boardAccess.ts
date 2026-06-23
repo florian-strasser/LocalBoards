@@ -27,12 +27,12 @@ export interface BoardInvitation {
 /**
  * Resolve the access level a user has on a board.
  *
- * Mirrors the existing endpoint logic exactly:
  *  - The owner always has full ("edit") access.
- *  - A private board is only reachable through an invitation; the invitation's
- *    permission decides edit vs. read. No invitation means no access.
- *  - A public board currently grants write ("edit") access to everyone.
- *  - Any other (non-private) status is read-only for non-owners.
+ *  - An invitation governs an invited user's access: an `edit` invitation grants
+ *    "edit", any other permission grants "read".
+ *  - A public board is readable by anyone ("read") but is NOT writable without
+ *    an invitation — public status never grants "edit".
+ *  - A private board with no invitation grants no access ("none").
  *
  * @param board       The board row ({ user, status }).
  * @param userId      The authenticated user's id (or null/undefined).
@@ -49,13 +49,13 @@ export function resolveBoardAccess(
     return "edit";
   }
 
-  // Private boards are only reachable through an invitation.
-  if (board.status === "private") {
-    if (!invitation) return "none";
+  // An invitation determines an invited user's access regardless of board
+  // visibility.
+  if (invitation) {
     return invitation.permission === "edit" ? "edit" : "read";
   }
 
-  // Public boards currently grant write access to everyone; any other
-  // (non-private) status is read-only for non-owners.
-  return board.status === "public" ? "edit" : "read";
+  // No invitation: public boards are read-only to everyone else; private boards
+  // are not accessible at all.
+  return board.status === "public" ? "read" : "none";
 }

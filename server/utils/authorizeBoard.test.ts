@@ -69,47 +69,41 @@ describe("authorizeBoard", () => {
     });
   });
 
-  describe("public board, non-owner (standard)", () => {
-    it("grants edit without an invitation lookup", async () => {
-      const res = await authorizeBoard(db, publicBoard, OTHER, "edit");
-      expect(res).toEqual({ ok: true, access: "edit" });
+  describe("public board, non-owner", () => {
+    it("grants read without an invitation lookup", async () => {
+      const res = await authorizeBoard(db, publicBoard, OTHER, "read");
+      expect(res).toEqual({ ok: true, access: "read" });
+      // Read on a public board is granted regardless, so no lookup is needed.
       expect(db.execute).not.toHaveBeenCalled();
     });
-  });
 
-  describe("strict edit (publicWrite: false)", () => {
-    it("denies a public-board non-owner without an edit invitation", async () => {
+    it("denies edit without an edit invitation (public never grants write)", async () => {
       db = makeDb([]);
-      const res = await authorizeBoard(db, publicBoard, OTHER, "edit", {
-        publicWrite: false,
-      });
+      const res = await authorizeBoard(db, publicBoard, OTHER, "edit");
       expect(res).toMatchObject({ ok: false, status: 403 });
-      // Strict mode must look up the invitation even on a public board.
+      // An "edit" check must look up the invitation even on a public board.
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
 
-    it("grants a public-board non-owner WITH an edit invitation", async () => {
+    it("grants edit WITH an edit invitation", async () => {
       db = makeDb([{ permission: "edit" }]);
-      expect(
-        await authorizeBoard(db, publicBoard, OTHER, "edit", {
-          publicWrite: false,
-        }),
-      ).toEqual({ ok: true, access: "edit" });
+      expect(await authorizeBoard(db, publicBoard, OTHER, "edit")).toEqual({
+        ok: true,
+        access: "edit",
+      });
     });
+  });
 
+  describe("edit checks", () => {
     it("denies a private-board non-owner with only a 'view' invitation", async () => {
       db = makeDb([{ permission: "view" }]);
       expect(
-        await authorizeBoard(db, privateBoard, OTHER, "edit", {
-          publicWrite: false,
-        }),
+        await authorizeBoard(db, privateBoard, OTHER, "edit"),
       ).toMatchObject({ ok: false, status: 403 });
     });
 
-    it("grants the owner without an invitation lookup", async () => {
-      const res = await authorizeBoard(db, publicBoard, OWNER, "edit", {
-        publicWrite: false,
-      });
+    it("grants the owner edit without an invitation lookup", async () => {
+      const res = await authorizeBoard(db, publicBoard, OWNER, "edit");
       expect(res).toEqual({ ok: true, access: "edit" });
       expect(db.execute).not.toHaveBeenCalled();
     });

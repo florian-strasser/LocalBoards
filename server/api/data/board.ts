@@ -75,13 +75,9 @@ export default defineEventHandler(async (event) => {
           return { error: "Resource not found" };
         }
 
-        // NOTE: editing the board *record* (name/style/status) is intentionally
-        // stricter than general board access — it requires ownership or an
-        // explicit `edit` invitation, and is NOT granted by a `public` status
-        // (hence publicWrite: false).
-        const decision = await authorizeBoard(db, board, userId, "edit", {
-          publicWrite: false,
-        });
+        // Editing the board record requires write access (owner or an `edit`
+        // invitation). Public status does not grant write.
+        const decision = await authorizeBoard(db, board, userId, "edit");
         if (!decision.ok) {
           event.res.statusCode = decision.status;
           return { error: decision.error };
@@ -264,7 +260,7 @@ export default defineEventHandler(async (event) => {
 
         return { message: "Area order updated successfully" };
       } catch (error) {
-        console.error("Error updating area order:", error);
+        logger.error("Error updating area order:", error);
         event.res.statusCode = 500;
         return { error: "Internal server error" };
       }
@@ -273,7 +269,7 @@ export default defineEventHandler(async (event) => {
       return { error: "Method not allowed" };
     }
   } catch (error) {
-    console.error("Database error:", error);
+    logger.error("Database error:", error);
     event.res.statusCode = 500;
     return { error: "Internal server error" };
   }

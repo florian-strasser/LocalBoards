@@ -174,11 +174,11 @@ export default defineMcpTool({
 
         return jsonResult({ success: true });
       } catch (error) {
-        console.error("Error moving card:", error);
+        logger.error("Error moving card:", error);
         return textResult("Failed to move card.");
       }
     } catch (error) {
-      console.error("Database error:", error);
+      logger.error("Database error:", error);
       return textResult("Internal server error.");
     }
   },

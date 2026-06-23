@@ -126,12 +126,8 @@ export default defineEventHandler(async (event) => {
         return { error: "Board not found" };
       }
 
-      // NOTE: deleting an area is intentionally stricter than creating/renaming
-      // one (the POST above) — it requires ownership or an `edit` invitation and
-      // is NOT granted by a `public` status (publicWrite: false).
-      const writeDecision = await authorizeBoard(db, board, userId, "edit", {
-        publicWrite: false,
-      });
+      // Deleting an area requires write access (owner or an `edit` invitation).
+      const writeDecision = await authorizeBoard(db, board, userId, "edit");
       if (!writeDecision.ok) {
         event.res.statusCode = writeDecision.status;
         return { error: writeDecision.error };
@@ -197,7 +193,7 @@ export default defineEventHandler(async (event) => {
       return { error: "Method not allowed" };
     }
   } catch (error) {
-    console.error("Database error:", error);
+    logger.error("Database error:", error);
     event.res.statusCode = 500;
     return { error: "Internal server error" };
   }

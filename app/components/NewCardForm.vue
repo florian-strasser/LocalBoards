@@ -4,6 +4,7 @@
             <button
                 @click="createNewCard"
                 type="button"
+                data-testid="new-card-button"
                 class="bg-primary hover:bg-secondary px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
             >
                 <Plus class="size-5" /><span>{{ $t("createNewCard") }}</span>
@@ -14,12 +15,14 @@
                 v-model="newCardName"
                 rows="2"
                 ref="newCardInput"
+                data-testid="new-card-input"
                 :placeholder="$t('enterAnCardName')"
                 class="font-bold text-dark dark:text-white resize-none focus:outline-none w-full p-2 rounded-md bg-primary/10 dark:bg-white/10"
             />
             <div class="flex gap-x-1 mt-2">
                 <input
                     type="submit"
+                    data-testid="new-card-submit"
                     class="bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
                     :value="$t('createCard')"
                 />

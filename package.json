@@ -1,5 +1,6 @@
 {
-  "name": "nuxt-app",
+  "name": "localboards",
+  "version": "0.16.0",
   "type": "module",
   "private": true,
   "scripts": {
@@ -9,7 +10,10 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "test:e2e": "vitest run -c vitest.e2e.config.ts",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@nuxtjs/i18n": "^10.4.0",
@@ -37,6 +41,8 @@
     "ws": "8.21.0"
   },
   "devDependencies": {
+    "@nuxt/test-utils": "^3.23.0",
+    "@playwright/test": "^1.61.1",
     "vitest": "^3.2.6"
   }
 }

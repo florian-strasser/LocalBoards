@@ -2,6 +2,7 @@ import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { v4 as uuidv4 } from "uuid";
 import { sendEmail } from "../../../app/lib/sendEmail";
 import { getEmailSubject, getEmailMessage } from "../../utils/translations";
+import { enforceRateLimit, passwordRequestLimiter } from "../../utils/rateLimit";
 
 const runtimeConfig = useRuntimeConfig();
 
@@ -15,6 +16,12 @@ export default defineEventHandler(async (event) => {
     event.res.statusCode = 405;
     return { error: "Method not allowed" };
   }
+
+  // Throttle reset requests per client IP (limits email bombing and probing).
+  if (!enforceRateLimit(event, passwordRequestLimiter)) {
+    return { error: "TOO_MANY_REQUESTS" };
+  }
+
   try {
     const body = await readBody(event);
     const { email } = body;
@@ -78,7 +85,7 @@ export default defineEventHandler(async (event) => {
         "If an account exists with this email, a password reset link has been sent",
     };
   } catch (error) {
-    console.error("Request password reset error:", error);
+    logger.error("Request password reset error:", error);
     event.res.statusCode = 500;
     return { error: "Internal server error" };
   }

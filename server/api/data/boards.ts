@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
       boards: rows,
     };
   } catch (error) {
-    console.error("Database error:", error);
+    logger.error("Database error:", error);
     event.res.statusCode = 500;
     return { error: "Internal server error" };
   }

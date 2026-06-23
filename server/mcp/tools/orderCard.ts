@@ -79,8 +79,8 @@ export default defineMcpTool({
 
       const [cardRows] = await db.execute(query, params);
 
-      console.log(cardRows);
-      console.log(cardRows.length + " : " + cardOrders.length);
+      logger.debug("orderCard: fetched cards", cardRows);
+      logger.debug(`orderCard: ${cardRows.length} cards : ${cardOrders.length} orders`);
       if (cardRows.length !== cardOrders.length) {
         return textResult(
           "One or more cards do not belong to the specified area.",
@@ -116,7 +116,7 @@ export default defineMcpTool({
 
       return jsonResult({ cards: updatedCards });
     } catch (error) {
-      console.error("Database error:", error);
+      logger.error("Database error:", error);
       return textResult("Internal server error.");
     }
   },

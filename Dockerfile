@@ -55,6 +55,12 @@ USER nodejs
 # Expose the port the application will run on
 EXPOSE 3000
 
+# Probe the app's health endpoint (which also checks DB connectivity). Uses
+# Node's global fetch so no extra tools (curl/wget) are needed in the slim image.
+# A longer start period gives the server time to boot and run migrations.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"
+
 # Start the application
 CMD ["node", "/app/server/index.mjs"]
 ENTRYPOINT ["/entrypoint.sh"]

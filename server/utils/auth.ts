@@ -1,8 +1,9 @@
 import { setupDatabase } from "../../app/lib/databaseSetup";
 import { v4 as uuidv4 } from "uuid";
-import { setCookie } from "h3";
-import bcrypt from "bcryptjs";
+import { setCookie, getCookie } from "h3";
 import { resolveBoardAccess, type BoardAccess } from "./boardAccess";
+import { hashApiKey } from "./apiKey";
+import { logger } from "./logger";
 
 // UUID v4 regex for validation
 const uuidRegex =
@@ -14,7 +15,7 @@ export async function createSession(event: any, userId: string) {
 
   // Validate userId is a non-empty string
   if (!userIdStr || typeof userIdStr !== "string") {
-    console.error("Invalid userId for session creation");
+    logger.error("Invalid userId for session creation");
     return { error: "INVALID_USER_ID" };
   }
 
@@ -58,7 +59,7 @@ export async function createSession(event: any, userId: string) {
       },
     };
   } catch (error) {
-    console.error("Session creation error:", error);
+    logger.error("Session creation error:", error);
     return { error: "SESSION_CREATION_FAILED" };
   }
 }
@@ -66,45 +67,30 @@ export async function createSession(event: any, userId: string) {
 export async function verifyApiKey(apiKey: string) {
   // Validate API key input
   if (!apiKey || typeof apiKey !== "string" || apiKey.length > 64) {
-    // Always perform constant-time operation before returning
-    const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
-    await bcrypt.compare("fake", fakeHash);
     return { error: "INVALID_API_KEY" };
   }
 
   try {
     const db = await setupDatabase();
 
-    // Check if API key exists and is valid
+    // API keys are stored as a SHA-256 hash, so look up by the hash of the
+    // presented key (a deterministic, indexed lookup). Any pre-hashing plaintext
+    // keys were converted to hashes by the 0002 migration, so no plaintext
+    // fallback is needed here.
+    const hashedKey = hashApiKey(apiKey);
     const [keys] = await db.execute(
       "SELECT * FROM `apikey` WHERE `key` = ? AND (`enabled` IS NULL OR `enabled` = 1)",
-      [apiKey],
+      [hashedKey],
     );
 
-    const keyExists = keys.length > 0;
-    let key = null;
-
-    // Always perform fake hash comparison to maintain constant time
-    const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
-    await bcrypt.compare(apiKey, fakeHash);
-
-    if (!keyExists) {
-      // Also perform the expiration check timing to maintain consistency
-      const fakeDate = new Date();
-      if (fakeDate < new Date()) {
-        await bcrypt.compare(apiKey, fakeHash);
-      }
+    if (keys.length === 0) {
       return { error: "INVALID_API_KEY" };
     }
 
-    key = keys[0];
+    const key = keys[0];
 
-    // Check if key is expired - always perform the check for constant timing
+    // Reject expired keys.
     const isExpired = key.expiresAt && new Date(key.expiresAt) < new Date();
-
-    // Perform another fake operation to maintain timing consistency
-    await bcrypt.compare(key.id, fakeHash);
-
     if (isExpired) {
       return { error: "INVALID_API_KEY" };
     }
@@ -119,19 +105,91 @@ export async function verifyApiKey(apiKey: string) {
       },
     };
   } catch (error) {
-    console.error("API key verification error:", error);
+    logger.error("API key verification error:", error);
     return { error: "API_KEY_VERIFICATION_FAILED" };
   }
 }
 
-export async function getSession(event: any) {
+// Resolve the session + user directly from the database. Shared by the
+// `/api/auth/get-session` endpoint and the internal `getUserSession` helper so there
+// is a single implementation. The discriminated result lets the endpoint
+// distinguish "no/invalid session" (401) from "banned" (403), while internal
+// callers treat both as "not authenticated".
+export type SessionResult =
+  | { status: "ok"; session: any; user: any }
+  | { status: "banned" }
+  | { status: "invalid" };
+
+export async function resolveSession(event: any): Promise<SessionResult> {
+  // Token from the Authorization header (Bearer) or the session cookie.
+  const sessionToken =
+    event.headers.get("authorization")?.replace("Bearer ", "") ||
+    getCookie(event, "session_token");
+
+  // Basic format validation.
+  if (
+    !sessionToken ||
+    typeof sessionToken !== "string" ||
+    sessionToken.length < 10
+  ) {
+    return { status: "invalid" };
+  }
+
+  const db = await setupDatabase();
+
+  const [sessions]: any = await db.execute(
+    "SELECT * FROM `session` WHERE `token` = ? AND `expiresAt` > NOW()",
+    [sessionToken],
+  );
+  if (sessions.length === 0) {
+    return { status: "invalid" };
+  }
+  const session = sessions[0];
+
+  const [users]: any = await db.execute(
+    "SELECT id, name, email, role, banned, banReason, image, banExpires, displayUsername FROM `user` WHERE `id` = ?",
+    [session.userId],
+  );
+  if (users.length === 0) {
+    return { status: "invalid" };
+  }
+  const user = users[0];
+
+  // Don't leak ban details; banned users have no access.
+  if (user.banned) {
+    return { status: "banned" };
+  }
+
+  return {
+    status: "ok",
+    session: {
+      id: session.id,
+      expiresAt: session.expiresAt,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+    },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      image: user.image,
+      displayUsername: user.displayUsername,
+    },
+  };
+}
+
+export async function getUserSession(event: any) {
   try {
-    const { data: session } = await $fetch("/api/auth/get-session", {
-      headers: event.headers,
-    });
-    return session;
+    // Resolve directly from the DB instead of doing an HTTP round-trip to
+    // /api/auth/get-session on every authenticated request.
+    const result = await resolveSession(event);
+    if (result.status === "ok") {
+      return { session: result.session, user: result.user };
+    }
+    return null;
   } catch (error) {
-    console.error("Session fetch error:", error);
+    logger.error("Session fetch error:", error);
     return null;
   }
 }
@@ -149,7 +207,7 @@ export async function getApiKeyUser(event: any) {
     const result = await verifyApiKey(apiKey);
 
     if (result.error) {
-      console.error("API key verification failed:", result.error);
+      logger.error("API key verification failed:", result.error);
       return null;
     }
 
@@ -160,7 +218,7 @@ export async function getApiKeyUser(event: any) {
       },
     };
   } catch (error) {
-    console.error("getApiKeyUser error:", error);
+    logger.error("getApiKeyUser error:", error);
     return null;
   }
 }
@@ -191,7 +249,7 @@ export async function resolveUserId(event: any): Promise<UserResolution> {
     userIdFromApiKey = data.key.userId;
   }
 
-  const session = await getSession(event);
+  const session = await getUserSession(event);
 
   if (!userIdFromApiKey && !session) return UNAUTHORIZED;
 
@@ -205,40 +263,34 @@ export type AccessDecision =
   | AuthFailure
   | { ok: true; access: Exclude<BoardAccess, "none"> };
 
-// Options for the strictness of an "edit" check.
-export interface BoardAccessOptions {
-  // When false, a `public` board does NOT grant write access — only the owner
-  // or an `edit` invitation does. Defaults to true (public boards are writable
-  // by anyone), matching the predominant endpoint behaviour. The board-record
-  // update (board.ts POST) and area deletion use `publicWrite: false`.
-  publicWrite?: boolean;
-}
-
 /**
  * Decide access for an already-loaded board row. This is the reusable core for
  * endpoints that reach the board via a join (card → area → board) and therefore
  * don't have a boardId up front. It loads the user's invitation only when it can
  * matter and returns the exact status/message to return on denial.
  *
- * @param required  "read" allows owner/invited/public; "edit" requires write.
+ * Access model: the owner always has edit; an invitation grants edit/read by its
+ * permission; a public board is read-only to everyone else; a private board with
+ * no invitation grants nothing. Public status never grants write.
+ *
+ * @param required  "read" allows owner/invited/public; "edit" requires the
+ *                  owner or an `edit` invitation.
  */
 export async function authorizeBoard(
   db: any,
   board: any,
   userId: string,
   required: "read" | "edit",
-  opts: BoardAccessOptions = {},
 ): Promise<AccessDecision> {
-  const publicWrite = opts.publicWrite !== false;
   const isOwner = !!userId && board.user === userId;
 
-  // Load the invitation for non-owners whenever it could affect the outcome:
-  // for private boards (always), and for strict edit checks (where an `edit`
-  // invitation is the only non-owner path to write access).
+  // Load the invitation for non-owners only when it can affect the outcome:
+  // for any "edit" check (an `edit` invitation is the only non-owner path to
+  // write), and for private boards (where the invitation decides none/read/edit).
+  // For a "read" check on a public board, read is granted regardless.
   let invitation = null;
   if (!isOwner) {
-    const needInvitation =
-      board.status === "private" || (required === "edit" && !publicWrite);
+    const needInvitation = required === "edit" || board.status === "private";
     if (needInvitation) {
       const [invitationRows]: any = await db.execute(
         "SELECT permission FROM invitations WHERE board = ? AND user = ?",
@@ -246,14 +298,6 @@ export async function authorizeBoard(
       );
       invitation = invitationRows[0] || null;
     }
-  }
-
-  // Strict edit (no public write): owner or an `edit` invitation only.
-  if (required === "edit" && !publicWrite) {
-    if (isOwner || invitation?.permission === "edit") {
-      return { ok: true, access: "edit" };
-    }
-    return UNAUTHORIZED;
   }
 
   const access = resolveBoardAccess(board, userId, invitation);
@@ -281,7 +325,6 @@ export async function requireBoardAccess(
   event: any,
   boardId: any,
   required: "read" | "edit",
-  opts: BoardAccessOptions = {},
 ): Promise<BoardAccessResolution> {
   // Validate the board id is a positive integer.
   if (!boardId || isNaN(Number(boardId)) || Number(boardId) <= 0) {
@@ -301,7 +344,7 @@ export async function requireBoardAccess(
   // Generic 404 to avoid board enumeration.
   if (!board) return { ok: false, status: 404, error: "Resource not found" };
 
-  const decision = await authorizeBoard(db, board, auth.userId, required, opts);
+  const decision = await authorizeBoard(db, board, auth.userId, required);
   if (!decision.ok) return decision;
 
   return {

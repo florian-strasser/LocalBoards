@@ -1,5 +1,5 @@
 import { setupDatabase } from "../../../../app/lib/databaseSetup";
-import { getSession } from "../../../utils/auth";
+import { getUserSession } from "../../../utils/auth";
 
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Verify session and admin role
-    const session = await getSession(event);
+    const session = await getUserSession(event);
     if (!session) {
       event.res.statusCode = 401;
       return { error: "UNAUTHORIZED" };
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
       users: formattedUsers,
     };
   } catch (error) {
-    console.error("List users error:", error);
+    logger.error("List users error:", error);
     event.res.statusCode = 500;
     return { error: "INTERNAL_SERVER_ERROR" };
   }

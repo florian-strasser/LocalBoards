@@ -1,5 +1,10 @@
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { createSession } from "../../utils/auth";
+import {
+  blockIfRateLimited,
+  recordFailure,
+  signInLimiter,
+} from "../../utils/rateLimit";
 import bcrypt from "bcryptjs";
 
 export default defineEventHandler(async (event) => {
@@ -7,6 +12,13 @@ export default defineEventHandler(async (event) => {
   if (method !== "POST") {
     event.res.statusCode = 405;
     return { error: "method_not_allowed" };
+  }
+
+  // Throttle brute-force logins per client IP. Only *failed* attempts count
+  // (recorded below), so legitimate users — including many behind one office IP
+  // — aren't locked out by successful logins.
+  if (blockIfRateLimited(event, signInLimiter)) {
+    return { error: "too_many_requests" };
   }
 
   try {
@@ -46,6 +58,7 @@ export default defineEventHandler(async (event) => {
       // Always perform bcrypt compare even for non-existent users
       const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
       await bcrypt.compare(password, fakeHash);
+      recordFailure(event, signInLimiter);
       event.res.statusCode = 401;
       return { error: "invalid_email_or_password" };
     }
@@ -62,6 +75,7 @@ export default defineEventHandler(async (event) => {
       // CRITICAL FIX: Use fake hash comparison to maintain constant time
       const fakeHash = "$2a$10$fakehashforconstanttimecomparison";
       await bcrypt.compare(password, fakeHash);
+      recordFailure(event, signInLimiter);
       event.res.statusCode = 401;
       return { error: "invalid_email_or_password" };
     }
@@ -72,6 +86,7 @@ export default defineEventHandler(async (event) => {
     const isPasswordValid = await bcrypt.compare(password, account.password);
 
     if (!isPasswordValid) {
+      recordFailure(event, signInLimiter);
       event.res.statusCode = 401;
       return { error: "invalid_email_or_password" };
     }
@@ -80,7 +95,7 @@ export default defineEventHandler(async (event) => {
     const sessionResult = await createSession(event, user.id);
 
     if (sessionResult.error) {
-      console.error("Session creation failed:", sessionResult.error);
+      logger.error("Session creation failed:", sessionResult.error);
       event.res.statusCode = 500;
       return { error: "authentication_failed" };
     }
@@ -101,7 +116,7 @@ export default defineEventHandler(async (event) => {
       },
     };
   } catch (error) {
-    console.error("Sign-in error:", error);
+    logger.error("Sign-in error:", error);
     event.res.statusCode = 500;
     return { error: "internal_server_error" };
   }

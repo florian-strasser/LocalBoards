@@ -1,4 +1,5 @@
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { enforceRateLimit, passwordResetLimiter } from "../../utils/rateLimit";
 import bcrypt from "bcryptjs";
 
 // UUID v4 regex pattern for token validation
@@ -10,6 +11,11 @@ export default defineEventHandler(async (event) => {
   if (method !== "POST") {
     event.res.statusCode = 405;
     return { error: "Method not allowed" };
+  }
+
+  // Throttle reset-token submissions per client IP (limits token brute-forcing).
+  if (!enforceRateLimit(event, passwordResetLimiter)) {
+    return { error: "TOO_MANY_REQUESTS" };
   }
 
   try {
@@ -90,7 +96,7 @@ export default defineEventHandler(async (event) => {
       message: "PASSWORD_RESET_SUCCESSFUL",
     };
   } catch (error) {
-    console.error("Reset password error:", error);
+    logger.error("Reset password error:", error);
     event.res.statusCode = 500;
     return { error: "INTERNAL_SERVER_ERROR" };
   }

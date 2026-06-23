@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { logger } from "../../server/utils/logger";
 
 const runtimeConfig = useRuntimeConfig();
 
@@ -28,10 +29,10 @@ export const sendEmail = async ({ to, subject, text }) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent:", info.messageId);
+    logger.info("Email sent", { messageId: info.messageId });
     return info;
   } catch (error) {
-    console.error("Error sending email:", error);
+    logger.error("Error sending email", error);
     throw error;
   }
 };

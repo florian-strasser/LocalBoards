@@ -151,7 +151,7 @@ export default defineMcpTool({
 
       return jsonResult({ comment });
     } catch (error) {
-      console.error("Database error:", error);
+      logger.error("Database error:", error);
       return textResult("Internal server error.");
     }
   },

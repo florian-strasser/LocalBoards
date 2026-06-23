@@ -71,20 +71,26 @@ describe("resolveBoardAccess", () => {
   });
 
   describe("public board, non-owner", () => {
-    // NOTE: this encodes the *current* behaviour — a public board grants write
-    // access to everyone. Flagged for review (see ROADMAP).
-    it("grants edit to any user", () => {
+    it("grants read (not edit) to an uninvited user", () => {
       expect(
         resolveBoardAccess({ user: OWNER, status: "public" }, OTHER),
+      ).toBe("read");
+    });
+
+    it("still honours an edit invitation on a public board", () => {
+      expect(
+        resolveBoardAccess({ user: OWNER, status: "public" }, OTHER, {
+          permission: "edit",
+        }),
       ).toBe("edit");
     });
   });
 
   describe("other / unknown status, non-owner", () => {
-    it("is read-only", () => {
+    it("denies access without an invitation (only 'public' grants read)", () => {
       expect(
         resolveBoardAccess({ user: OWNER, status: "archived" }, OTHER),
-      ).toBe("read");
+      ).toBe("none");
     });
   });
 
@@ -101,12 +107,12 @@ describe("resolveBoardAccess", () => {
       ).toBe("none");
     });
 
-    it("still grants read on a public board to an unauthenticated user", () => {
+    it("grants read on a public board to an unauthenticated user", () => {
       // Endpoints block unauthenticated access earlier; this documents the pure
       // decision in isolation.
       expect(
         resolveBoardAccess({ user: OWNER, status: "public" }, null),
-      ).toBe("edit");
+      ).toBe("read");
     });
   });
 });

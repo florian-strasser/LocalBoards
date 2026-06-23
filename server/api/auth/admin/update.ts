@@ -1,5 +1,5 @@
 import { setupDatabase } from "../../../../app/lib/databaseSetup";
-import { getSession } from "../../../utils/auth";
+import { getUserSession } from "../../../utils/auth";
 import bcrypt from "bcryptjs";
 
 // UUID v4 and email validation regex
@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Verify session and admin role
-    const session = await getSession(event);
+    const session = await getUserSession(event);
     if (!session) {
       event.res.statusCode = 401;
       return { error: "UNAUTHORIZED" };
@@ -176,7 +176,7 @@ export default defineEventHandler(async (event) => {
       user: updatedUsers[0],
     };
   } catch (error) {
-    console.error("Update user error:", error);
+    logger.error("Update user error:", error);
     event.res.statusCode = 500;
     return { error: "INTERNAL_SERVER_ERROR" };
   }

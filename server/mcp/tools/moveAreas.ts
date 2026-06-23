@@ -103,11 +103,11 @@ export default defineMcpTool({
 
         return jsonResult({ message: "Area order updated successfully" });
       } catch (error) {
-        console.error("Error updating area order:", error);
+        logger.error("Error updating area order:", error);
         return textResult("Internal server error.");
       }
     } catch (error) {
-      console.error("Database error:", error);
+      logger.error("Database error:", error);
       return textResult("Internal server error.");
     }
   },

@@ -76,7 +76,7 @@ export default defineMcpTool({
 
       return jsonResult({ area });
     } catch (error) {
-      console.error("Database error:", error);
+      logger.error("Database error:", error);
       return textResult("Internal server error.");
     }
   },

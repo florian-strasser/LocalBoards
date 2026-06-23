@@ -10,6 +10,11 @@ public/uploads
 # Node dependencies
 node_modules
 
+# Playwright
+test-results
+playwright-report
+.playwright
+
 # Logs
 logs
 *.log

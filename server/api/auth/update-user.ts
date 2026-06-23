@@ -1,5 +1,5 @@
 import { setupDatabase } from "../../../app/lib/databaseSetup";
-import { getSession } from "../../utils/auth";
+import { getUserSession } from "../../utils/auth";
 
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Verify session first
-    const session = await getSession(event);
+    const session = await getUserSession(event);
     // HIGH FIX: Use generic error message
     if (!session) {
       event.res.statusCode = 401;
@@ -85,7 +85,7 @@ export default defineEventHandler(async (event) => {
       user: users[0],
     };
   } catch (error) {
-    console.error("Update user error:", error);
+    logger.error("Update user error:", error);
     event.res.statusCode = 500;
     return { error: "Internal server error" };
   }

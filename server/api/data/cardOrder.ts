@@ -100,7 +100,7 @@ export default defineEventHandler(async (event) => {
           return { success: true };
         } catch (error) {
           // HIGH FIX: Don't leak internal error details
-          console.error("Database error:", error);
+          logger.error("Database error:", error);
           event.res.statusCode = 500;
           return { error: "Internal server error" };
         }
@@ -110,7 +110,7 @@ export default defineEventHandler(async (event) => {
       return { error: "Method not allowed" };
     }
   } catch (error) {
-    console.error("Database error:", error);
+    logger.error("Database error:", error);
     event.res.statusCode = 500;
     return { error: "Internal server error" };
   }

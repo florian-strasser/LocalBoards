@@ -3,7 +3,7 @@ import { createError } from "h3";
 import { join } from "path";
 import { randomBytes } from "crypto";
 import { promises as fs } from "fs";
-import { getSession, getApiKeyUser } from "../utils/auth";
+import { getUserSession, getApiKeyUser } from "../utils/auth";
 
 // Allowed file types with their MIME types and magic bytes signatures
 const ALLOWED_FILE_TYPES = {
@@ -51,7 +51,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024;
 export default defineEventHandler(async (event) => {
   try {
     // CRITICAL FIX: Require authentication - check session first
-    const session = await getSession(event);
+    const session = await getUserSession(event);
     const apiKeyUser = await getApiKeyUser(event);
 
     if (!session && !apiKeyUser) {
@@ -157,7 +157,7 @@ export default defineEventHandler(async (event) => {
     try {
       await fs.mkdir(uploadDir, { recursive: true });
     } catch (err) {
-      console.error("Failed to create upload directory:", err);
+      logger.error("Failed to create upload directory:", err);
       throw createError({
         statusCode: 500,
         statusMessage: "Upload failed",
@@ -178,7 +178,7 @@ export default defineEventHandler(async (event) => {
       size: fileBuffer.length,
     };
   } catch (error) {
-    console.error("File upload error:", error);
+    logger.error("File upload error:", error);
     throw createError({
       statusCode: 500,
       statusMessage: "Upload failed",
