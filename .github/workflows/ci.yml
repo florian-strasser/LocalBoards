@@ -16,13 +16,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
+
+      # Match the npm major used locally to generate package-lock.json. Node 22
+      # bundles npm 10, whose lockfile resolution differs from npm 11 and makes
+      # `npm ci` reject the (npm 11-generated) lockfile.
+      - name: Pin npm to 11
+        run: npm install --global npm@11
 
       - name: Install dependencies
         run: npm ci
@@ -63,13 +69,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
+
+      # Match the npm major used locally to generate package-lock.json. Node 22
+      # bundles npm 10, whose lockfile resolution differs from npm 11 and makes
+      # `npm ci` reject the (npm 11-generated) lockfile.
+      - name: Pin npm to 11
+        run: npm install --global npm@11
 
       - name: Install dependencies
         run: npm ci
@@ -109,13 +121,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
+
+      # Match the npm major used locally to generate package-lock.json. Node 22
+      # bundles npm 10, whose lockfile resolution differs from npm 11 and makes
+      # `npm ci` reject the (npm 11-generated) lockfile.
+      - name: Pin npm to 11
+        run: npm install --global npm@11
 
       - name: Install dependencies
         run: npm ci
@@ -139,15 +157,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Validate that the production image still builds (catches Dockerfile
       # regressions, e.g. the HEALTHCHECK). Build only — no push.
       - name: Build Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: false
