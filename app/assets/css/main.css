@@ -88,6 +88,14 @@ body {
 .tiptap:focus {
     border-color: var(--color-secondary);
 }
+/* Wrap long, unbreakable strings (e.g. URLs) instead of letting them overflow
+   the card/comment box. overflow-wrap and word-break inherit, so setting them on
+   the container covers paragraphs, links, list items, etc. */
+.tiptap,
+.wysiwyg-wrapper {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
 .tiptap :first-child,
 .wysiwyg-wrapper :first-child {
     margin-top: 0 !important;

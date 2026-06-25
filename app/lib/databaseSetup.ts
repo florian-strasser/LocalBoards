@@ -34,10 +34,20 @@ const db = createPool({
   user: mysqlUser,
   password: mysqlPassword,
   database: mysqlDatabase,
-  timezone: "Z", // Important to ensure consistent timezone values
+  timezone: "Z", // mysql2 parses returned DATETIME/TIMESTAMP values as UTC
   ...(mysqlSsl
     ? { ssl: { rejectUnauthorized: mysqlSslRejectUnauthorized } }
     : {}),
+});
+
+// Force every pooled connection to UTC. The pool reads timestamps as UTC
+// (`timezone: "Z"` above), so the MySQL session must also be UTC — otherwise the
+// server's local session timezone (e.g. CEST) makes `CURRENT_TIMESTAMP`/`NOW()`
+// return local time that mysql2 then reinterprets as UTC, shifting every stored
+// timestamp (e.g. a comment posted at 00:56 showing as 02:56). `+00:00` is a
+// fixed offset, so it works without MySQL's named-timezone tables being loaded.
+db.on("connection", (connection: any) => {
+  connection.query("SET time_zone = '+00:00';");
 });
 
 /**

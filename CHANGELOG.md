@@ -1,3 +1,9 @@
+## v0.16.2
+
+### Bug Fixes
+- Long unbreakable strings (e.g. URLs) in card descriptions and comments no longer overflow the box — the rich-text content now wraps them (`overflow-wrap`/`word-break` on the `.wysiwyg-wrapper`/`.tiptap` containers)
+- Timestamps (e.g. comment times) were shown shifted by the server's UTC offset — a comment posted at 00:56 displayed as 02:56 in CEST. The connection pool reads timestamps as UTC (`timezone: "Z"`), but the MySQL session used the server's local timezone, so `CURRENT_TIMESTAMP`/`NOW()` returned local time that was then reinterpreted as UTC. Each pooled connection now sets `time_zone = '+00:00'`, so writes and reads are consistently UTC. No data migration is needed (TIMESTAMP columns are stored as UTC internally; only the read path was affected), and existing comments now display with the correct time
+
 ## v0.16.1
 
 ### Internal
