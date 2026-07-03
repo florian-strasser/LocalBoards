@@ -39,7 +39,7 @@
                 >
                     <div
                         class="text-sm"
-                        v-html="translateNotification(notification.message)"
+                        v-html="sanitizeHtml(translateNotification(notification.message))"
                     />
                     <p class="text-xs text-gray-500 mt-1">
                         {{ formatDate(notification.createdAt) }}
@@ -88,7 +88,16 @@ const fetchNotifications = async () => {
 
 const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleString();
+    // Explicit 2-digit day/month/hour/minute/second so localized formats keep
+    // leading zeros (e.g. de-DE "03.07.2026, 02:09:00" instead of "3.7.2026").
+    return date.toLocaleString(undefined, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+    });
 };
 
 const translateNotification = (message: string): string => {
@@ -178,6 +187,27 @@ const translateNotification = (message: string): string => {
     if (message.startsWith("New card created:")) {
         const cardName = message.slice("New card created:".length).trim();
         return $t("notificationNewCardOld", { cardName });
+    }
+
+    // Handle due-date reminder: Card "cardName" is due on <ISO date>
+    if (message.startsWith('Card "') && message.includes('" is due on ')) {
+        const cardNameMatch = message.match(/Card "([^"]+)"/);
+        const dateMatch = message.match(/ is due on (.+)$/);
+        const cardName = cardNameMatch ? cardNameMatch[1] : "";
+        const dueIso = dateMatch ? dateMatch[1] : "";
+        return $t("notificationCardDue", {
+            cardName,
+            date: dueIso ? formatDate(dueIso) : "",
+        });
+    }
+
+    // Handle card assignment: "username" assigned you the card "cardName"
+    if (message.includes(" assigned you the card ")) {
+        const usernameMatch = message.match(/^"([^"]+)" assigned you the card/);
+        const cardNameMatch = message.match(/assigned you the card "([^"]+)"/);
+        const username = usernameMatch ? usernameMatch[1] : "";
+        const cardName = cardNameMatch ? cardNameMatch[1] : "";
+        return $t("notificationCardAssigned", { username, cardName });
     }
 
     // Map the static part to a translation key

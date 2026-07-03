@@ -1,6 +1,13 @@
 // server/tasks/notification.ts
 import { setupDatabase } from "~/lib/databaseSetup";
 import { sendEmail } from "~/lib/sendEmail";
+import enLocale from "../../i18n/locales/en.json";
+import deLocale from "../../i18n/locales/de.json";
+import frLocale from "../../i18n/locales/fr.json";
+import esLocale from "../../i18n/locales/es.json";
+import itLocale from "../../i18n/locales/it.json";
+import nlLocale from "../../i18n/locales/nl.json";
+import plLocale from "../../i18n/locales/pl.json";
 
 const runtimeConfig = useRuntimeConfig();
 
@@ -9,130 +16,41 @@ const baseURL = runtimeConfig.boardsUrl;
 
 const language = runtimeConfig.language;
 
-const textList = {
-  en: {
-    youHaveUnreadNotifications: "You have unread notifications",
-    youHaveTheFollowingUnreadNotifications:
-      "You have the following unread notifications",
-    clickHereToViewYourNotifications: "Click here to view your notifications",
-    notificationInvitedToBoard: "You have been invited to the board",
-    notificationNewComment: 'New comment by "{username}" on card:',
-    notificationNewCard:
-      '"{username}" created a new card "{cardName}" on board "{boardName}"',
-    notificationCardMoved: "Card",
-    notificationCardMovedFrom: " moved from ",
-    notificationCardMovedTo: " to ",
-    notificationCardStatusChanged: "Card",
-    notificationCardStatusChangedTo: " status changed to ",
-    notificationCardStatusCompleted: "completed",
-    notificationCardStatusReopened: "reopened",
-  },
-  de: {
-    youHaveUnreadNotifications: "Du hast ungelesene Benachrichtigungen",
-    youHaveTheFollowingUnreadNotifications:
-      "Du hast folgende ungelesene Benachrichtigungen",
-    clickHereToViewYourNotifications:
-      "Klicke hier, um deine Benachrichtigungen anzuzeigen",
-    notificationInvitedToBoard: "Du wurdest zum Board eingeladen",
-    notificationNewComment: 'Neuer Kommentar von "{username}" auf Karte',
-    notificationNewCard:
-      '"{username}" hat eine neue Karte "{cardName}" auf dem Board "{boardName}" erstellt',
-    notificationCardMoved: "Karte",
-    notificationCardMovedFrom: " bewegt von ",
-    notificationCardMovedTo: " nach ",
-    notificationCardStatusChanged: "Karte",
-    notificationCardStatusChangedTo: " Status geändert zu ",
-    notificationCardStatusCompleted: "abgeschlossen",
-    notificationCardStatusReopened: "wiedereröffnet",
-  },
-  fr: {
-    youHaveUnreadNotifications: "Vous avez des notifications non lues",
-    youHaveTheFollowingUnreadNotifications:
-      "Vous avez les notifications non lues suivantes",
-    clickHereToViewYourNotifications: "Cliquez ici pour voir vos notifications",
-    notificationInvitedToBoard: "Vous avez été invité au tableau",
-    notificationNewComment:
-      'Nouveau commentaire de "{username}" sur la carte :',
-    notificationNewCard:
-      '"{username}" a créé une nouvelle carte "{cardName}" sur le tableau "{boardName}"',
-    notificationCardMoved: "Carte",
-    notificationCardMovedFrom: " déplacée de ",
-    notificationCardMovedTo: " à ",
-    notificationCardStatusChanged: "Carte",
-    notificationCardStatusChangedTo: " statut changé à ",
-    notificationCardStatusCompleted: "terminé",
-    notificationCardStatusReopened: "rouvert",
-  },
-  es: {
-    youHaveUnreadNotifications: "Tienes notificaciones no leídas",
-    youHaveTheFollowingUnreadNotifications:
-      "Tienes las siguientes notificaciones no leídas",
-    clickHereToViewYourNotifications:
-      "Haz clic aquí para ver tus notificaciones",
-    notificationInvitedToBoard: "Has sido invitado al tablero",
-    notificationNewComment: 'Nuevo comentario de "{username}" en la tarjeta:',
-    notificationNewCard:
-      '"{username}" creó una nueva tarjeta "{cardName}" en el tablero "{boardName}"',
-    notificationCardMoved: "Tarjeta",
-    notificationCardMovedFrom: " movida de ",
-    notificationCardMovedTo: " a ",
-    notificationCardStatusChanged: "Tarjeta",
-    notificationCardStatusChangedTo: " estado cambiado a ",
-    notificationCardStatusCompleted: "completado",
-    notificationCardStatusReopened: "reabierto",
-  },
-  it: {
-    youHaveUnreadNotifications: "Hai notifiche non lette",
-    youHaveTheFollowingUnreadNotifications:
-      "Hai le seguenti notifiche non lette",
-    clickHereToViewYourNotifications: "Clicca qui per vedere le tue notifiche",
-    notificationInvitedToBoard: "Sei stato invitato alla bacheca",
-    notificationNewComment: 'Nuovo commento di "{username}" sulla carta:',
-    notificationNewCard:
-      '"{username}" ha creato una nuova carta "{cardName}" sulla bacheca "{boardName}"',
-    notificationCardMoved: "Carta",
-    notificationCardMovedFrom: " spostata da ",
-    notificationCardMovedTo: " a ",
-    notificationCardStatusChanged: "Carta",
-    notificationCardStatusChangedTo: " stato cambiato a ",
-    notificationCardStatusCompleted: "completato",
-    notificationCardStatusReopened: "riaperto",
-  },
-  nl: {
-    youHaveUnreadNotifications: "Je hebt ongelezen meldingen",
-    youHaveTheFollowingUnreadNotifications:
-      "Je hebt de volgende ongelezen meldingen",
-    clickHereToViewYourNotifications: "Klik hier om je meldingen te bekijken",
-    notificationInvitedToBoard: "Je bent uitgenodigd voor het bord",
-    notificationNewComment: 'Nieuwe reactie van "{username}" op kaart:',
-    notificationNewCard:
-      '"{username}" heeft een nieuwe kaart "{cardName}" gemaakt op het bord "{boardName}"',
-    notificationCardMoved: "Kaart",
-    notificationCardMovedFrom: " verplaatst van ",
-    notificationCardMovedTo: " naar ",
-    notificationCardStatusChanged: "Kaart",
-    notificationCardStatusChangedTo: " status gewijzigd naar ",
-    notificationCardStatusCompleted: "voltooid",
-    notificationCardStatusReopened: "heropend",
-  },
-  pl: {
-    youHaveUnreadNotifications: "Masz nieprzeczytane powiadomienia",
-    youHaveTheFollowingUnreadNotifications:
-      "Masz następujące nieprzeczytane powiadomienia",
-    clickHereToViewYourNotifications:
-      "Kliknij tutaj, aby zobaczyć swoje powiadomienia",
-    notificationInvitedToBoard: "Zostałeś zaproszony do tablicy",
-    notificationNewComment: 'Nowy komentarz od "{username}" do karty:',
-    notificationNewCard:
-      '"{username}" utworzył nową kartę "{cardName}" na tablicy "{boardName}"',
-    notificationCardMoved: "Karta",
-    notificationCardMovedFrom: " przeniesiona z ",
-    notificationCardMovedTo: " do ",
-    notificationCardStatusChanged: "Karta",
-    notificationCardStatusChangedTo: " status zmieniony na ",
-    notificationCardStatusCompleted: "ukończono",
-    notificationCardStatusReopened: "ponownie otwarto",
-  },
+// Notification/email strings come from the app's i18n locale files, so there is
+// one source of truth for translations (shared with the UI).
+const textList: Record<string, Record<string, string>> = {
+  en: enLocale,
+  de: deLocale,
+  fr: frLocale,
+  es: esLocale,
+  it: itLocale,
+  nl: nlLocale,
+  pl: plLocale,
+};
+
+const dateLocales: Record<string, string> = {
+  en: "en-US",
+  de: "de-DE",
+  fr: "fr-FR",
+  es: "es-ES",
+  it: "it-IT",
+  nl: "nl-NL",
+  pl: "pl-PL",
+};
+
+const formatDueDate = (iso: string): string => {
+  try {
+    return new Date(iso).toLocaleString(dateLocales[language] || "en-US", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
 };
 
 const translateText = (text: string): string => {
@@ -212,6 +130,28 @@ const translateNotification = (message: string): string => {
   if (message.startsWith("New card created:")) {
     const cardName = message.slice("New card created:".length).trim();
     return `<p>${translateText("notificationNewCard")}</p><p>${cardName}</p>`;
+  }
+
+  // Handle due-date reminder: Card "cardName" is due on <ISO date>
+  if (message.startsWith('Card "') && message.includes('" is due on ')) {
+    const cardName = (message.match(/Card "([^"]+)"/) || [])[1] || "";
+    const dueIso = (message.match(/ is due on (.+)$/) || [])[1] || "";
+    const text = translateText("notificationCardDue")
+      .replace("{cardName}", cardName)
+      .replace("{date}", dueIso ? formatDueDate(dueIso) : "");
+    return `<p>${text}</p>`;
+  }
+
+  // Handle card assignment: "username" assigned you the card "cardName"
+  if (message.includes(" assigned you the card ")) {
+    const username =
+      (message.match(/^"([^"]+)" assigned you the card/) || [])[1] || "";
+    const cardName =
+      (message.match(/assigned you the card "([^"]+)"/) || [])[1] || "";
+    const text = translateText("notificationCardAssigned")
+      .replace("{username}", username)
+      .replace("{cardName}", cardName);
+    return `<p>${text}</p>`;
   }
 
   // Map the static part to a translation key

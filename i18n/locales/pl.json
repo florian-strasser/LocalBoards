@@ -183,5 +183,19 @@
   "back": "Wstecz",
   "editorEmojis": "Emotikony",
   "reset_your_password_subject": "Zresetuj hasło",
-  "reset_your_password_message": "Kliknij ten link, aby przypisać nowe hasło:"
+  "reset_your_password_message": "Kliknij ten link, aby przypisać nowe hasło:",
+  "dueDate": "Termin",
+  "assignee": "Przypisane do",
+  "unassigned": "Nieprzypisane",
+  "reminders": "Przypomnienia",
+  "addReminder": "Dodaj przypomnienie",
+  "reminderAtDueTime": "W momencie terminu",
+  "reminder5min": "5 minut wcześniej",
+  "reminder15min": "15 minut wcześniej",
+  "reminder30min": "30 minut wcześniej",
+  "reminder1hour": "1 godzinę wcześniej",
+  "reminder1day": "1 dzień wcześniej",
+  "reminder1week": "1 tydzień wcześniej",
+  "notificationCardDue": "Karta \"{cardName}\" ma termin {date}",
+  "notificationCardAssigned": "\"{username}\" przypisał(a) Ci kartę \"{cardName}\""
 }

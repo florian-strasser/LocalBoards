@@ -24,8 +24,13 @@
             </div>
         </div>
         <div
-            v-if="props.card.commentCount || props.card.attachmentCount"
-            class="pl-8 flex items-center text-sm gap-x-3 flex-wrap text-gray"
+            v-if="
+                props.card.commentCount ||
+                props.card.attachmentCount ||
+                props.card.dueDate ||
+                props.card.assignee
+            "
+            class="pl-8 mt-1 flex items-center text-sm gap-x-3 flex-wrap text-gray"
         >
             <div class="flex gap-x-1.5 shrink-0" v-if="props.card.commentCount">
                 <MessageSquareText class="size-4 shrink-0 grow-0" />
@@ -42,14 +47,57 @@
                     {{ props.card.attachmentCount }}
                 </div>
             </div>
+            <div
+                v-if="props.card.dueDate"
+                class="flex gap-x-1.5 shrink-0 items-center"
+                :class="{ 'text-secondary font-semibold': isOverdue }"
+            >
+                <Clock class="size-4 shrink-0 grow-0" />
+                <span class="shrink-0 grow-0">{{ dueDateLabel }}</span>
+            </div>
+            <div
+                v-if="props.card.assignee"
+                class="ml-auto shrink-0"
+                v-tooltip="props.card.assigneeName || ''"
+            >
+                <img
+                    v-if="props.card.assigneeImage"
+                    :src="props.card.assigneeImage"
+                    class="w-6 h-6 rounded-full object-cover"
+                    :alt="props.card.assigneeName || ''"
+                />
+                <div
+                    v-else
+                    class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs"
+                >
+                    {{ (props.card.assigneeName || "?").substring(0, 1) }}
+                </div>
+            </div>
         </div>
     </button>
 </template>
 <script setup lang="ts">
-import { Check, MessageSquareText, Paperclip } from "lucide-vue-next";
+import { Check, MessageSquareText, Paperclip, Clock } from "lucide-vue-next";
 const cardModal = defineModel();
 const props = defineProps({
     card: Object,
+});
+
+const isOverdue = computed(
+    () =>
+        !!props.card.dueDate &&
+        !props.card.status &&
+        new Date(props.card.dueDate).getTime() < Date.now(),
+);
+
+const dueDateLabel = computed(() => {
+    if (!props.card.dueDate) return "";
+    return new Date(props.card.dueDate).toLocaleString(undefined, {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
 });
 const openModal = (modalId) => {
     cardModal.value = modalId;

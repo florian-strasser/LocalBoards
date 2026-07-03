@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
       }
       {
         const [cards] = await db.execute(
-          "SELECT c.id, c.area, c.name, c.content, c.status, c.sort, (SELECT COUNT(*) FROM comments co WHERE co.card = c.id) as commentCount, (SELECT COUNT(*) FROM attachments a WHERE a.card = c.id) as attachmentCount FROM cards c WHERE c.area = ? ORDER BY c.sort ASC",
+          "SELECT c.id, c.area, c.name, c.content, c.status, c.sort, c.dueDate, c.assignee, au.name AS assigneeName, au.image AS assigneeImage, (SELECT COUNT(*) FROM comments co WHERE co.card = c.id) as commentCount, (SELECT COUNT(*) FROM attachments a WHERE a.card = c.id) as attachmentCount FROM cards c LEFT JOIN user au ON au.id = c.assignee WHERE c.area = ? ORDER BY c.sort ASC",
           [areaId],
         );
 
@@ -69,6 +69,17 @@ export default defineEventHandler(async (event) => {
             `SELECT id, card, filename, filetype, filesize FROM attachments WHERE card IN (${placeholders})`,
             cardIds,
           );
+
+          const [reminderRows] = await db.execute(
+            `SELECT card, minutesBefore FROM card_reminders WHERE card IN (${placeholders}) ORDER BY minutesBefore ASC`,
+            cardIds,
+          );
+          const remindersByCard = new Map();
+          for (const row of reminderRows) {
+            if (!remindersByCard.has(row.card))
+              remindersByCard.set(row.card, []);
+            remindersByCard.get(row.card).push(row.minutesBefore);
+          }
 
           const commentsByCard = new Map();
           for (const row of commentRows) {
@@ -101,6 +112,7 @@ export default defineEventHandler(async (event) => {
             card.status = !!card.status;
             card.comments = commentsByCard.get(card.id) || [];
             card.attachments = attachmentsByCard.get(card.id) || [];
+            card.reminders = remindersByCard.get(card.id) || [];
           }
         }
 

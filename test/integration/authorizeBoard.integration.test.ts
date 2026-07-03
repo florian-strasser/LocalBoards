@@ -49,10 +49,10 @@ describe("authorizeBoard (integration, real MySQL)", () => {
     ).toMatchObject({ ok: false, status: 403 });
   });
 
-  it("denies a private-board non-owner with no invitation", async () => {
+  it("denies a private-board non-owner with no invitation (404, no oracle)", async () => {
     const board = await insertBoard(1, "owner", "private");
     const res = await authorizeBoard(db(), board, "stranger", "read");
-    expect(res).toMatchObject({ ok: false, status: 403 });
+    expect(res).toMatchObject({ ok: false, status: 404 });
   });
 
   it("grants read to anyone on a public board", async () => {

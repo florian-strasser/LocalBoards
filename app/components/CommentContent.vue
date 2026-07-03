@@ -2,7 +2,7 @@
     <div class="comment-content-container">
         <div
             class="wysiwyg-wrapper"
-            v-html="props.content"
+            v-html="sanitizeHtml(props.content)"
             @change="handleCheckboxChange"
             @click="handleContentClick"
         />

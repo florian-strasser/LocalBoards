@@ -254,13 +254,33 @@ const migrations: Migration[] = [
     },
   },
 
+  {
+    // Card due dates, assignment, and per-card reminder schedule.
+    id: "0003_card_due_dates_and_assignment",
+    up: async (db) => {
+      await db.execute(
+        "ALTER TABLE `cards` ADD COLUMN `dueDate` timestamp NULL DEFAULT NULL, ADD COLUMN `assignee` varchar(255) COLLATE utf8mb4_0900_ai_ci DEFAULT NULL",
+      );
+      await db.execute(`CREATE TABLE IF NOT EXISTS \`card_reminders\` (
+        \`id\` int NOT NULL AUTO_INCREMENT,
+        \`card\` int NOT NULL,
+        \`minutesBefore\` int NOT NULL,
+        \`notified\` tinyint(1) NOT NULL DEFAULT '0',
+        PRIMARY KEY (\`id\`),
+        KEY \`card\` (\`card\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+      // Extend the notification type enum with the two new kinds.
+      await db.execute(
+        "ALTER TABLE `notifications` MODIFY COLUMN `type` enum('invitation','comment','card_created','card_moved','card_status_changed','card_due','card_assigned') COLLATE utf8mb4_general_ci NOT NULL",
+      );
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
-  //   id: "0003_add_card_due_date",
+  //   id: "0004_add_x",
   //   up: async (db) => {
-  //     await db.execute(
-  //       "ALTER TABLE `cards` ADD COLUMN `dueDate` date NULL DEFAULT NULL",
-  //     );
+  //     await db.execute("ALTER TABLE `cards` ADD COLUMN `x` int NULL");
   //   },
   // },
 ];

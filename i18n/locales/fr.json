@@ -186,5 +186,19 @@
   "back": "Retour",
   "editorEmojis": "Émojis",
   "reset_your_password_subject": "Réinitialiser votre mot de passe",
-  "reset_your_password_message": "Cliquez sur ce lien pour attribuer un nouveau mot de passe :"
+  "reset_your_password_message": "Cliquez sur ce lien pour attribuer un nouveau mot de passe :",
+  "dueDate": "Date d'échéance",
+  "assignee": "Assigné à",
+  "unassigned": "Non assigné",
+  "reminders": "Rappels",
+  "addReminder": "Ajouter un rappel",
+  "reminderAtDueTime": "À l'heure de l'échéance",
+  "reminder5min": "5 minutes avant",
+  "reminder15min": "15 minutes avant",
+  "reminder30min": "30 minutes avant",
+  "reminder1hour": "1 heure avant",
+  "reminder1day": "1 jour avant",
+  "reminder1week": "1 semaine avant",
+  "notificationCardDue": "La carte \"{cardName}\" est due le {date}",
+  "notificationCardAssigned": "\"{username}\" vous a assigné la carte \"{cardName}\""
 }

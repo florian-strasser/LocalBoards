@@ -186,5 +186,19 @@
   "back": "Indietro",
   "editorEmojis": "Emoji",
   "reset_your_password_subject": "Reimposta la password",
-  "reset_your_password_message": "Fai clic su questo link per assegnare una nuova password:"
+  "reset_your_password_message": "Fai clic su questo link per assegnare una nuova password:",
+  "dueDate": "Data di scadenza",
+  "assignee": "Assegnato a",
+  "unassigned": "Non assegnato",
+  "reminders": "Promemoria",
+  "addReminder": "Aggiungi promemoria",
+  "reminderAtDueTime": "All'ora di scadenza",
+  "reminder5min": "5 minuti prima",
+  "reminder15min": "15 minuti prima",
+  "reminder30min": "30 minuti prima",
+  "reminder1hour": "1 ora prima",
+  "reminder1day": "1 giorno prima",
+  "reminder1week": "1 settimana prima",
+  "notificationCardDue": "La carta \"{cardName}\" scade il {date}",
+  "notificationCardAssigned": "\"{username}\" ti ha assegnato la carta \"{cardName}\""
 }

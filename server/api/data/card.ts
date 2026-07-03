@@ -88,6 +88,13 @@ export default defineEventHandler(async (event) => {
           filedata: row.filedata,
         }));
 
+        // Reminder schedule (minutes-before-due offsets).
+        const [reminderRows]: any = await db.execute(
+          "SELECT minutesBefore FROM card_reminders WHERE card = ? ORDER BY minutesBefore ASC",
+          [cardId],
+        );
+        card.reminders = (reminderRows as any[]).map((r) => r.minutesBefore);
+
         return { card, attachments };
       }
     } else if (method === "POST") {
@@ -199,7 +206,8 @@ export default defineEventHandler(async (event) => {
       }
     } else if (method === "PUT") {
       // Handle PUT request to update an existing card
-      const { cardID, name, content, status, files } = await readBody(event);
+      const { cardID, name, content, status, files, dueDate, assignee, reminders } =
+        await readBody(event);
 
       // HIGH FIX: Validate required fields with generic message
       if (!cardID || !name) {
@@ -252,11 +260,88 @@ export default defineEventHandler(async (event) => {
         const originalStatus = !!originalCard.status;
         const newStatus = !!status;
 
+        // Normalize the new due date / assignee.
+        const newDue = dueDate ? new Date(dueDate) : null;
+        const newAssignee = assignee || null;
+        const oldDue = originalCard.dueDate
+          ? new Date(originalCard.dueDate)
+          : null;
+        const dueChanged =
+          (newDue ? newDue.getTime() : null) !==
+          (oldDue ? oldDue.getTime() : null);
+
         // Update the card
         await db.execute(
-          "UPDATE cards SET name = ?, content = ?, status = ? WHERE id = ?",
-          [name, content || "", status ? 1 : 0, cardID],
+          "UPDATE cards SET name = ?, content = ?, status = ?, dueDate = ?, assignee = ? WHERE id = ?",
+          [name, content || "", status ? 1 : 0, newDue, newAssignee, cardID],
         );
+
+        // Sync the reminder schedule when the client provided one, preserving
+        // the `notified` flag of reminders that stay unchanged.
+        if (Array.isArray(reminders)) {
+          const wanted = [
+            ...new Set(
+              reminders
+                .map((m: any) => Number(m))
+                .filter((m: number) => Number.isFinite(m) && m >= 0),
+            ),
+          ];
+          const [existingRem]: any = await db.execute(
+            "SELECT minutesBefore FROM card_reminders WHERE card = ?",
+            [cardID],
+          );
+          const existing = new Set(
+            (existingRem as any[]).map((r) => r.minutesBefore),
+          );
+          for (const m of existing) {
+            if (!wanted.includes(m)) {
+              await db.execute(
+                "DELETE FROM card_reminders WHERE card = ? AND minutesBefore = ?",
+                [cardID, m],
+              );
+            }
+          }
+          for (const m of wanted) {
+            if (!existing.has(m)) {
+              await db.execute(
+                "INSERT INTO card_reminders (card, minutesBefore, notified) VALUES (?, ?, 0)",
+                [cardID, m],
+              );
+            }
+          }
+        }
+
+        // A changed due date means the reminders should fire again.
+        if (dueChanged) {
+          await db.execute(
+            "UPDATE card_reminders SET notified = 0 WHERE card = ?",
+            [cardID],
+          );
+        }
+
+        // Notify a newly assigned user (not when clearing, re-saving the same
+        // assignee, or assigning yourself).
+        if (
+          newAssignee &&
+          newAssignee !== (originalCard.assignee || null) &&
+          newAssignee !== userId
+        ) {
+          const [assignerRows]: any = await db.execute(
+            "SELECT name FROM user WHERE id = ?",
+            [userId],
+          );
+          const assignerName = assignerRows[0]?.name || "Someone";
+          await db.execute(
+            "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+            [
+              newAssignee,
+              "card_assigned",
+              board.id,
+              cardID,
+              `"${assignerName}" assigned you the card "${name}"`,
+            ],
+          );
+        }
 
         // Handle file uploads if present
         let newAttachments = [];
@@ -282,6 +367,13 @@ export default defineEventHandler(async (event) => {
 
         // Convert status from number to boolean
         card.status = !!card.status;
+
+        // Attach the reminder schedule to the returned card.
+        const [cardReminderRows]: any = await db.execute(
+          "SELECT minutesBefore FROM card_reminders WHERE card = ? ORDER BY minutesBefore ASC",
+          [cardID],
+        );
+        card.reminders = (cardReminderRows as any[]).map((r) => r.minutesBefore);
 
         // Create notification if status changed
         if (originalStatus !== newStatus) {

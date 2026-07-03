@@ -40,10 +40,10 @@ describe("authorizeBoard", () => {
   });
 
   describe("private board, non-owner (standard)", () => {
-    it("denies read with no invitation", async () => {
+    it("denies read with no invitation (404 — no existence oracle)", async () => {
       db = makeDb([]);
       const res = await authorizeBoard(db, privateBoard, OTHER, "read");
-      expect(res).toMatchObject({ ok: false, status: 403 });
+      expect(res).toMatchObject({ ok: false, status: 404 });
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
 

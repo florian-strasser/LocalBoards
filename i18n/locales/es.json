@@ -186,5 +186,19 @@
   "back": "Atrás",
   "editorEmojis": "Emojis",
   "reset_your_password_subject": "Restablecer contraseña",
-  "reset_your_password_message": "Haz clic en este enlace para asignar una nueva contraseña:"
+  "reset_your_password_message": "Haz clic en este enlace para asignar una nueva contraseña:",
+  "dueDate": "Fecha de vencimiento",
+  "assignee": "Asignado a",
+  "unassigned": "Sin asignar",
+  "reminders": "Recordatorios",
+  "addReminder": "Añadir recordatorio",
+  "reminderAtDueTime": "A la hora de vencimiento",
+  "reminder5min": "5 minutos antes",
+  "reminder15min": "15 minutos antes",
+  "reminder30min": "30 minutos antes",
+  "reminder1hour": "1 hora antes",
+  "reminder1day": "1 día antes",
+  "reminder1week": "1 semana antes",
+  "notificationCardDue": "La tarjeta \"{cardName}\" vence el {date}",
+  "notificationCardAssigned": "\"{username}\" te asignó la tarjeta \"{cardName}\""
 }

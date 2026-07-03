@@ -63,27 +63,30 @@ export default defineMcpTool({
         return textResult("Board not found.");
       }
 
-      // Check if the user has write access to the board
-      let writeAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
 
-        if (invitationRows.length > 0) {
-          writeAccess = invitationRows[0].permission === "edit";
-        }
-      } else if (board.user === userId) {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
+      // Require write access to the SOURCE board: owner or an `edit` invitation.
+      // Public boards are read-only.
+      const decision = await authorizeBoard(db, board, userId, "edit");
+      if (!decision.ok) {
+        return textResult("Unauthorized access.");
       }
 
-      if (!writeAccess) {
-        return textResult("Unauthorized access.");
+      // When moving to a different board, require write access to the
+      // DESTINATION board too, so a card can't be pushed into a board the user
+      // has no access to.
+      if (toAreaId !== fromAreaId) {
+        const [toBoardRows] = await db.execute(
+          "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
+          [toAreaId],
+        );
+        const toBoard = toBoardRows[0];
+        if (!toBoard) {
+          return textResult("Destination board not found.");
+        }
+        const toDecision = await authorizeBoard(db, toBoard, userId, "edit");
+        if (!toDecision.ok) {
+          return textResult("Unauthorized access.");
+        }
       }
 
       try {

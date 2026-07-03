@@ -7,7 +7,8 @@
             <input
                 type="text"
                 :value="createdKey"
-                class="pl-4 pr-10 py-2 block w-full outline-0 border-2 border-gray/30 focus:border-primary rounded-lg"
+                readonly
+                class="form-control !pr-12"
             />
             <div class="absolute top-1 right-1 w-9">
                 <button

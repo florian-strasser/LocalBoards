@@ -106,9 +106,11 @@ export default defineEventHandler(async (event) => {
         [mail],
       );
       if (creatorRows.length === 0) {
-        // HIGH FIX: Generic error to prevent user enumeration
-        event.res.statusCode = 404;
-        return { error: "User not found" };
+        // Do NOT reveal whether an account exists for this email address
+        // (prevents email enumeration by a board owner). Return the same generic
+        // success shape as a real invite — no invitation is created, and the UI
+        // only adds a row when `invitation` is present.
+        return { message: "Invitation created successfully", invitation: null };
       }
       const creatorId = creatorRows[0].id;
 

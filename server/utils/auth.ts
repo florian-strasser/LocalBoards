@@ -228,6 +228,10 @@ export async function getApiKeyUser(event: any) {
 export type AuthFailure = { ok: false; status: number; error: string };
 
 const UNAUTHORIZED: AuthFailure = { ok: false, status: 403, error: "Unauthorized access" };
+// Returned when a user has NO access to a board that exists — deliberately the
+// same 404 as a missing board, so an authenticated user can't tell whether a
+// board id exists (existence oracle) by probing sequential ids.
+const NOT_FOUND: AuthFailure = { ok: false, status: 404, error: "Resource not found" };
 
 export type UserResolution =
   | AuthFailure
@@ -301,7 +305,10 @@ export async function authorizeBoard(
   }
 
   const access = resolveBoardAccess(board, userId, invitation);
-  if (access === "none") return UNAUTHORIZED;
+  // No access at all → 404 (indistinguishable from a missing board). Has read
+  // but "edit" was required → 403 (the user can already see the board, so this
+  // leaks nothing new).
+  if (access === "none") return NOT_FOUND;
   if (required === "edit" && access !== "edit") return UNAUTHORIZED;
   return { ok: true, access };
 }

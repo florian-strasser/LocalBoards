@@ -187,5 +187,19 @@
   "back": "Zurück",
   "editorEmojis": "Emojis",
   "reset_your_password_subject": "Passwort zurücksetzen",
-  "reset_your_password_message": "Klicke auf diesen Link, um ein neues Passwort zu vergeben:"
+  "reset_your_password_message": "Klicke auf diesen Link, um ein neues Passwort zu vergeben:",
+  "dueDate": "Fälligkeitsdatum",
+  "assignee": "Zuständig",
+  "unassigned": "Nicht zugewiesen",
+  "reminders": "Erinnerungen",
+  "addReminder": "Erinnerung hinzufügen",
+  "reminderAtDueTime": "Zum Fälligkeitszeitpunkt",
+  "reminder5min": "5 Minuten vorher",
+  "reminder15min": "15 Minuten vorher",
+  "reminder30min": "30 Minuten vorher",
+  "reminder1hour": "1 Stunde vorher",
+  "reminder1day": "1 Tag vorher",
+  "reminder1week": "1 Woche vorher",
+  "notificationCardDue": "Karte \"{cardName}\" ist fällig am {date}",
+  "notificationCardAssigned": "\"{username}\" hat dir die Karte \"{cardName}\" zugewiesen"
 }

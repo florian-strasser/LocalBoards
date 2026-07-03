@@ -51,14 +51,15 @@ describe("requireBoardAccess (integration, real MySQL, API-key auth)", () => {
     }
   });
 
-  it("denies a non-owner on a private board with no invitation", async () => {
+  it("returns 404 (not 403) for a private board the user can't access — no existence oracle", async () => {
     await insertUser("owner");
     await insertUser("bob");
     const key = await createApiKey("bob", "bobkey000000000000000000000000aa");
     await insertBoard(1, "owner", "private");
 
+    // Same 404 as a missing board, so `bob` can't tell board #1 exists.
     const res = await requireBoardAccess(eventForKey(key), 1, "read");
-    expect(res).toMatchObject({ ok: false, status: 403 });
+    expect(res).toMatchObject({ ok: false, status: 404 });
   });
 
   it("grants a non-owner with an 'edit' invitation edit access", async () => {

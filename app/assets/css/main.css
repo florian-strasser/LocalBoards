@@ -66,6 +66,24 @@ body {
     overflow-x: auto;
 }
 
+/* Clamp text to a single line and fade the right edge instead of showing an
+ * ellipsis. Short text doesn't reach the fade zone, so it stays crisp. Pair
+ * with `min-w-0` on a flex child so it can actually shrink and clip. */
+.fade-clip {
+    white-space: nowrap;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(
+        to right,
+        black calc(100% - 2rem),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to right,
+        black calc(100% - 2rem),
+        transparent 100%
+    );
+}
+
 .fade-enter-active,
 .fade-leave-active {
     transition:
@@ -79,14 +97,72 @@ body {
     transform: translateY(2rem);
 }
 
+/* ---- Form controls -------------------------------------------------------
+ * Single source of truth for the look of text inputs, textareas and selects
+ * across the app. The `.form-control` class is intentionally unlayered so it
+ * wins over Tailwind's (layered) utilities; call sites can still override an
+ * individual property with a Tailwind `!` utility (e.g. `!w-auto`, `!pr-12`).
+ * Change the appearance here and it updates everywhere: InputField.vue, the
+ * rich-text editor (.tiptap, below) and any element carrying .form-control. */
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.625rem;
+    border: 1px solid color-mix(in oklab, var(--color-primary) 22%, transparent);
+    background-color: color-mix(in oklab, var(--color-primary) 6%, var(--color-white));
+    color: var(--color-dark);
+    outline: 0;
+}
+.form-control::placeholder {
+    color: color-mix(in oklab, var(--color-gray) 65%, transparent);
+}
+.form-control:focus {
+    border-color: var(--color-primary);
+}
+/* Selects: drop the native chrome and supply our own chevron so they match the
+ * text inputs' height and padding. (Not applied to date/text inputs, whose
+ * native pickers we want to keep.) */
+select.form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2.5rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234e4e52' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+}
+@media (prefers-color-scheme: dark) {
+    .form-control {
+        border-color: color-mix(in oklab, var(--color-white) 16%, transparent);
+        background-color: color-mix(in oklab, var(--color-white) 7%, transparent);
+        color: var(--color-white);
+    }
+    .form-control::placeholder {
+        color: color-mix(in oklab, var(--color-gray) 70%, transparent);
+    }
+    select.form-control {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23aeaeb2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    }
+}
+/* The rich-text editor shares the same skin as the form controls. */
 .tiptap {
     padding: 1.5rem;
-    border: 2px color-mix(in oklab, var(--color-gray) 30%, transparent) solid;
+    border: 1px solid color-mix(in oklab, var(--color-primary) 22%, transparent);
+    background-color: color-mix(in oklab, var(--color-primary) 6%, var(--color-white));
+    color: var(--color-dark);
     border-radius: var(--radius-xl);
     outline: 0 !important;
 }
 .tiptap:focus {
-    border-color: var(--color-secondary);
+    border-color: var(--color-primary);
+}
+@media (prefers-color-scheme: dark) {
+    .tiptap {
+        border-color: color-mix(in oklab, var(--color-white) 16%, transparent);
+        background-color: color-mix(in oklab, var(--color-white) 7%, transparent);
+        color: var(--color-white);
+    }
 }
 /* Wrap long, unbreakable strings (e.g. URLs) instead of letting them overflow
    the card/comment box. overflow-wrap and word-break inherit, so setting them on

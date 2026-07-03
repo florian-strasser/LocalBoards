@@ -8,6 +8,7 @@ const DATA_TABLES = [
   "boards",
   "areas",
   "cards",
+  "card_reminders",
   "attachments",
   "comments",
   "invitations",

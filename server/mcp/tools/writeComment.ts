@@ -51,26 +51,11 @@ export default defineMcpTool({
         return textResult("Board not found.");
       }
 
-      // Check if the user has write access to the board
-      let writeAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        // Check if the user has an invitation
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
 
-        if (invitationRows.length > 0) {
-          writeAccess = invitationRows[0].permission === "edit";
-        }
-      } else if (board.user === userId) {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      } else if (board.status === "public") {
-        writeAccess = true;
-      }
-
-      if (!writeAccess) {
+      // Require write access: owner or an `edit` invitation. Public boards are
+      // read-only (shared, tested helper — keeps this in sync with the REST API).
+      const decision = await authorizeBoard(db, board, userId, "edit");
+      if (!decision.ok) {
         return textResult("Unauthorized access.");
       }
 

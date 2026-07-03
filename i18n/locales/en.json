@@ -186,5 +186,19 @@
   "back": "Back",
   "editorEmojis": "Emojis",
   "reset_your_password_subject": "Reset your password",
-  "reset_your_password_message": "Click on this link to assign a new password:"
+  "reset_your_password_message": "Click on this link to assign a new password:",
+  "dueDate": "Due date",
+  "assignee": "Assignee",
+  "unassigned": "Unassigned",
+  "reminders": "Reminders",
+  "addReminder": "Add reminder",
+  "reminderAtDueTime": "At time of due date",
+  "reminder5min": "5 minutes before",
+  "reminder15min": "15 minutes before",
+  "reminder30min": "30 minutes before",
+  "reminder1hour": "1 hour before",
+  "reminder1day": "1 day before",
+  "reminder1week": "1 week before",
+  "notificationCardDue": "Card \"{cardName}\" is due on {date}",
+  "notificationCardAssigned": "\"{username}\" assigned you the card \"{cardName}\""
 }

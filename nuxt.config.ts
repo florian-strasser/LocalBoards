@@ -108,8 +108,10 @@ export default defineNuxtConfig({
       asyncContext: true,
     },
     scheduledTasks: {
-      // Run `notification` task every hour
+      // Email unread notifications every hour
       "0 * * * *": ["notification"],
+      // Fire card due-date reminders every 5 minutes
+      "*/5 * * * *": ["due-reminders"],
     },
   },
   vite: {

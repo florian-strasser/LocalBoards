@@ -7,7 +7,7 @@
         <input
             :type="props.type"
             :required="props.required"
-            class="px-4 py-2 block w-full outline-0 border-2 border-gray/30 focus:border-primary rounded-lg"
+            class="form-control"
             v-model="data"
         />
     </label>

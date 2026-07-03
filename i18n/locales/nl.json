@@ -186,5 +186,19 @@
   "back": "Terug",
   "editorEmojis": "Emoji's",
   "reset_your_password_subject": "Wachtwoord resetten",
-  "reset_your_password_message": "Klik op deze link om een nieuw wachtwoord in te stellen:"
+  "reset_your_password_message": "Klik op deze link om een nieuw wachtwoord in te stellen:",
+  "dueDate": "Vervaldatum",
+  "assignee": "Toegewezen aan",
+  "unassigned": "Niet toegewezen",
+  "reminders": "Herinneringen",
+  "addReminder": "Herinnering toevoegen",
+  "reminderAtDueTime": "Op het moment van vervaldatum",
+  "reminder5min": "5 minuten ervoor",
+  "reminder15min": "15 minuten ervoor",
+  "reminder30min": "30 minuten ervoor",
+  "reminder1hour": "1 uur ervoor",
+  "reminder1day": "1 dag ervoor",
+  "reminder1week": "1 week ervoor",
+  "notificationCardDue": "Kaart \"{cardName}\" vervalt op {date}",
+  "notificationCardAssigned": "\"{username}\" heeft de kaart \"{cardName}\" aan jou toegewezen"
 }

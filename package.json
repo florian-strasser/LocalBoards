@@ -1,6 +1,6 @@
 {
   "name": "localboards",
-  "version": "0.16.2",
+  "version": "0.17.0",
   "type": "module",
   "private": true,
   "scripts": {
@@ -26,6 +26,7 @@
     "@tiptap/starter-kit": "^3.27.0",
     "@tiptap/vue-3": "^3.27.0",
     "bcryptjs": "^3.0.3",
+    "isomorphic-dompurify": "^3.18.0",
     "lucide-vue-next": "^1.0.0",
     "mysql2": "^3.22.5",
     "nodemailer": "^9.0.1",
