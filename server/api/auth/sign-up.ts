@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { getCookie } from "h3";
 import { createSession } from "../../utils/auth";
+import { sendEmail } from "../../../app/lib/sendEmail";
+import { getWelcomeSignupEmail } from "../../utils/translations";
 
 export default defineEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig();
@@ -117,6 +119,20 @@ export default defineEventHandler(async (event) => {
 
         // Commit transaction
         await conn.commit();
+
+        // Send a welcome email (public-signup variant, no credentials).
+        // Best-effort: never let a mail hiccup break registration.
+        try {
+          const { subject, html } = getWelcomeSignupEmail({
+            appName: runtimeConfig.appName,
+            name,
+            loginURL: runtimeConfig.boardsUrl,
+            language: runtimeConfig.language,
+          });
+          await sendEmail({ to: email, subject, text: html });
+        } catch (mailError) {
+          logger.error("Welcome email (signup) failed:", mailError);
+        }
 
         // Create a session for the newly registered user
         const sessionResult = await createSession(event, userId);

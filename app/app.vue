@@ -3,6 +3,7 @@
         <NuxtRouteAnnouncer />
         <NuxtPage />
         <ToastHolder />
+        <OnboardingOverlay />
     </div>
 </template>
 <script setup lang="ts">

@@ -5,6 +5,7 @@
             <SectionHeader
                 :tooltip="$t('createNewBoard')"
                 asButton
+                onboardingTarget="new-board"
                 @sectionHeaderButtonClicked="openCreateBoard"
                 >{{ $t("yourBoards") }}</SectionHeader
             >
@@ -92,6 +93,14 @@ const { data: session } = await useFetch("/api/auth/get-session");
 const userID = session.value.data.user.id;
 const createBoard = ref(false);
 
+// Offer the first-run guided tour to accounts that haven't been onboarded yet.
+const onboarding = useOnboarding();
+onMounted(() => {
+    if (session.value?.data?.user && !session.value.data.user.onboarded) {
+        onboarding.openPrompt();
+    }
+});
+
 const newBoardName = ref($t("untitledBoard"));
 const newBoardStyle = ref("kanban");
 const newBoardStatus = ref("private");
@@ -127,6 +136,8 @@ const saveBoard = async () => {
             await nuxtApp.callHook("app:toast", {
                 message: $t("boardCreated"),
             });
+            // Advance the tour from "create a board" before moving on.
+            onboarding.advance("create-board");
             await navigateTo(`/board/${data.board.id}`);
         }
     } catch (err) {

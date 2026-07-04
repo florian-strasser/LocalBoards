@@ -66,6 +66,25 @@ body {
     overflow-x: auto;
 }
 
+/* Pulsing highlight ring used by the onboarding tour. */
+.onboarding-ring {
+    animation: onboarding-pulse 1.6s ease-in-out infinite;
+    transition:
+        top 0.15s ease,
+        left 0.15s ease,
+        width 0.15s ease,
+        height 0.15s ease;
+}
+@keyframes onboarding-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-primary) 45%, transparent);
+    }
+    50% {
+        box-shadow: 0 0 0 8px color-mix(in oklab, var(--color-primary) 0%, transparent);
+    }
+}
+
 /* Clamp text to a single line and fade the right edge instead of showing an
  * ellipsis. Short text doesn't reach the fade zone, so it stays crisp. Pair
  * with `min-w-0` on a flex child so it can actually shrink and clip. */

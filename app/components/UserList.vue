@@ -15,10 +15,20 @@
             <h2 class="text-4xl text-dark dark:text-white mb-6">
                 {{ $t("deleteUserMessage") }}
             </h2>
+            <label class="block text-left text-sm font-medium text-gray mb-1">
+                {{ $t("deleteUserReason") }}
+            </label>
+            <textarea
+                v-model="deleteReason"
+                rows="3"
+                :placeholder="$t('deleteUserReasonPlaceholder')"
+                class="form-control mb-4 resize-none text-left"
+            />
             <button
                 @click="deleteUser"
                 type="button"
-                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
+                :disabled="deleteReason.trim() === ''"
+                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
             >
                 {{ $t("deleteUser") }}
             </button>
@@ -29,7 +39,13 @@
 const nuxtApp = useNuxtApp();
 
 const deleteModal = ref(false);
+const deleteReason = ref("");
 const userList = ref([]);
+
+// Clear the reason whenever the modal closes (delete, cancel or backdrop).
+watch(deleteModal, (open) => {
+    if (!open) deleteReason.value = "";
+});
 
 const { data: users } = await useFetch("/api/auth/admin/list");
 if (users?.value?.users) {
@@ -42,6 +58,7 @@ const deleteUser = async () => {
             method: "POST",
             body: {
                 userId: deleteModal.value,
+                reason: deleteReason.value,
             },
         });
 

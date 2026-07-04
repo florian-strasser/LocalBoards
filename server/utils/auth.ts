@@ -147,7 +147,7 @@ export async function resolveSession(event: any): Promise<SessionResult> {
   const session = sessions[0];
 
   const [users]: any = await db.execute(
-    "SELECT id, name, email, role, banned, banReason, image, banExpires, displayUsername FROM `user` WHERE `id` = ?",
+    "SELECT id, name, email, role, banned, banReason, image, banExpires, displayUsername, onboarded FROM `user` WHERE `id` = ?",
     [session.userId],
   );
   if (users.length === 0) {
@@ -175,6 +175,7 @@ export async function resolveSession(event: any): Promise<SessionResult> {
       role: user.role,
       image: user.image,
       displayUsername: user.displayUsername,
+      onboarded: !!user.onboarded,
     },
   };
 }

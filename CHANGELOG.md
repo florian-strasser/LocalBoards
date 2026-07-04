@@ -1,3 +1,16 @@
+## v0.18.0
+
+### New Features
+- **First-run onboarding tour.** New accounts are offered an optional guided walkthrough on first sign-in: it highlights the "new board" button, then on the fresh board walks through creating two areas, adding a card, dragging it to another area, and inviting a collaborator. Each step **auto-advances when you actually do it**, and you can end the tour at any time. Whether an account has been onboarded is tracked server-side (schema migration `0004`; existing users are marked as already onboarded so only brand-new accounts see it). Public self-signups get the tour by default; when an **admin creates** a user there's a checkbox to opt that account into the tour (off by default, since admin-created accounts are usually managed). Fully translated in all seven languages.
+- **Account-deletion email with a reason.** When an admin deletes a user, they now must enter a reason, and the deleted user receives a translated email letting them know their account was removed and why — so a deletion is no longer silent. (The user's email/name are captured before deletion; the reason is required and HTML-escaped; email delivery is best-effort and never blocks the deletion.)
+- **Welcome emails for new accounts.** Users now get a translated welcome email when their account is created. Public self-signups receive a simple welcome (no credentials). When an **admin** creates an account there's a new opt-in checkbox — *"Send the login details to the user by email"* — that emails the new user their credentials and states who created the account (e.g. *"Carol has created a LocalBoards account for you"*), so admins no longer have to copy/paste and share the password manually. The checkbox is off by default (unchanged copy-the-credentials behaviour); if sending fails the account is still created and the credentials are shown for manual sharing. Emails are translated in all seven languages, and user-supplied values are HTML-escaped.
+
+### Improvements
+- **Invite people by searching, instead of typing their full email.** The board-invite dialog now has a searchable user picker: start typing a name or email and pick the person from a list (name + avatar), mirroring the card-modal assignee picker. To respect the earlier anti-enumeration hardening, the search runs server-side and only a board's owner can search its invitable users; results return names/avatars plus a **masked** email (e.g. `fl••@exa••.com`) so same-name users can be told apart without exposing real addresses. Invites are sent by the picked user's id (typing a full email still works for API clients).
+
+### Changes
+- **Board invitations now send a dedicated email instead of an in-app notification.** When you invite someone to a board they receive a direct, translated email with a link straight to the board and their access level (read-only vs. read & write), rather than the previous in-app notification that was only delivered in the hourly notification digest. New invitations no longer create an `invitation` notification. (Best-effort delivery: the invite is still created if the email can't be sent; the invited user's board name is HTML-escaped.)
+
 ## v0.17.0
 
 ### New Features

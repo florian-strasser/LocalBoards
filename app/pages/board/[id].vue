@@ -44,6 +44,7 @@
                         </button>
                         <button
                             @click="openInviteModal"
+                            data-onboarding="invite"
                             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
                             v-tooltip="$t('inviteUsers')"
                         >
@@ -67,6 +68,7 @@
                 <div
                     v-if="!accessError"
                     ref="areasWrapper"
+                    data-onboarding="areas"
                     class="mt-4"
                     :class="{
                         'flex items-start gap-x-5': boardStyle === 'kanban',
@@ -74,7 +76,7 @@
                     }"
                 >
                     <div
-                        v-for="area in areas"
+                        v-for="(area, areaIndex) in areas"
                         :key="area.id"
                         class="p-4 space-y-2 rounded-lg bg-white dark:bg-slate"
                         :class="{
@@ -112,6 +114,9 @@
                         </div>
                         <NewCardForm
                             v-if="writeAccess"
+                            :data-onboarding="
+                                areaIndex === 0 ? 'new-card' : undefined
+                            "
                             :boardID="boardID * 1"
                             :areaID="area.id"
                             :userID="userID"
@@ -129,6 +134,7 @@
                         <button
                             v-if="!newAreaCreation"
                             @click="createNewArea"
+                            data-onboarding="new-area"
                             class="bg-white dark:bg-slate text-dark dark:text-white hover:bg-secondary hover:text-white p-4 rounded-lg flex w-full items-center gap-x-1"
                         >
                             <Plus :stroke-width="1.5" class="size-5" /><span>{{
@@ -330,6 +336,25 @@ const fetchInvitations = async () => {
 const areasWrapper = ref(null);
 const areas = ref([]);
 const cards = ref({});
+
+// Guided-tour progress: advance when the user completes each step's action.
+const onboarding = useOnboarding();
+watch(
+    () => areas.value.length,
+    (n) => {
+        if (n >= 2) onboarding.advance("create-areas");
+    },
+);
+watch(
+    () =>
+        Object.values(cards.value).reduce(
+            (sum, list) => sum + (list?.length || 0),
+            0,
+        ),
+    (n) => {
+        if (n >= 1) onboarding.advance("add-card");
+    },
+);
 
 const cardModal = ref(false);
 
@@ -591,6 +616,8 @@ const openDeleteAreaModal = (id) => {
 const openInviteModal = () => {
     inviteModal.value = true;
     document.body.style.overflow = "hidden";
+    // Final tour step — opening the invite dialog completes the walkthrough.
+    onboarding.advance("invite");
 };
 
 // Save board name with debounce
@@ -746,6 +773,7 @@ const initSort = () => {
                     onEnd: async (event) => {
                         if (event.from !== event.to) {
                             // Card moved to a different area
+                            onboarding.advance("move-card");
                             const cardId = event.item.dataset.cardId;
                             const fromAreaId = event.from.dataset.areaId;
                             const toAreaId = event.to.dataset.areaId;

@@ -7,6 +7,7 @@
         <button
             v-if="props.asButton"
             type="button"
+            :data-onboarding="props.onboardingTarget || undefined"
             class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
             @click="handleClick"
             v-tooltip="props.tooltip"
@@ -32,6 +33,7 @@ const props = defineProps({
     asButton: Boolean,
     tooltip: String,
     asH2: Boolean,
+    onboardingTarget: String,
 });
 
 const handleClick = () => {

@@ -1,6 +1,12 @@
 import { setupDatabase } from "../../../../app/lib/databaseSetup";
 import { getUserSession } from "../../../utils/auth";
+import { sendEmail } from "../../../../app/lib/sendEmail";
+import { getAccountDeletedEmail } from "../../../utils/translations";
 import bcrypt from "bcryptjs";
+
+const runtimeConfig = useRuntimeConfig();
+const appName = runtimeConfig.appName;
+const defaultLanguage = runtimeConfig.language;
 
 // UUID v4 regex for userId validation
 const uuidRegex =
@@ -27,12 +33,24 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event);
-    const { userId } = body;
+    const { userId, reason } = body;
 
     // Validate input - UUID format
     if (!userId || typeof userId !== "string" || !uuidRegex.test(userId)) {
       event.res.statusCode = 400;
       return { error: "INVALID_USER_ID" };
+    }
+
+    // A reason is required — the deleted user is emailed why their account was
+    // removed, so a silent deletion doesn't leave them in the dark.
+    if (
+      !reason ||
+      typeof reason !== "string" ||
+      reason.trim() === "" ||
+      reason.length > 2000
+    ) {
+      event.res.statusCode = 400;
+      return { error: "INVALID_REASON" };
     }
 
     // Prevent admin from deleting themselves
@@ -43,6 +61,9 @@ export default defineEventHandler(async (event) => {
 
     const db = await setupDatabase();
 
+    // Captured before deletion so we can email the user afterwards.
+    let deletedUser: { email: string; name: string } | null = null;
+
     // Use transaction for atomic deletion across all tables
     const conn = await db.getConnection();
     try {
@@ -50,7 +71,7 @@ export default defineEventHandler(async (event) => {
 
       // HIGH FIX: Use constant-time check for user existence
       const [users] = await conn.execute(
-        "SELECT id FROM `user` WHERE `id` = ?",
+        "SELECT id, email, name FROM `user` WHERE `id` = ?",
         [userId],
       );
 
@@ -65,6 +86,8 @@ export default defineEventHandler(async (event) => {
         event.res.statusCode = 404;
         return { error: "USER_NOT_FOUND" };
       }
+
+      deletedUser = { email: users[0].email, name: users[0].name };
 
       // Delete user's sessions first
       await conn.execute("DELETE FROM `session` WHERE `userId` = ?", [userId]);
@@ -86,6 +109,22 @@ export default defineEventHandler(async (event) => {
       throw error;
     } finally {
       conn.release();
+    }
+
+    // Notify the deleted user by email with the reason. Best-effort: the
+    // account is already gone, so a mail failure just gets logged.
+    if (deletedUser) {
+      try {
+        const { subject, html } = getAccountDeletedEmail({
+          appName,
+          name: deletedUser.name,
+          reason: reason.trim(),
+          language: defaultLanguage,
+        });
+        await sendEmail({ to: deletedUser.email, subject, text: html });
+      } catch (mailError) {
+        logger.error("Account-deleted email failed:", mailError);
+      }
     }
 
     return {

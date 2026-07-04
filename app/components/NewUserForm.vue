@@ -60,6 +60,20 @@
                     />
                 </div>
 
+                <div class="form-group">
+                    <InputCheckbox
+                        v-model="sendWelcomeEmail"
+                        :label="$t('sendCredentialsByEmail')"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <InputCheckbox
+                        v-model="showOnboarding"
+                        :label="$t('showOnboardingToUser')"
+                    />
+                </div>
+
                 <input
                     type="submit"
                     class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
@@ -67,13 +81,21 @@
                 />
             </form>
             <div v-else class="space-y-5">
-                <p>
-                    {{ $t("accountCreatedMessage") }}
+                <p v-if="emailSent">
+                    {{ $t("accountCreatedEmailSent", { email }) }}
                 </p>
-                <p>
-                    {{ $t("email") }}: {{ email }}<br />
-                    {{ $t("password") }}: {{ password }}
-                </p>
+                <template v-else>
+                    <p v-if="emailRequested" class="text-primary">
+                        {{ $t("accountCreatedEmailFailed") }}
+                    </p>
+                    <p>
+                        {{ $t("accountCreatedMessage") }}
+                    </p>
+                    <p>
+                        {{ $t("email") }}: {{ email }}<br />
+                        {{ $t("password") }}: {{ password }}
+                    </p>
+                </template>
             </div>
         </ContentBox>
     </div>
@@ -97,11 +119,20 @@ const name = ref("");
 const email = ref("");
 const password = ref(generateRandomPassword());
 const role = ref("user");
+// Off by default so existing behaviour (admin copies the credentials) is
+// unchanged; when on, the new user is emailed their login details.
+const sendWelcomeEmail = ref(false);
+// Off by default: admin-created accounts are usually managed (the admin owns
+// the boards), so the first-run tour would be out of place. Tick to enable it.
+const showOnboarding = ref(false);
 
 const createdUser = ref(false);
+const emailRequested = ref(false);
+const emailSent = ref(false);
 
 const handleNewUser = async () => {
     try {
+        emailRequested.value = sendWelcomeEmail.value;
         const response = await $fetch("/api/auth/admin/create", {
             method: "POST",
             body: {
@@ -109,13 +140,19 @@ const handleNewUser = async () => {
                 email: email.value,
                 password: password.value,
                 role: role.value,
+                sendEmail: sendWelcomeEmail.value,
+                onboarding: showOnboarding.value,
             },
         });
 
         if (response.success) {
+            emailSent.value = !!response.emailSent;
             createdUser.value = true;
             await nuxtApp.callHook("app:toast", {
-                message: $t("userCreated"),
+                message:
+                    emailRequested.value && !emailSent.value
+                        ? $t("accountCreatedEmailFailed")
+                        : $t("userCreated"),
             });
         } else {
             throw new Error(response.error || "Failed to create user");

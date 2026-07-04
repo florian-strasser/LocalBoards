@@ -1,12 +1,12 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { sendEmail } from "../../../app/lib/sendEmail";
+import { getBoardInviteEmail } from "../../utils/translations";
 
-const appName = process.env.APP_NAME || "LocalBoards";
-const baseURL = process.env.PUBLIC_URL || "https://boards.florian-strasser.de";
-
-const buildTitle = (title) => {
-  return title + " | " + appName;
-};
+const runtimeConfig = useRuntimeConfig();
+const appName = runtimeConfig.appName;
+const baseURL = runtimeConfig.boardsUrl;
+const defaultLanguage = runtimeConfig.language;
 
 export default defineEventHandler(async (event) => {
   // Check the HTTP method
@@ -68,10 +68,17 @@ export default defineEventHandler(async (event) => {
       return { invitations: invitationRows };
     } else if (method === "POST") {
       // Handle POST request to create an invitation
-      const { boardId, mail, permission } = await readBody(event);
+      const {
+        boardId,
+        mail,
+        userId: inviteUserId,
+        permission,
+      } = await readBody(event);
 
-      // HIGH FIX: Validate required fields with generic message
-      if (!boardId || !mail || !permission) {
+      // HIGH FIX: Validate required fields with generic message.
+      // The invitee is identified either by a picked user id (from the
+      // directory search) or, for backward compatibility, by email.
+      if (!boardId || (!mail && !inviteUserId) || !permission) {
         event.res.statusCode = 400;
         return { error: "Required fields are missing" };
       }
@@ -100,11 +107,10 @@ export default defineEventHandler(async (event) => {
         return { error: "Unauthorized access" };
       }
 
-      // Determine User ID by mail - returns UUID
-      const [creatorRows] = await db.query(
-        "SELECT * FROM user WHERE email = ?",
-        [mail],
-      );
+      // Resolve the invited user — by picked id, else by email (legacy).
+      const [creatorRows] = inviteUserId
+        ? await db.query("SELECT * FROM user WHERE id = ?", [inviteUserId])
+        : await db.query("SELECT * FROM user WHERE email = ?", [mail]);
       if (creatorRows.length === 0) {
         // Do NOT reveal whether an account exists for this email address
         // (prevents email enumeration by a board owner). Return the same generic
@@ -136,16 +142,26 @@ export default defineEventHandler(async (event) => {
         [boardId, creatorId, permission],
       );
 
-      // Create a notification for the invited user
-      await db.query(
-        "INSERT INTO notifications (userId, type, boardId, message) VALUES (?, ?, ?, ?)",
-        [
-          creatorId,
-          "invitation",
-          boardId,
-          `You have been invited to the board: ${board.name}`,
-        ],
-      );
+      // Email the invited user directly with a link to the board and their
+      // access level. Best-effort: a mail hiccup must not fail the invite.
+      try {
+        const [inviterRows] = await db.query(
+          "SELECT name FROM user WHERE id = ?",
+          [userId],
+        );
+        const { subject, html } = getBoardInviteEmail({
+          appName,
+          name: creatorRows[0].name,
+          inviterName: inviterRows[0]?.name || appName,
+          boardName: board.name,
+          permission,
+          boardURL: `${baseURL}/board/${boardId}`,
+          language: defaultLanguage,
+        });
+        await sendEmail({ to: creatorRows[0].email, subject, text: html });
+      } catch (mailError) {
+        logger.error("Board invite email failed:", mailError);
+      }
 
       // Fetch the newly created invitation with user details
       const [invitationRows] = await db.query(

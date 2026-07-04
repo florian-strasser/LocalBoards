@@ -64,14 +64,70 @@
             </div>
         </div>
         <form @submit.prevent="createInvitation" class="text-left space-y-5">
-            <div>
-                <InputField
-                    type="email"
-                    name="inviteEmail"
-                    :label="$t('userEmail')"
-                    required
-                    v-model="inviteEmail"
+            <div class="relative">
+                <label class="block text-sm mb-1">
+                    {{ $t("inviteUserSearchLabel") }}
+                    <span class="text-primary ml-1">*</span>
+                </label>
+                <input
+                    type="text"
+                    class="form-control"
+                    v-model="search"
+                    :placeholder="$t('inviteUserSearchPlaceholder')"
+                    autocomplete="off"
+                    @focus="openList"
+                    @input="onInput"
+                    @blur="onBlur"
                 />
+                <ul
+                    v-if="showList"
+                    class="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-auto rounded-xl border border-gray/20 dark:border-white/15 bg-white dark:bg-slate shadow-xl p-1"
+                >
+                    <li
+                        v-if="loading && results.length === 0"
+                        class="px-2 py-1.5 text-sm text-gray"
+                    >
+                        …
+                    </li>
+                    <li
+                        v-else-if="!loading && results.length === 0"
+                        class="px-2 py-1.5 text-sm text-gray"
+                    >
+                        {{ $t("inviteUserNoResults") }}
+                    </li>
+                    <li v-for="u in results" :key="u.id">
+                        <button
+                            type="button"
+                            @mousedown.prevent="pick(u)"
+                            class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg hover:bg-primary/10 dark:hover:bg-white/10 text-dark dark:text-white"
+                        >
+                            <span
+                                class="size-6 rounded-full overflow-hidden bg-primary text-white flex items-center justify-center shrink-0 text-xs"
+                            >
+                                <img
+                                    v-if="u.image"
+                                    :src="u.image"
+                                    class="w-full h-full object-cover"
+                                />
+                                <template v-else>{{
+                                    (u.name || "?").charAt(0)
+                                }}</template>
+                            </span>
+                            <span class="grow text-left min-w-0">
+                                <span class="block truncate">{{ u.name }}</span>
+                                <span
+                                    v-if="u.emailMasked"
+                                    class="block text-xs text-gray truncate"
+                                    >{{ u.emailMasked }}</span
+                                >
+                            </span>
+                            <Check
+                                v-if="selectedUser && selectedUser.id === u.id"
+                                class="size-4 text-primary shrink-0"
+                            />
+                        </button>
+                    </li>
+                </ul>
             </div>
             <div>
                 <label class="block text-sm/6 font-medium text-gray">{{
@@ -88,14 +144,15 @@
             </div>
             <input
                 type="submit"
-                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
+                :disabled="!selectedUser"
+                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
                 :value="$t('sendInvitation')"
             />
         </form>
     </div>
 </template>
 <script setup lang="ts">
-import { Trash, Eye, EyeOff, Pencil, PencilOff } from "lucide-vue-next";
+import { Trash, Eye, EyeOff, Pencil, PencilOff, Check } from "lucide-vue-next";
 const props = defineProps({
     boardID: String,
     invitations: Array,
@@ -106,20 +163,74 @@ const invitations = ref(props.invitations || []);
 
 const nuxtApp = useNuxtApp();
 
-const inviteEmail = ref("");
 const invitePermission = ref("read");
+
+// --- Searchable user picker -------------------------------------------------
+// Users are searched server-side by name or email; only id/name/image come
+// back (never the email), and an invite is sent by the picked user's id.
+const search = ref("");
+const results = ref([]);
+const selectedUser = ref(null);
+const showList = ref(false);
+const loading = ref(false);
+let debounceTimer;
+let requestSeq = 0;
+
+const fetchUsers = async () => {
+    // Keep the previous results visible until the new ones arrive (no flicker),
+    // and ignore responses that a newer keystroke has already superseded.
+    const seq = ++requestSeq;
+    loading.value = true;
+    try {
+        const data = await $fetch(
+            `/api/data/users/search?boardId=${Number(props.boardID)}&q=${encodeURIComponent(search.value)}`,
+        );
+        if (seq !== requestSeq) return;
+        results.value = data.users || [];
+    } catch (err) {
+        if (seq !== requestSeq) return;
+        results.value = [];
+    } finally {
+        if (seq === requestSeq) loading.value = false;
+    }
+};
+
+const onInput = () => {
+    // Typing invalidates any prior pick and re-searches (debounced).
+    selectedUser.value = null;
+    showList.value = true;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(fetchUsers, 200);
+};
+
+const openList = () => {
+    showList.value = true;
+    if (results.value.length === 0) fetchUsers();
+};
+
+// Close after a beat so a click on an option still registers.
+const onBlur = () => {
+    setTimeout(() => (showList.value = false), 120);
+};
+
+const pick = (user) => {
+    selectedUser.value = user;
+    search.value = user.name;
+    showList.value = false;
+};
 
 const { data: session } = await useFetch("/api/auth/get-session");
 
 const userID = session.value.data.user.id;
 
 const createInvitation = async () => {
+    if (!selectedUser.value) return;
     try {
         const data = await $fetch("/api/data/invite", {
             method: "POST",
             body: {
                 boardId: Number(props.boardID),
-                mail: inviteEmail.value,
+                userId: selectedUser.value.id,
                 permission: invitePermission.value,
             },
         });
@@ -132,7 +243,9 @@ const createInvitation = async () => {
             await nuxtApp.callHook("app:toast", {
                 message: $t("invitationSent"),
             });
-            inviteEmail.value = "";
+            search.value = "";
+            selectedUser.value = null;
+            results.value = [];
             invitePermission.value = "read";
             // Add the new invitation to the local ref
             if (data.invitation) {

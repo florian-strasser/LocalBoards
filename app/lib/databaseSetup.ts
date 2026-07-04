@@ -276,9 +276,21 @@ const migrations: Migration[] = [
     },
   },
 
+  {
+    // First-run onboarding flag. Existing users are marked as already
+    // onboarded, so only brand-new accounts see the guided tour.
+    id: "0004_user_onboarded",
+    up: async (db) => {
+      await db.execute(
+        "ALTER TABLE `user` ADD COLUMN `onboarded` tinyint(1) NOT NULL DEFAULT '0'",
+      );
+      await db.execute("UPDATE `user` SET `onboarded` = 1");
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
-  //   id: "0004_add_x",
+  //   id: "0005_add_x",
   //   up: async (db) => {
   //     await db.execute("ALTER TABLE `cards` ADD COLUMN `x` int NULL");
   //   },

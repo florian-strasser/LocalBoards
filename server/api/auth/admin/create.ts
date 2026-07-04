@@ -1,7 +1,14 @@
 import { setupDatabase } from "../../../../app/lib/databaseSetup";
 import { getUserSession } from "../../../utils/auth";
+import { sendEmail } from "../../../../app/lib/sendEmail";
+import { getWelcomeAdminEmail } from "../../../utils/translations";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
+
+const runtimeConfig = useRuntimeConfig();
+const appName = runtimeConfig.appName;
+const loginURL = runtimeConfig.boardsUrl;
+const defaultLanguage = runtimeConfig.language;
 
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,7 +34,14 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event);
-    const { name, email, password, role = "user" } = body;
+    const {
+      name,
+      email,
+      password,
+      role = "user",
+      sendEmail: sendMail,
+      onboarding = false,
+    } = body;
 
     // Validate input with length limits for DoS protection
     if (!name || !email || !password) {
@@ -94,10 +108,11 @@ export default defineEventHandler(async (event) => {
     try {
       await conn.beginTransaction();
 
-      // Create user in database
+      // Create user in database. `onboarded` is set from the admin's choice:
+      // opt-in to the first-run tour (0) or skip it (1, the default).
       await conn.execute(
-        "INSERT INTO `user` (`id`, `name`, `email`, `emailVerified`, `role`) VALUES (?, ?, ?, ?, ?)",
-        [userId, name.trim(), email, 1, role],
+        "INSERT INTO `user` (`id`, `name`, `email`, `emailVerified`, `role`, `onboarded`) VALUES (?, ?, ?, ?, ?, ?)",
+        [userId, name.trim(), email, 1, role, onboarding ? 0 : 1],
       );
 
       // Create account entry
@@ -114,9 +129,32 @@ export default defineEventHandler(async (event) => {
       conn.release();
     }
 
+    // Optionally email the new user their credentials instead of the admin
+    // copying them by hand. Best-effort: if delivery fails the account still
+    // exists, so we report emailSent:false and the admin falls back to copying.
+    let emailSent = false;
+    if (sendMail) {
+      try {
+        const { subject, html } = getWelcomeAdminEmail({
+          appName,
+          name: name.trim(),
+          adminName: session.user.name,
+          email,
+          password,
+          loginURL,
+          language: defaultLanguage,
+        });
+        await sendEmail({ to: email, subject, text: html });
+        emailSent = true;
+      } catch (mailError) {
+        logger.error("Welcome email (admin) failed:", mailError);
+      }
+    }
+
     return {
       success: true,
       message: "USER_CREATED_SUCCESSFULLY",
+      emailSent,
       user: {
         id: userId,
         name: name.trim(),
