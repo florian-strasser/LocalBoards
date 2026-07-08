@@ -38,6 +38,7 @@
                                 :cardId="props.cardID"
                                 :boardId="getBoardId()"
                                 :writeAccess="props.writeAccess"
+                                @updated="handleCommentPatched"
                             />
                         </div>
                         <div class="flex mt-2 items-center gap-x-2 flex-wrap">
@@ -231,6 +232,21 @@ const handleCommentUpdated = (updatedComment: Comment) => {
     if (index !== -1) {
         comments.value[index] = updatedComment;
     }
+};
+
+// A checklist checkbox was toggled inside a comment (CommentContent PATCHed it).
+// Sync local state, broadcast to other users, and bubble it up so the board's
+// prefetched card stays fresh on reopen.
+const handleCommentPatched = (updatedComment: Comment) => {
+    const index = comments.value.findIndex((c) => c.id === updatedComment.id);
+    if (index !== -1) {
+        comments.value[index] = updatedComment;
+    }
+    socket.emit("commentUpdated", {
+        cardID: props.cardID,
+        comment: updatedComment,
+    });
+    emits("comment-updated", updatedComment);
 };
 
 interface Comment {

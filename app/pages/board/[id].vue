@@ -62,7 +62,9 @@
             </div>
         </div>
         <div
-            class="w-full grow shrink-0 pb-5 overflow-scroll hide-scrollbar bg-slate dark:bg-dark"
+            ref="scrollRegion"
+            class="w-full grow shrink-0 pb-10 overflow-scroll hide-scrollbar bg-slate dark:bg-dark"
+            :style="anyModalOpen ? { overflowX: 'hidden' } : undefined"
         >
             <div class="container">
                 <div
@@ -171,6 +173,7 @@
                 </div>
             </div>
         </div>
+        <BoardScrollbar :target="scrollRegion" />
         <ModalWindow v-model="optionsActive">
             <div>
                 <form @submit.prevent="saveBoard" class="text-left space-y-5">
@@ -263,7 +266,7 @@
                 {{ $t("deleteAreaButton") }}
             </button>
         </ModalWindow>
-        <ModalWindow v-model="cardModal" :hideClose="true">
+        <ModalWindow v-model="cardModalOpen" :hideClose="true">
             <CardModal
                 v-if="cardModal && selectedCard"
                 :card="selectedCard"
@@ -272,7 +275,7 @@
                 :writeAccess="writeAccess"
                 :userID="userID"
                 :openInEditMode="editCardId === cardModal"
-                v-model="cardModal"
+                v-model="cardModalOpen"
                 @card-updated="handleCardUpdated"
                 @card-deleted="handleCardDeleted"
                 @comment-count-updated="handleCommentCountUpdated"
@@ -334,6 +337,9 @@ const fetchInvitations = async () => {
 };
 
 const areasWrapper = ref(null);
+const scrollRegion = ref(null); // horizontal scroll container for the areas
+// Lock horizontal scrolling of the board while a modal is open.
+const { isOpen: anyModalOpen } = useModalOpen();
 const areas = ref([]);
 const cards = ref({});
 
@@ -357,6 +363,25 @@ watch(
 );
 
 const cardModal = ref(false);
+// Drives the modal's open/close animation. `cardModal` (the card id) is kept a
+// little longer so the card content stays mounted through the close animation
+// (otherwise the box would collapse mid-exit).
+const cardModalOpen = ref(false);
+let cardModalCloseTimer;
+watch(cardModal, (id) => {
+    if (id) cardModalOpen.value = true;
+});
+watch(cardModalOpen, (isOpen) => {
+    clearTimeout(cardModalCloseTimer);
+    // Clearing the id (which unmounts the content) is deferred so the card
+    // stays mounted through the close animation. The watch on `cardModal`
+    // below then updates the URL and resets edit mode.
+    if (!isOpen) {
+        cardModalCloseTimer = setTimeout(() => {
+            cardModal.value = false;
+        }, 450);
+    }
+});
 
 // Id of a card just created in this session that should open directly in edit
 // mode the first time it is opened. Cleared once that card's modal is closed.
@@ -414,16 +439,17 @@ const createNewArea = async () => {
 };
 
 const handleCardUpdated = (updatedCard) => {
-    const areaCards = cards.value[updatedCard.area];
-    if (!areaCards) return;
-    const cardIndex = areaCards.findIndex(
-        (card) => card.id === updatedCard.id,
-    );
-    if (cardIndex !== -1) {
-        // Merge instead of replace so the prefetched comments/attachments are
-        // preserved when an update payload (e.g. from a socket event) doesn't
-        // include them.
-        areaCards[cardIndex] = { ...areaCards[cardIndex], ...updatedCard };
+    // Locate the card by id across all areas — the payload may omit `area`
+    // (e.g. an optimistic update from the modal).
+    for (const areaId in cards.value) {
+        const list = cards.value[areaId];
+        const index = list.findIndex((card) => card.id === updatedCard.id);
+        if (index !== -1) {
+            // Merge instead of replace so prefetched comments/attachments are
+            // preserved when the payload doesn't include them.
+            list[index] = { ...list[index], ...updatedCard };
+            return;
+        }
     }
 };
 
@@ -834,6 +860,11 @@ const initSort = () => {
         if (writeAccess.value) {
             const sortable = Sortable.create(areasWrapper.value, {
                 group: "areas",
+                // Don't start an area drag from a form field, so text can be
+                // selected in the card/area name inputs. preventOnFilter:false
+                // keeps the field's native mouse behaviour (focus/selection).
+                filter: "input, textarea, [contenteditable]",
+                preventOnFilter: false,
                 onEnd: async (event) => {
                     if (
                         event.oldIndex !== undefined &&
@@ -942,6 +973,7 @@ onMounted(() => {
         // otherwise the modal would open empty and (with hideClose) be stuck.
         if (!selectedCard.value) {
             cardModal.value = false;
+            cardModalOpen.value = false;
         } else {
             document.body.style.overflow = "hidden";
         }

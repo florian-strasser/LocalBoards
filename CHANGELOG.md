@@ -1,3 +1,15 @@
+## v0.18.1
+
+### Improvements
+- Modal windows now animate open: the dimmed backdrop fades in and the dialog scales in with a quick, subtle easing (powered by Motion). While a modal is open the page behind it is locked so it can't scroll.
+- Custom overlay scrollbars throughout. The native scrollbars are replaced by slim, rounded bars — a vertical one on the right of the page (and of tall modals) and a horizontal one pinned to the bottom of a board, so you can pan across areas without first scrolling to the bottom of a long page (a pain for anyone without a horizontal scroll wheel). Each bar fades in only when its content overflows, has a draggable thumb (powered by Motion) and click-to-jump on the track, and is theme-coloured for light and dark. Their inset/size/rounding live in `main.css`.
+- Native UI that isn't replaced by the custom bars — the scrollbars inside small dropdowns/popovers (notifications, the invite search, the assignee picker), date pickers and other form controls — now follows the light/dark theme via CSS `color-scheme`.
+- Session lifetime is now configurable via the `NUXT_SESSION_MAX_AGE_DAYS` environment variable (default `1` day, as before). Both the session record and the auth cookie use it, so self-hosters can keep users logged in for longer (e.g. `30`).
+- Real-time board updates recover more gracefully from brief WebSocket drops (background-tab throttling, network blips, proxy idle timeouts). Socket.IO connection-state recovery is now enabled, so a short disconnection restores the same session and rooms and replays the events missed during the gap, instead of a cold reconnect. (The browser may still log a one-off "WebSocket connection … was lost" when the drop happens — that line comes from the browser itself — but the board resyncs automatically.)
+
+### Bug Fixes
+- You can now select text with the mouse in the card-name and area-name fields without accidentally dragging the whole area. The area drag-and-drop (SortableJS) no longer starts when the click begins on an `input`, `textarea` or contenteditable field.
+
 ## v0.18.0
 
 ### New Features

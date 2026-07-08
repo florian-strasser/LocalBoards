@@ -22,6 +22,15 @@ export async function createSession(event: any, userId: string) {
   try {
     const db = await setupDatabase();
 
+    // Session lifetime is configurable via NUXT_SESSION_MAX_AGE_DAYS (defaults
+    // to 1 day). Guard against a missing/invalid value.
+    const configuredDays = Number(useRuntimeConfig(event).sessionMaxAgeDays);
+    const sessionDays =
+      Number.isFinite(configuredDays) && configuredDays > 0
+        ? configuredDays
+        : 1;
+    const maxAgeSeconds = Math.floor(sessionDays * 24 * 60 * 60);
+
     // Generate session token
     const sessionToken = uuidv4();
 
@@ -30,7 +39,7 @@ export async function createSession(event: any, userId: string) {
       "INSERT INTO `session` (`id`, `expiresAt`, `token`, `userId`) VALUES (?, ?, ?, ?)",
       [
         uuidv4(),
-        new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+        new Date(Date.now() + maxAgeSeconds * 1000),
         sessionToken,
         userIdStr,
       ],
@@ -48,7 +57,7 @@ export async function createSession(event: any, userId: string) {
       httpOnly: true,
       secure: isSecureContext,
       sameSite: "lax",
-      maxAge: 24 * 60 * 60,
+      maxAge: maxAgeSeconds,
       path: "/",
     });
 

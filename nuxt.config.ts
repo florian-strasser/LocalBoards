@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   },
   compatibilityDate: "2025-07-15",
   devtools: { enabled: false },
-  modules: ["@nuxtjs/i18n", "@nuxtjs/mcp-toolkit"],
+  modules: ["@nuxtjs/i18n", "@nuxtjs/mcp-toolkit", "motion-v/nuxt"],
   app: {
     head: {
       charset: "utf-8",
@@ -60,6 +60,8 @@ export default defineNuxtConfig({
     appName: process.env.NUXT_APP_NAME || "LocalBoards",
     language: process.env.NUXT_LANGUAGE || "en",
     boardsUrl: process.env.NUXT_BOARDS_URL || "http://localhost:3000",
+    // How many days a login session stays valid. Defaults to 1 day.
+    sessionMaxAgeDays: process.env.NUXT_SESSION_MAX_AGE_DAYS || "1",
     mysqlHost: process.env.NUXT_MYSQL_HOST || "localhost",
     mysqlDatabase: process.env.NUXT_MYSQL_DATABASE || "root",
     mysqlUser: process.env.NUXT_MYSQL_USER || "root",

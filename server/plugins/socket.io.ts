@@ -6,7 +6,17 @@ import { setServerSocket } from "../utils/socket";
 
 export default defineNitroPlugin((nitroApp: NitroApp) => {
   const engine = new Engine();
-  const io = new Server();
+  const io = new Server({
+    // Recover the session after a brief disconnection (background-tab timer
+    // throttling, a network blip, or a proxy idle timeout) instead of doing a
+    // cold reconnect: the socket keeps its id and rooms, and any board events
+    // missed during the gap are replayed. Reduces the "connection was lost"
+    // churn seen after sitting on a board for a while.
+    connectionStateRecovery: {
+      maxDisconnectionDuration: 2 * 60 * 1000,
+      skipMiddlewares: true,
+    },
+  });
 
   // Set the server socket for API access
   setServerSocket(io);

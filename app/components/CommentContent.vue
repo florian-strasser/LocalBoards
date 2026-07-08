@@ -24,6 +24,8 @@ const props = defineProps({
     writeAccess: Boolean,
 });
 
+const emits = defineEmits(["updated"]);
+
 const imageModalOpen = ref(false);
 const selectedImageSrc = ref("");
 const selectedImageAlt = ref("");
@@ -73,7 +75,7 @@ const handleCheckboxChange = async (event: Event) => {
     // Get the taskList HTML with updated attributes
     const updatedContent = taskList.outerHTML;
     try {
-        await $fetch("/api/data/comment", {
+        const res = await $fetch("/api/data/comment", {
             method: "PATCH",
             body: {
                 id: props.commentId,
@@ -82,6 +84,9 @@ const handleCheckboxChange = async (event: Event) => {
                 boardId: props.boardId,
             },
         });
+        // Propagate the saved comment up so the local state (and the board's
+        // prefetched card) stay in sync and it's broadcast to other users.
+        if (res?.comment) emits("updated", res.comment);
     } catch (error) {
         console.error("Failed to update comment checkpoint:", error);
         // Revert the change if API call fails

@@ -357,6 +357,7 @@
                     :initialComments="comments"
                     @comment-created="handleCommentCreated"
                     @comment-deleted="handleCommentDeleted"
+                    @comment-updated="handleCommentContentUpdated"
                 />
                 <ImageWindow v-model="imageModalOpen" bare>
                     <img
@@ -532,7 +533,35 @@ const handleDescriptionClick = (event) => {
         selectedImageSrc.value = target.getAttribute("src") || "";
         selectedImageAlt.value = target.getAttribute("alt") || "";
         imageModalOpen.value = true;
+        return;
     }
+    // Let write-access users tick checklist items straight from the read-only
+    // view; toggle the matching item in the stored content and persist it.
+    if (target.matches?.('input[type="checkbox"]') && props.writeAccess) {
+        event.preventDefault();
+        const boxes = Array.from(
+            event.currentTarget.querySelectorAll('input[type="checkbox"]'),
+        );
+        toggleChecklistItem(boxes.indexOf(target));
+    }
+};
+
+// Toggle the Nth checklist checkbox in `content` (rendered order matches the
+// stored order) and let the content watcher save it.
+const toggleChecklistItem = (index) => {
+    if (index < 0) return;
+    const doc = new DOMParser().parseFromString(content.value, "text/html");
+    const box = doc.querySelectorAll('input[type="checkbox"]')[index];
+    if (!box) return;
+    const li = box.closest("li");
+    if (box.hasAttribute("checked")) {
+        box.removeAttribute("checked");
+        li?.setAttribute("data-checked", "false");
+    } else {
+        box.setAttribute("checked", "checked");
+        li?.setAttribute("data-checked", "true");
+    }
+    content.value = doc.body.innerHTML;
 };
 
 const handleCommentCreated = (newComment) => {
@@ -546,6 +575,19 @@ const handleCommentCreated = (newComment) => {
         boardId: props.boardID,
         cardId: props.cardID,
         commentCount: comments.value.length,
+    });
+};
+
+// A comment's content changed (e.g. a checklist item toggled). Keep the local
+// list and — via the comment-count-updated channel — the board's prefetched
+// card in sync, so reopening the card shows the change.
+const handleCommentContentUpdated = (updatedComment) => {
+    const index = comments.value.findIndex((c) => c.id === updatedComment.id);
+    if (index !== -1) comments.value[index] = updatedComment;
+    emits("comment-count-updated", {
+        cardId: props.cardID,
+        commentCount: comments.value.length,
+        comments: comments.value,
     });
 };
 
@@ -697,6 +739,24 @@ const saveCard = async () => {
         name.value = cardTitle.value.textContent || name.value;
     }
 
+    // Optimistically update the board immediately (while this modal is still
+    // mounted) so a quick close→reopen shows the change even if the request —
+    // and its post-save emit — outlives the modal.
+    const assigneeMemberNow = members.value.find(
+        (m) => m.id === assignee.value,
+    );
+    emits("card-updated", {
+        id: props.cardID,
+        name: name.value,
+        content: content.value,
+        status: currentStatus.value,
+        dueDate: dueDate.value || null,
+        assignee: assignee.value || null,
+        reminders: [...reminders.value],
+        assigneeName: assigneeMemberNow?.name ?? null,
+        assigneeImage: assigneeMemberNow?.image ?? null,
+    });
+
     try {
         const response = await $fetch(`/api/data/card`, {
             method: "PUT",
@@ -802,17 +862,19 @@ onMounted(async () => {
     }
 });
 
-// Set up socket event listener for card updates
+// Set up socket event listener for card updates (from other users). Keep a
+// stable reference so it can actually be removed on unmount.
+const onSocketUpdateCard = ({ card, attachments, boardId }) => {
+    if (props.boardID === boardId && card.id === props.cardID) {
+        handleCardUpdated(card, attachments);
+    }
+};
 onMounted(() => {
-    socket.on("updateCard", ({ card, attachments, boardId }) => {
-        if (props.boardID === boardId && card.id === props.cardID) {
-            handleCardUpdated(card, attachments);
-        }
-    });
+    socket.on("updateCard", onSocketUpdateCard);
 });
 
 onBeforeUnmount(() => {
-    socket.off("updateCard", handleCardUpdated);
+    socket.off("updateCard", onSocketUpdateCard);
 });
 
 // Watch for changes in name, content, or currentStatus

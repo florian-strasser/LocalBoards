@@ -1,6 +1,6 @@
 {
   "name": "localboards",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "type": "module",
   "private": true,
   "scripts": {
@@ -28,6 +28,7 @@
     "bcryptjs": "^3.0.3",
     "isomorphic-dompurify": "^3.18.0",
     "lucide-vue-next": "^1.0.0",
+    "motion-v": "^2.3.0",
     "mysql2": "^3.22.5",
     "nodemailer": "^9.0.1",
     "nuxt": "^4.4.8",

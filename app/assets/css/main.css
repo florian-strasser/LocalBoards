@@ -17,6 +17,10 @@ html,
 body {
     background: var(--color-slate);
     color: var(--color-gray);
+    /* Render native UI (scrollbars, date/color pickers, etc.) to match the
+     * active theme: a dark scrollbar on the light background and a light one on
+     * the dark background. Inherited, so every scroll container follows it. */
+    color-scheme: light dark;
 }
 /* Static dark-mode color tokens live in a cascade layer so the runtime color
  * overrides injected in app.vue (from NUXT_PUBLIC_COLOR_*_DARK) take
@@ -64,6 +68,164 @@ body {
 .hide-scrollbar {
     overflow-y: hidden;
     overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+    display: none; /* WebKit */
+}
+
+/* Applied to <body> while a custom scrollbar thumb is being dragged, to stop
+ * the drag from selecting page text. */
+.no-select {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+/* Hide only the native scrollbar (keep scrolling) — for containers that use a
+ * custom overlay scrollbar instead. Unlike .hide-scrollbar it doesn't force the
+ * overflow axes, so the element keeps its own overflow-x/y utilities. */
+.no-native-scrollbar {
+    scrollbar-width: none; /* Firefox */
+}
+.no-native-scrollbar::-webkit-scrollbar {
+    display: none; /* WebKit */
+}
+
+/* Hide the native page scrollbar — replaced by the custom PageScrollbar. */
+html,
+body {
+    scrollbar-width: none; /* Firefox */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none; /* WebKit */
+}
+
+/* Custom vertical scrollbar for the whole page — pinned to the right of the
+ * viewport with a margin, fades in when the page overflows (PageScrollbar.vue).
+ * Sits below modals (which bring their own ModalScrollbar). */
+.page-scrollbar {
+    position: fixed;
+    /* Top lines up with the header nav (its pt-6); the bottom keeps the 2rem
+     * inset so it meets the board scrollbar symmetrically at the corner. */
+    top: 1.5rem;
+    bottom: 2rem;
+    right: 0.75rem;
+    width: 10px;
+    z-index: 30;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--color-gray) 16%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    touch-action: none;
+}
+.page-scrollbar--visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.page-scrollbar__thumb {
+    position: absolute;
+    left: 1px;
+    top: 0;
+    width: 8px;
+    min-height: 2.5rem;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--color-gray) 55%, transparent);
+    cursor: grab;
+    transition: background 0.15s ease;
+    will-change: transform;
+}
+.page-scrollbar:hover .page-scrollbar__thumb,
+.page-scrollbar__thumb:active {
+    background: var(--color-primary);
+}
+.page-scrollbar__thumb:active {
+    cursor: grabbing;
+}
+
+/* Custom vertical scrollbar for modal windows — pinned to the right of the
+ * viewport with a margin, fades in with the modal (see ModalScrollbar.vue). */
+.modal-scrollbar {
+    position: fixed;
+    top: 2rem;
+    bottom: 2rem;
+    right: 0.75rem;
+    width: 10px;
+    z-index: 50;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--color-gray) 16%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    touch-action: none;
+}
+.modal-scrollbar--visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.modal-scrollbar__thumb {
+    position: absolute;
+    left: 1px;
+    top: 0;
+    width: 8px;
+    min-height: 2.5rem;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--color-gray) 55%, transparent);
+    cursor: grab;
+    transition: background 0.15s ease;
+    will-change: transform;
+}
+.modal-scrollbar:hover .modal-scrollbar__thumb,
+.modal-scrollbar__thumb:active {
+    background: var(--color-primary);
+}
+.modal-scrollbar__thumb:active {
+    cursor: grabbing;
+}
+
+/* Custom horizontal scrollbar for the board areas — pinned to the bottom of
+ * the viewport (so it's always reachable) and driven by BoardScrollbar.vue.
+ * Adjust the inset/height/radius here to taste. */
+.board-scrollbar {
+    position: fixed;
+    /* Match the .container horizontal padding so the bar lines up with the
+     * first and last areas. */
+    left: 2rem;
+    right: 2rem;
+    bottom: 0.75rem;
+    height: 10px;
+    z-index: 30;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--color-gray) 16%, transparent);
+    cursor: pointer;
+    touch-action: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+.board-scrollbar--visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.board-scrollbar__thumb {
+    position: absolute;
+    top: 1px;
+    left: 0;
+    height: 8px;
+    min-width: 2.5rem;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--color-gray) 55%, transparent);
+    cursor: grab;
+    transition: background 0.15s ease;
+    will-change: transform;
+}
+.board-scrollbar:hover .board-scrollbar__thumb,
+.board-scrollbar__thumb:active {
+    background: var(--color-primary);
+}
+.board-scrollbar__thumb:active {
+    cursor: grabbing;
 }
 
 /* Pulsing highlight ring used by the onboarding tour. */
@@ -241,12 +403,59 @@ select.form-control {
 .tiptap > ul[data-type="taskList"] > li,
 .wysiwyg-wrapper > ul[data-type="taskList"] > li {
     display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
 }
-.tiptap > ul[data-type="taskList"] > li label,
-.wysiwyg-wrapper > ul[data-type="taskList"] > li label {
-    flex-grow: 0;
+/* The label wraps the checkbox; give it the text line-height so the box lines
+ * up vertically with the first line, and hide TipTap's empty helper span. */
+.tiptap > ul[data-type="taskList"] > li > label,
+.wysiwyg-wrapper > ul[data-type="taskList"] > li > label {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    height: 1.5em;
+    margin: 0;
+}
+.tiptap > ul[data-type="taskList"] > li > label > span,
+.wysiwyg-wrapper > ul[data-type="taskList"] > li > label > span {
+    display: none;
+}
+/* Task-list checkboxes styled like the card status toggle: a small round box
+ * that fills with the primary colour and shows a check when ticked. */
+.tiptap ul[data-type="taskList"] input[type="checkbox"],
+.wysiwyg-wrapper ul[data-type="taskList"] input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1.1em;
+    height: 1.1em;
+    margin: 0;
+    border: 2px solid color-mix(in oklab, var(--color-gray) 55%, transparent);
+    border-radius: 9999px;
+    background-color: transparent;
+    position: relative;
     flex-shrink: 0;
-    margin-right: 0.5em;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+}
+.tiptap ul[data-type="taskList"] input[type="checkbox"]:checked,
+.wysiwyg-wrapper ul[data-type="taskList"] input[type="checkbox"]:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+.tiptap ul[data-type="taskList"] input[type="checkbox"]:checked::after,
+.wysiwyg-wrapper ul[data-type="taskList"] input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        center / 0.72em no-repeat
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+}
+.tiptap ul[data-type="taskList"] input[type="checkbox"]:disabled,
+.wysiwyg-wrapper ul[data-type="taskList"] input[type="checkbox"]:disabled {
+    cursor: default;
 }
 .tiptap > pre,
 .wysiwyg-wrapper > pre {
