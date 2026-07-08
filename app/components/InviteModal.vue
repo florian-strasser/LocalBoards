@@ -63,18 +63,38 @@
                 {{ $t("inviteMoreUser") }}
             </div>
         </div>
-        <form @submit.prevent="createInvitation" class="text-left space-y-5">
+        <form
+            @submit.prevent="createInvitation"
+            class="text-left space-y-5"
+            autocomplete="off"
+        >
             <div class="relative">
                 <label class="block text-sm mb-1">
                     {{ $t("inviteUserSearchLabel") }}
                     <span class="text-primary ml-1">*</span>
                 </label>
+                <!-- Custom user-search autocomplete. The extra attributes stop
+                     the browser's own autofill (Safari/iCloud Keychain in
+                     particular treats a "Benutzer"/e-mail field as a login and
+                     overlays saved-password suggestions on top of our list). A
+                     non-credential name, combobox semantics and the password-
+                     manager ignore hints together suppress that. -->
                 <input
                     type="text"
+                    name="lb-invite-search"
                     class="form-control"
                     v-model="search"
                     :placeholder="$t('inviteUserSearchPlaceholder')"
                     autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    :aria-expanded="showList"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-form-type="other"
                     @focus="openList"
                     @input="onInput"
                     @blur="onBlur"

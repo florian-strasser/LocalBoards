@@ -1,3 +1,9 @@
+## v0.18.4
+
+### Bug Fixes
+- Uploading a **WebP** (or GIF) image as a board thumbnail / profile picture now works. The picker was posting to the generic attachment endpoint, which only accepts JPEG/PNG among images; it now uses the image endpoint that also accepts WebP and GIF. Also fixed the upload fallback so a failed upload embeds a valid base64 data URL instead of a broken one (which was showing as a broken-image placeholder).
+- The invite dialog's user-search field no longer triggers the browser's own autofill (Safari/iCloud Keychain was treating the "Benutzer"/e-mail field as a login and overlaying saved-password suggestions on top of the app's own results list). The field is now marked as a custom combobox with a non-credential name and autofill/password-manager opt-outs.
+
 ## v0.18.3
 
 ### New Features

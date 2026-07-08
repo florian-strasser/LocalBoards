@@ -130,37 +130,29 @@ const uploadImage = async (file: File) => {
         data.value = imageUrl;
     } catch (error) {
         console.error("Error uploading image:", error);
-        // Fallback to base64 for backward compatibility
+        // Fallback: embed the image as a full base64 data URL so it still shows
+        // (a valid data URI, not the bare base64 payload).
         const fileReader = new FileReader();
-        fileReader.readAsDataURL(file);
         fileReader.onload = () => {
             data.value = fileReader.result;
         };
+        fileReader.readAsDataURL(file);
     }
 };
 
 const uploadFileToServer = async (file: File) => {
-    try {
-        const formData = new FormData();
-        formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-        const response = await $fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-        });
+    // Use the image-specific endpoint, which accepts png/jpeg/gif/webp. The
+    // generic /api/upload (for card attachments) only allows png/jpeg among
+    // images, so webp/gif thumbnails failed there. Throw on failure so the
+    // caller's base64 fallback runs.
+    const response = await $fetch("/api/upload/image", {
+        method: "POST",
+        body: formData,
+    });
 
-        return response.url;
-    } catch (error) {
-        console.error("File upload failed:", error);
-        // Fallback to base64 for backward compatibility
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const base64Data = e.target.result.split(",")[1];
-                resolve(base64Data);
-            };
-            reader.readAsDataURL(file);
-        });
-    }
+    return response.imageUrl;
 };
 </script>
