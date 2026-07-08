@@ -196,6 +196,8 @@
                                 '/images/board_placeholder_04.png',
                                 '/images/board_placeholder_05.png',
                                 '/images/board_placeholder_06.png',
+                                '/images/board_placeholder_07.png',
+                                '/images/board_placeholder_08.png',
                             ]"
                             v-model="newBoardImage"
                         />

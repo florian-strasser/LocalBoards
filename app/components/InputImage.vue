@@ -1,10 +1,10 @@
 <template>
-    <div class="block w-88 max-w-full space-y-1">
+    <div class="block w-full space-y-1">
         <label class="text-sm">
             {{ props.label }}
         </label>
-        <div class="flex gap-2">
-            <div class="w-34">
+        <div class="flex gap-2 items-start">
+            <div class="w-34 shrink-0">
                 <div
                     class="aspect-square relative rounded-lg bg-slate dark:bg-white/10"
                     @click="triggerFileInput"
@@ -46,11 +46,14 @@
                     @change="handleFileUpload"
                 />
             </div>
-            <div class="flex gap-2 flex-wrap max-w-52">
+            <div
+                class="grid gap-2 flex-1 min-w-0 content-start"
+                style="grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr))"
+            >
                 <div v-for="image in props.images">
                     <button
                         type="button"
-                        class="relative aspect-square w-16 rounded-lg overflow-clip"
+                        class="relative aspect-square w-full rounded-lg overflow-clip"
                         :class="{
                             'border-2 border-secondary': data === image,
                         }"

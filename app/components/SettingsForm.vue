@@ -4,18 +4,20 @@
         class="relative space-y-4 bg-white dark:bg-slate rounded-xl p-5"
     >
         <div class="flex flex-col md:flex-row gap-y-4 gap-x-5">
-            <InputImage
-                :label="$t('settingsProfilePicture')"
-                :images="[
-                    '/images/profile_placeholder_01.png',
-                    '/images/profile_placeholder_02.png',
-                    '/images/profile_placeholder_03.png',
-                    '/images/profile_placeholder_04.png',
-                    '/images/profile_placeholder_05.png',
-                    '/images/profile_placeholder_06.png',
-                ]"
-                v-model="image"
-            />
+            <div class="w-full md:w-88 shrink-0">
+                <InputImage
+                    :label="$t('settingsProfilePicture')"
+                    :images="[
+                        '/images/profile_placeholder_01.png',
+                        '/images/profile_placeholder_02.png',
+                        '/images/profile_placeholder_03.png',
+                        '/images/profile_placeholder_04.png',
+                        '/images/profile_placeholder_05.png',
+                        '/images/profile_placeholder_06.png',
+                    ]"
+                    v-model="image"
+                />
+            </div>
             <div class="grow shrink">
                 <InputField type="text" label="Name" required v-model="name" />
             </div>

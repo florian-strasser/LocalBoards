@@ -24,7 +24,17 @@ export default defineNuxtConfig({
         { name: "format-detection", content: "telephone=no" },
       ],
       link: [
-        { rel: "icon", href: "/touchicon.png" },
+        // Icons are generated at runtime (see server/routes/favicon.svg.get.ts
+        // and server/routes/touchicon.png.get.ts) so they pick up the instance's
+        // configured primary colour instead of a build-time default. A single
+        // favicon in the primary colour is used for both light and dark tabs:
+        // Safari doesn't switch favicons by `prefers-color-scheme` (neither an
+        // in-SVG media query nor a `media` link attribute works without a JS
+        // polling shim), so a theme-specific variant only broke the other theme.
+        // The PNG is the fallback for browsers without SVG-favicon support and
+        // for the Apple touch icon (which doesn't support SVG).
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        { rel: "icon", type: "image/png", href: "/touchicon.png" },
         { rel: "apple-touch-icon", href: "/touchicon.png" },
       ],
     },

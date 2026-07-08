@@ -1,3 +1,11 @@
+## v0.18.2
+
+### Improvements
+- Reworked the app icons around the logo, and they now follow the instance's configured **primary colour** (`NUXT_PUBLIC_COLOR_PRIMARY`) instead of a hard-coded default. Both are generated at runtime, so a prebuilt Docker image picks up your colour without a rebuild:
+  - The **favicon** is served from `/favicon.svg` as an SVG drawn in the primary colour, with the colour baked into an inline `fill` attribute so it renders in every browser.
+  - The **touch icon** (`/touchicon.png`, used for the Apple/Android home-screen icon and as the PNG-favicon fallback) is the white logo on the primary-colour background. It's composited at runtime from a small pre-baked alpha mask of the logo and encoded with Node's built-in `zlib` — deliberately **without** a native SVG rasterizer, so no per-architecture binary is added and the Docker `.output` stays portable across architectures. The result is cached per colour. (`scripts/gen-touchicon-template.mjs` regenerates the mask if the logo ever changes.)
+- Added two more board placeholder thumbnails (now eight), and reworked the thumbnail picker to use the full width of the dialog. The thumbnails now sit in a responsive grid whose square cells stretch to fill the available width and whose column count adapts to it (roughly four columns in the board dialog, fewer on a narrow/mobile viewport) instead of small fixed-size thumbnails capped at three columns. The preview/upload box on the left keeps a fixed square aspect ratio at every width.
+
 ## v0.18.1
 
 ### Improvements
