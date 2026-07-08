@@ -4,6 +4,7 @@
         :data-card-id="props.card.id"
         type="button"
         class="bg-dark/10 dark:bg-white/10 text-dark dark:text-white text-left p-2 rounded-md w-full"
+        :class="{ 'ring-2 ring-primary': props.hasUnread }"
         @click="openModal(props.card.id)"
     >
         <div class="flex gap-x-2">
@@ -81,6 +82,8 @@ import { Check, MessageSquareText, Paperclip, Clock } from "lucide-vue-next";
 const cardModal = defineModel();
 const props = defineProps({
     card: Object,
+    // Whether this card has unread notifications for the current user.
+    hasUnread: { type: Boolean, default: false },
 });
 
 const isOverdue = computed(

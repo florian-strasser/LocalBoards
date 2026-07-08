@@ -190,6 +190,7 @@ const migrations: Migration[] = [
         \`cardId\` int DEFAULT NULL,
         \`message\` longtext COLLATE utf8mb4_general_ci,
         \`isRead\` tinyint(1) DEFAULT '0',
+        \`notified\` tinyint(1) NOT NULL DEFAULT '0',
         \`createdAt\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
@@ -288,9 +289,28 @@ const migrations: Migration[] = [
     },
   },
 
+  {
+    // Split "emailed" from "read" on notifications. Previously the hourly email
+    // task set `isRead = TRUE` after sending, which doubled as the unread
+    // indicator — so notifications self-cleared within an hour regardless of
+    // whether the user had seen them. `notified` now tracks email dedup, leaving
+    // `isRead` to mean "the user has actually viewed it" (opened the card, or the
+    // board for non-card notifications). Existing already-emailed notifications
+    // are marked notified so they aren't re-sent.
+    id: "0005_notifications_notified_flag",
+    up: async (db) => {
+      await db.execute(
+        "ALTER TABLE `notifications` ADD COLUMN `notified` tinyint(1) NOT NULL DEFAULT '0'",
+      );
+      await db.execute(
+        "UPDATE `notifications` SET `notified` = 1 WHERE `isRead` = 1",
+      );
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
-  //   id: "0005_add_x",
+  //   id: "0006_add_x",
   //   up: async (db) => {
   //     await db.execute("ALTER TABLE `cards` ADD COLUMN `x` int NULL");
   //   },

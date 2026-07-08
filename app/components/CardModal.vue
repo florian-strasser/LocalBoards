@@ -72,7 +72,9 @@
                             ref="cardTitle"
                             contenteditable="plaintext-only"
                             @blur="saveCard"
-                            class="text-2xl font-bold text-dark dark:text-white w-full"
+                            @copy="onTitleCopy"
+                            @cut="onTitleCopy"
+                            class="editable-underline text-2xl font-bold text-dark dark:text-white w-full focus:outline-none"
                         >
                             {{ name }}
                         </div>
@@ -734,6 +736,17 @@ const downloadAttachment = async (attachment) => {
 };
 
 // Function to save the card data
+// The title is a styled contenteditable, so a normal copy/cut puts the heading's
+// rendered HTML (font size/weight/colour) on the clipboard — pasting it into an
+// email or doc then carries that styling. Write only plain text instead.
+const onTitleCopy = (e: ClipboardEvent) => {
+    const text = window.getSelection()?.toString() ?? "";
+    if (!text) return;
+    e.preventDefault();
+    e.clipboardData?.setData("text/plain", text);
+    if (e.type === "cut") window.getSelection()?.deleteFromDocument();
+};
+
 const saveCard = async () => {
     if (cardTitle.value) {
         name.value = cardTitle.value.textContent || name.value;

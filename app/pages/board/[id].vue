@@ -111,6 +111,7 @@
                             <CardTile
                                 v-for="card in cards[area.id]"
                                 :card="card"
+                                :has-unread="unreadCardIds.has(card.id)"
                                 v-model="cardModal"
                             />
                         </div>
@@ -202,34 +203,41 @@
                             v-model="newBoardImage"
                         />
                     </div>
-                    <div>
-                        <label class="block text-sm/6 font-medium text-gray">{{
-                            $t("boardStyle")
-                        }}</label>
-                        <RadioList
-                            :values="[
-                                { value: 'kanban', label: $t('kanBan') },
-                                { value: 'todo', label: $t('toDo') },
-                            ]"
-                            name="style"
-                            v-model="newBoardStyle"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm/6 font-medium text-gray">{{
-                            $t("boardStatus")
-                        }}</label>
-                        <RadioList
-                            :values="[
-                                {
-                                    value: 'private',
-                                    label: $t('statusPrivate'),
-                                },
-                                { value: 'public', label: $t('statusPublic') },
-                            ]"
-                            name="status"
-                            v-model="newBoardStatus"
-                        />
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label
+                                class="mb-1 block text-sm/6 font-medium text-gray"
+                                >{{ $t("boardStyle") }}</label
+                            >
+                            <SegmentedControl
+                                :values="[
+                                    { value: 'kanban', label: $t('kanBan') },
+                                    { value: 'todo', label: $t('toDo') },
+                                ]"
+                                name="style"
+                                v-model="newBoardStyle"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-sm/6 font-medium text-gray"
+                                >{{ $t("boardStatus") }}</label
+                            >
+                            <SegmentedControl
+                                :values="[
+                                    {
+                                        value: 'private',
+                                        label: $t('statusPrivate'),
+                                    },
+                                    {
+                                        value: 'public',
+                                        label: $t('statusPublic'),
+                                    },
+                                ]"
+                                name="status"
+                                v-model="newBoardStatus"
+                            />
+                        </div>
                     </div>
                     <input
                         type="submit"
@@ -365,13 +373,60 @@ watch(
 );
 
 const cardModal = ref(false);
+
+// Card ids on this board that still have unread notifications for the user;
+// drives the "unread changes" highlight on the card tiles.
+const unreadCardIds = ref(new Set());
+
+// Load which cards on this board still have unread notifications for this user.
+const refreshUnreadCards = async () => {
+    try {
+        const res = await $fetch(`/api/data/notifications?userId=${userID}`);
+        const ids = new Set();
+        for (const n of res?.notifications || []) {
+            if (
+                !n.isRead &&
+                n.cardId &&
+                String(n.boardId) === String(boardID.value)
+            ) {
+                ids.add(n.cardId);
+            }
+        }
+        // A card that's already open is being read; never highlight it.
+        if (cardModal.value) ids.delete(cardModal.value);
+        unreadCardIds.value = ids;
+    } catch (err) {
+        console.error("Error loading unread cards:", err);
+    }
+};
+
+// Opening a card marks its notifications read; opening the board marks the
+// board-level (non-card) ones read. See server/api/data/notifications.ts.
+const markCardNotificationsRead = (cardId) =>
+    $fetch(`/api/data/notifications?cardId=${cardId}`, {
+        method: "PATCH",
+    }).catch((err) =>
+        console.error("Error marking card notifications read:", err),
+    );
+const markBoardNotificationsRead = () =>
+    $fetch(`/api/data/notifications?boardId=${boardID.value}`, {
+        method: "PATCH",
+    }).catch((err) =>
+        console.error("Error marking board notifications read:", err),
+    );
+
 // Drives the modal's open/close animation. `cardModal` (the card id) is kept a
 // little longer so the card content stays mounted through the close animation
 // (otherwise the box would collapse mid-exit).
 const cardModalOpen = ref(false);
 let cardModalCloseTimer;
 watch(cardModal, (id) => {
-    if (id) cardModalOpen.value = true;
+    if (id) {
+        cardModalOpen.value = true;
+        // Viewing a card clears its unread highlight and marks it read.
+        unreadCardIds.value.delete(id);
+        markCardNotificationsRead(id);
+    }
 });
 watch(cardModalOpen, (isOpen) => {
     clearTimeout(cardModalCloseTimer);
@@ -429,6 +484,21 @@ watch(cardModal, (newVal, oldVal) => {
         }
     }
 });
+
+// Open/close the card modal when the `card` query changes without a full page
+// load — e.g. clicking a notification for a card on the board you're already
+// viewing (same route, so setup doesn't re-run). Guarded so it doesn't loop
+// with the watcher above that writes the query.
+watch(
+    () => route.query.card,
+    (card) => {
+        const id = card ? card * 1 : false;
+        if (id !== cardModal.value) {
+            cardModal.value = id;
+            if (id) document.body.style.overflow = "hidden";
+        }
+    },
+);
 
 const createNewArea = async () => {
     newAreaName.value = "";
@@ -981,5 +1051,9 @@ onMounted(() => {
         }
     }
     initSort();
+    // Board opened: load which cards still have unread activity (for the
+    // highlight) and clear the board's non-card notifications (e.g. invitations).
+    refreshUnreadCards();
+    markBoardNotificationsRead();
 });
 </script>

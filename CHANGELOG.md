@@ -1,3 +1,25 @@
+## v0.18.3
+
+### New Features
+- Board tiles on the dashboard now show who works on each board: up to four collaborator avatars (the owner plus invited members) are stacked in the tile's corner, with a "+N" bubble when a board has more than four members. The board-list endpoint (`/api/data/boards`) now returns each board's members and total member count (fetched in a couple of batch queries, no per-board N+1), and long board names truncate so they don't collide with the avatars.
+- Board tiles also show a small pulsing dot when the board has unread notifications for you, so you can spot boards with new activity at a glance. The board-list endpoint returns a per-board unread-notification count for this.
+- On a board, individual cards that have unread activity for you (a new comment, a move, an assignment, …) are highlighted with a coloured border, so you can see exactly which cards changed. The highlight clears the moment you open the card.
+
+### Changes
+- **Notifications are now marked read when you actually view them, not on a timer.** Previously the hourly notification-email task marked every notification read after emailing it, so the unread indicators self-cleared within an hour regardless of whether you'd seen anything. Now a notification stays unread until you open the thing it's about — the referenced **card** for card notifications, or the **board** for board-level ones (e.g. invitations). Email de-duplication moved to a separate `notified` flag (schema migration `0005`), so emails still go out once but no longer clear your unread state; and anything you've already viewed won't be emailed.
+
+### Improvements
+- The custom overlay scrollbars (page, board and modal) are now only used on non-touch devices. On touch devices they were unhelpful — there's no cursor to hover or drag the thumb — so those devices fall back to the platform's native scrollbars (gated via the `(pointer: coarse)` media query).
+- Widened the preview/upload box in the image picker from `w-34` to `w-36` for a slightly better fit next to the thumbnail grid.
+- The board **display** (KanBan/ToDo) and **status** (private/public) choices in the create- and edit-board dialogs are now shown as full-width segmented toggles — the selected option is a filled pill in the primary colour, the other is muted — laid out side by side in a two-column grid (stacking to one column on narrow/mobile screens) instead of two stacked radio lists. The board-invite permission choice (read-only / read & write) uses the same control. Implemented as a new `SegmentedControl` component (styled radio group, so it stays keyboard- and form-accessible); the remaining radio lists in the app are unchanged.
+- Reworked the comment edit/delete controls. Instead of an awkwardly floating edit button and a separate delete button on the author row, both actions now sit together in a small pill in the comment's top-right corner — revealed on hover on pointer devices, and always visible on touch (where there's no hover). The author/date row underneath is now just the avatar and name.
+
+### Bug Fixes
+- The editable card title no longer shows a browser focus outline around the whole (full-width) field when you click into or select text in it; instead it shows an animated underline in the primary colour on focus. Copying or cutting from the title now also puts **plain text** on the clipboard instead of the heading's rendered HTML, so pasting into an email or document no longer carries the title's font size/weight/colour.
+- Comment timestamps now keep leading zeros for the day and month (e.g. `08.07.2026` instead of `8.7.2026`), matching the notification dates.
+- Fixed a stray tooltip appearing over a comment: the new comment action pill used a `group` for its hover reveal, which collided with the tooltip directive's own `group` and made the delete button's tooltip show whenever the comment was hovered. The comment now uses a named group so the tooltip only appears when its button is hovered.
+- Clicking a notification for a card on the board you're already viewing now opens that card. Previously the URL updated (`?card=…`) but the modal didn't open, because the page wasn't reloaded and nothing reacted to the query change; the board page now watches the `card` query and opens/closes the modal accordingly.
+
 ## v0.18.2
 
 ### Improvements

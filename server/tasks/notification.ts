@@ -200,9 +200,11 @@ const translateNotification = (message: string): string => {
 const sendNotification = async () => {
   try {
     const db = setupDatabase();
-    // Fetch all unread notifications
+    // Fetch notifications that still need an email: not yet emailed and not yet
+    // seen by the user. (`isRead` now means "the user has viewed it", so anything
+    // already opened is skipped; `notified` tracks what's already been emailed.)
     const [rows] = await db.execute(
-      "SELECT * FROM notifications WHERE isRead = FALSE",
+      "SELECT * FROM notifications WHERE isRead = FALSE AND notified = FALSE",
     );
 
     const notifications = rows as Array<{
@@ -262,10 +264,14 @@ const sendNotification = async () => {
             "</a></p>",
         });
 
-        // Mark notifications as read after sending the email
+        // Mark the emailed notifications as notified (not read) so they aren't
+        // re-sent. `isRead` is left untouched — it only flips when the user
+        // actually opens the card/board.
+        const emailedIds = userNotifications.map((n) => n.id);
+        const idPlaceholders = emailedIds.map(() => "?").join(",");
         await db.execute(
-          "UPDATE notifications SET isRead = TRUE WHERE userId = ?",
-          [userId],
+          `UPDATE notifications SET notified = TRUE WHERE id IN (${idPlaceholders})`,
+          emailedIds,
         );
       } else {
         logger.error(

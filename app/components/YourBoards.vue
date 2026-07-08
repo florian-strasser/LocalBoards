@@ -8,6 +8,9 @@
             :name="item.name"
             :style="item.style"
             :image="item.image"
+            :members="item.members"
+            :member-count="item.memberCount"
+            :unread-count="item.unreadCount"
         />
         <button
             type="button"

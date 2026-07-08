@@ -19,17 +19,31 @@
                 <template v-if="commentToDelete !== comment.id">
                     <template v-if="commentToEdit !== comment.id">
                         <div
-                            class="relative bg-dark/10 dark:bg-white/10 p-6 rounded-xl"
+                            class="group/comment relative bg-dark/10 dark:bg-white/10 p-6 rounded-xl"
                         >
-                            <div class="w-5 absolute top-1 right-1">
+                            <!-- Edit + delete grouped in a small pill: revealed on
+                                 hover on pointer devices, always shown on touch.
+                                 Named group so it doesn't collide with the tooltip
+                                 directive's own (unnamed) `group`. -->
+                            <div
+                                v-if="comment.user === currentUserId"
+                                class="comment-actions absolute top-2 right-2 flex items-center gap-0.5 rounded-lg bg-white/70 dark:bg-slate/70 backdrop-blur-sm p-0.5 shadow-sm opacity-0 transition-opacity group-hover/comment:opacity-100 focus-within:opacity-100"
+                            >
                                 <button
-                                    v-if="comment.user === currentUserId"
                                     type="button"
                                     @click="startEditing(comment)"
-                                    class="size-5 flex justify-center items-center hover:text-secondary"
                                     v-tooltip="$t('edit')"
+                                    class="flex size-7 items-center justify-center rounded-md text-gray hover:bg-primary hover:text-white"
                                 >
-                                    <Pen class="size-3" />
+                                    <Pen class="size-3.5" />
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="confirmDelete(comment.id)"
+                                    v-tooltip="$t('deleteMessage')"
+                                    class="flex size-7 items-center justify-center rounded-md text-gray hover:bg-primary hover:text-white"
+                                >
+                                    <Trash2 class="size-3.5" />
                                 </button>
                             </div>
                             <CommentContent
@@ -41,46 +55,28 @@
                                 @updated="handleCommentPatched"
                             />
                         </div>
-                        <div class="flex mt-2 items-center gap-x-2 flex-wrap">
-                            <div
-                                class="flex items-center gap-x-2 shrink-0 grow"
-                            >
-                                <div class="w-8 shrink-0 grow-0">
+                        <div class="flex mt-2 items-center gap-x-2">
+                            <div class="w-8 shrink-0 grow-0">
+                                <div
+                                    class="relative aspect-square rounded-full overflow-clip"
+                                >
+                                    <img
+                                        v-if="comment.userImage"
+                                        :src="comment.userImage"
+                                        class="absolute top-0 left-0 w-full h-full object-cover"
+                                    />
                                     <div
-                                        class="relative aspect-square rounded-full overflow-clip"
+                                        v-else
+                                        class="absolute top-0 left-0 w-full h-full bg-primary text-white flex justify-center items-center"
                                     >
-                                        <img
-                                            v-if="comment.userImage"
-                                            :src="comment.userImage"
-                                            class="absolute top-0 left-0 w-full h-full object-cover"
-                                        />
-                                        <div
-                                            v-else
-                                            class="absolute top-0 left-0 w-full h-full bg-primary text-white flex justify-center items-center"
-                                        >
-                                            {{
-                                                comment.userName.substring(0, 1)
-                                            }}
-                                        </div>
+                                        {{ comment.userName.substring(0, 1) }}
                                     </div>
                                 </div>
-                                <p class="text-sm grow shrink">
-                                    {{ comment.userName }} |
-                                    {{ formatDate(comment.date) }}
-                                </p>
                             </div>
-                            <div
-                                v-if="comment.user === currentUserId"
-                                class="flex items-center gap-2"
-                            >
-                                <button
-                                    @click="confirmDelete(comment.id)"
-                                    v-tooltip="$t('deleteMessage')"
-                                    class="text-sm hover:text-secondary shrink-0 grow-0"
-                                >
-                                    <Trash2 class="size-4" />
-                                </button>
-                            </div>
+                            <p class="text-sm grow shrink">
+                                {{ comment.userName }} |
+                                {{ formatDate(comment.date) }}
+                            </p>
                         </div>
                     </template>
                     <template v-else>
@@ -289,10 +285,19 @@ const handleCommentDeleted = (deletedCommentId) => {
     });
 };
 
-// Format the date for display
+// Format the date for display. Explicit 2-digit day/month/hour/minute/second so
+// localized formats keep leading zeros (e.g. de-DE "08.07.2026, 23:11:02"
+// instead of "8.7.2026, 23:11:02").
 const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString();
+    return date.toLocaleString(undefined, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+    });
 };
 
 // Delete a comment by its creator

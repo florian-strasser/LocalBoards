@@ -4,7 +4,7 @@
             {{ props.label }}
         </label>
         <div class="flex gap-2 items-start">
-            <div class="w-34 shrink-0">
+            <div class="w-36 shrink-0">
                 <div
                     class="aspect-square relative rounded-lg bg-slate dark:bg-white/10"
                     @click="triggerFileInput"
@@ -48,7 +48,9 @@
             </div>
             <div
                 class="grid gap-2 flex-1 min-w-0 content-start"
-                style="grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr))"
+                style="
+                    grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr));
+                "
             >
                 <div v-for="image in props.images">
                     <button

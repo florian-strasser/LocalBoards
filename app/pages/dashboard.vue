@@ -44,34 +44,41 @@
                             v-model="newBoardImage"
                         />
                     </div>
-                    <div>
-                        <label class="block text-sm/6 font-medium text-gray">{{
-                            $t("boardStyle")
-                        }}</label>
-                        <RadioList
-                            :values="[
-                                { value: 'kanban', label: $t('kanBan') },
-                                { value: 'todo', label: $t('toDo') },
-                            ]"
-                            name="style"
-                            v-model="newBoardStyle"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm/6 font-medium text-gray">{{
-                            $t("boardStatus")
-                        }}</label>
-                        <RadioList
-                            :values="[
-                                {
-                                    value: 'private',
-                                    label: $t('statusPrivate'),
-                                },
-                                { value: 'public', label: $t('statusPublic') },
-                            ]"
-                            name="status"
-                            v-model="newBoardStatus"
-                        />
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label
+                                class="mb-1 block text-sm/6 font-medium text-gray"
+                                >{{ $t("boardStyle") }}</label
+                            >
+                            <SegmentedControl
+                                :values="[
+                                    { value: 'kanban', label: $t('kanBan') },
+                                    { value: 'todo', label: $t('toDo') },
+                                ]"
+                                name="style"
+                                v-model="newBoardStyle"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-sm/6 font-medium text-gray"
+                                >{{ $t("boardStatus") }}</label
+                            >
+                            <SegmentedControl
+                                :values="[
+                                    {
+                                        value: 'private',
+                                        label: $t('statusPrivate'),
+                                    },
+                                    {
+                                        value: 'public',
+                                        label: $t('statusPublic'),
+                                    },
+                                ]"
+                                name="status"
+                                v-model="newBoardStatus"
+                            />
+                        </div>
                     </div>
                     <input
                         type="submit"

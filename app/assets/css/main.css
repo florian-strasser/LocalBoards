@@ -228,6 +228,31 @@ body::-webkit-scrollbar {
     cursor: grabbing;
 }
 
+/* On touch devices the custom overlay scrollbars aren't useful — there's no
+ * cursor to hover or drag the thumb, and the platform already provides transient
+ * touch scrollbars. Hide the custom bars and restore the native ones. */
+@media (pointer: coarse) {
+    .page-scrollbar,
+    .modal-scrollbar,
+    .board-scrollbar {
+        display: none !important;
+    }
+    html,
+    body,
+    .no-native-scrollbar {
+        scrollbar-width: auto; /* Firefox */
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar,
+    .no-native-scrollbar::-webkit-scrollbar {
+        display: revert; /* WebKit */
+    }
+    /* Hover-reveal comment actions can't be hovered on touch — keep them shown. */
+    .comment-actions {
+        opacity: 1;
+    }
+}
+
 /* Pulsing highlight ring used by the onboarding tour. */
 .onboarding-ring {
     animation: onboarding-pulse 1.6s ease-in-out infinite;
@@ -263,6 +288,28 @@ body::-webkit-scrollbar {
         black calc(100% - 2rem),
         transparent 100%
     );
+}
+
+/* Animated bottom border for an inline-editable field (e.g. the card title):
+ * a primary-coloured underline that grows in from the left on focus, instead of
+ * the browser's default focus outline. */
+.editable-underline {
+    position: relative;
+}
+.editable-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    height: 2px;
+    width: 100%;
+    background: var(--color-primary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+}
+.editable-underline:focus::after {
+    transform: scaleX(1);
 }
 
 .fade-enter-active,

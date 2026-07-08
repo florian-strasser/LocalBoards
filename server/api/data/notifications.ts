@@ -26,22 +26,46 @@ export default defineEventHandler(async (event) => {
       );
       return { notifications: rows };
     } else if (method === "PATCH") {
-      // Mark a notification as read
-      const notificationId = query.id;
+      const isPositiveInt = (v: unknown) =>
+        v !== undefined && !isNaN(Number(v)) && Number(v) > 0;
 
-      // HIGH FIX: Validate notificationId is a positive integer
-      if (
-        !notificationId ||
-        isNaN(Number(notificationId)) ||
-        Number(notificationId) <= 0
-      ) {
+      // Mark read when the user opens a card: all of their notifications for
+      // that card (comment, moved, status change, due, assigned, …).
+      if (query.cardId !== undefined) {
+        if (!isPositiveInt(query.cardId)) {
+          event.res.statusCode = 400;
+          return { error: "Invalid card ID" };
+        }
+        await db.execute(
+          "UPDATE notifications SET isRead = TRUE WHERE userId = ? AND cardId = ?",
+          [userId, query.cardId],
+        );
+        return { message: "Card notifications marked as read" };
+      }
+
+      // Mark read when the user opens a board: only the board-level (non-card)
+      // notifications, e.g. invitations. Card notifications stay unread until
+      // the card itself is opened.
+      if (query.boardId !== undefined) {
+        if (!isPositiveInt(query.boardId)) {
+          event.res.statusCode = 400;
+          return { error: "Invalid board ID" };
+        }
+        await db.execute(
+          "UPDATE notifications SET isRead = TRUE WHERE userId = ? AND boardId = ? AND cardId IS NULL",
+          [userId, query.boardId],
+        );
+        return { message: "Board notifications marked as read" };
+      }
+
+      // Legacy: mark a single notification read by id.
+      if (!isPositiveInt(query.id)) {
         event.res.statusCode = 400;
         return { error: "Invalid notification ID" };
       }
-
       await db.execute(
         "UPDATE notifications SET isRead = TRUE WHERE id = ? AND userId = ?",
-        [notificationId, userId],
+        [query.id, userId],
       );
       return { message: "Notification marked as read" };
     } else {

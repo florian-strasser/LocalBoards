@@ -130,10 +130,10 @@
                 </ul>
             </div>
             <div>
-                <label class="block text-sm/6 font-medium text-gray">{{
+                <label class="mb-1 block text-sm/6 font-medium text-gray">{{
                     $t("permission")
                 }}</label>
-                <RadioList
+                <SegmentedControl
                     :values="[
                         { value: 'read', label: $t('permissionRead') },
                         { value: 'edit', label: $t('permissionWrite') },
