@@ -190,7 +190,6 @@ const migrations: Migration[] = [
         \`cardId\` int DEFAULT NULL,
         \`message\` longtext COLLATE utf8mb4_general_ci,
         \`isRead\` tinyint(1) DEFAULT '0',
-        \`notified\` tinyint(1) NOT NULL DEFAULT '0',
         \`createdAt\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);

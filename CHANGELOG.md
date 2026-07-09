@@ -1,3 +1,8 @@
+## v0.18.5
+
+### Bug Fixes
+- Fixed a **fresh-install database error** introduced in v0.18.3: the `notified` column was added to both the `notifications` `CREATE TABLE` and migration `0005`, so on a brand-new database the migration's `ADD COLUMN notified` hit a duplicate-column error and aborted schema setup (the server/CI couldn't start). The column is now only added by the migration, matching the pattern of the other migration-added columns. Existing installs were unaffected (their table already existed, so the base `CREATE TABLE` was a no-op and the migration added the column normally).
+
 ## v0.18.4
 
 ### Bug Fixes
