@@ -307,9 +307,22 @@ const migrations: Migration[] = [
     },
   },
 
+  {
+    // Preserve the original author's name on comments that aren't tied to a
+    // local user account — currently comments imported from Trello, where the
+    // Trello author has no LocalBoards account. Comment queries COALESCE this
+    // after user.name, so normal comments (authorName NULL) are unaffected.
+    id: "0006_comment_author_name",
+    up: async (db) => {
+      await db.execute(
+        "ALTER TABLE `comments` ADD COLUMN `authorName` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL",
+      );
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
-  //   id: "0006_add_x",
+  //   id: "0007_add_x",
   //   up: async (db) => {
   //     await db.execute("ALTER TABLE `cards` ADD COLUMN `x` int NULL");
   //   },

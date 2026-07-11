@@ -132,6 +132,18 @@ export default defineEventHandler(async (event) => {
       }
 
       if (role && role !== user.role) {
+        // Don't allow demoting the last remaining admin — an instance must keep
+        // at least one admin.
+        if (user.role === "admin" && role === "user") {
+          const [adminRows]: any = await conn.execute(
+            "SELECT COUNT(*) AS c FROM `user` WHERE `role` = 'admin'",
+          );
+          if ((adminRows[0]?.c ?? 0) <= 1) {
+            await conn.rollback();
+            event.res.statusCode = 400;
+            return { error: "LAST_ADMIN" };
+          }
+        }
         updateFields.push("`role` = ?");
         updateValues.push(role);
       }

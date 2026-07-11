@@ -304,7 +304,7 @@
                         <button
                             v-if="writeAccess"
                             type="button"
-                            class="mt-2 bg-primary hover:bg-secondary px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
+                            class="mt-4 bg-primary hover:bg-secondary px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
                             @click="editingDescription = true"
                         >
                             <Pencil class="size-5" />
@@ -326,16 +326,34 @@
                             <li
                                 v-for="attachment in attachments"
                                 :key="attachment.id"
+                                class="flex w-full items-center gap-1 bg-dark/10 dark:bg-white/10 px-3 py-2 rounded-xl"
                             >
-                                <a
-                                    @click="downloadAttachment(attachment)"
-                                    class="flex w-full items-center justify-between bg-dark/10 dark:bg-white/10 hover:bg-secondary hover:text-white px-6 py-4 rounded-xl text-left"
+                                <!-- Click the name to view images/PDFs in the
+                                     modal; other types fall back to download. -->
+                                <button
+                                    type="button"
+                                    @click="openAttachment(attachment)"
+                                    class="fade-clip shrink grow min-w-0 px-3 py-2 text-left rounded-lg hover:text-secondary"
                                 >
-                                    <div class="shrink grow min-w-0 fade-clip">
-                                        <span>{{ attachment.filename }}</span>
-                                    </div>
-                                    <Download class="size-5 shrink-0 ml-2" />
-                                </a>
+                                    {{ attachment.filename }}
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="downloadAttachment(attachment)"
+                                    v-tooltip="$t('download')"
+                                    class="shrink-0 flex size-9 items-center justify-center rounded-lg hover:text-secondary"
+                                >
+                                    <Download class="size-5" />
+                                </button>
+                                <button
+                                    v-if="writeAccess"
+                                    type="button"
+                                    @click="deleteAttachment(attachment)"
+                                    v-tooltip="$t('remove')"
+                                    class="shrink-0 flex size-9 items-center justify-center rounded-lg hover:text-secondary"
+                                >
+                                    <Trash2 class="size-5" />
+                                </button>
                             </li>
                         </ul>
                     </div>
@@ -361,13 +379,13 @@
                     @comment-deleted="handleCommentDeleted"
                     @comment-updated="handleCommentContentUpdated"
                 />
-                <ImageWindow v-model="imageModalOpen" bare>
-                    <img
-                        :src="selectedImageSrc"
-                        class="w-full h-full object-contain max-h-[calc(100vh-4rem)]"
-                        :alt="selectedImageAlt || 'Enlarged image'"
-                    />
-                </ImageWindow>
+                <ImageWindow
+                    v-model="imageModalOpen"
+                    bare
+                    :image-src="selectedImageSrc"
+                    :alt="selectedImageAlt || 'Enlarged image'"
+                    :source-rect="zoomSourceRect"
+                />
             </div>
         </div>
         <div v-else>Loading...</div>
@@ -527,11 +545,27 @@ const removeReminder = (minutes) => {
 const imageModalOpen = ref(false);
 const selectedImageSrc = ref("");
 const selectedImageAlt = ref("");
+// Screen rect of the clicked image, so the lightbox can zoom from/to it.
+const zoomSourceRect = ref(null);
+const rectOf = (el) => {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+};
+// Image attachments open in this lightbox. Base64 ones become a blob URL that
+// we revoke when done (PDFs open in a new tab instead — see openAttachment).
+let attachmentBlobUrl: string | null = null;
+const revokeAttachmentBlob = () => {
+    if (attachmentBlobUrl) {
+        URL.revokeObjectURL(attachmentBlobUrl);
+        attachmentBlobUrl = null;
+    }
+};
 
 const handleDescriptionClick = (event) => {
     const target = event.target;
     if (target.tagName === "IMG") {
         event.preventDefault();
+        zoomSourceRect.value = rectOf(target);
         selectedImageSrc.value = target.getAttribute("src") || "";
         selectedImageAlt.value = target.getAttribute("alt") || "";
         imageModalOpen.value = true;
@@ -735,6 +769,80 @@ const downloadAttachment = async (attachment) => {
     }
 };
 
+// Open an attachment: images in the lightbox modal, PDFs in a new browser tab
+// (in-page PDF iframes are unreliable on mobile), everything else downloads.
+// The type is known from the prefetched metadata, so PDFs open synchronously
+// (no await → not blocked as a popup).
+const openAttachment = (attachment) => {
+    const type = (attachment.filetype || "").toLowerCase();
+    if (type === "application/pdf") {
+        window.open(
+            `/api/data/attachment?id=${attachment.id}&raw=1`,
+            "_blank",
+            "noopener",
+        );
+        return;
+    }
+    if (type.startsWith("image/")) {
+        openImageAttachment(attachment);
+        return;
+    }
+    downloadAttachment(attachment);
+};
+
+// Fetch an image attachment and show it in the lightbox.
+const openImageAttachment = async (attachment) => {
+    try {
+        const file = await $fetch(`/api/data/attachment?id=${attachment.id}`);
+        revokeAttachmentBlob();
+        const data = file.filedata || "";
+        let src: string;
+        if (data.startsWith("http") || data.startsWith("/")) {
+            src = data; // stored as a URL/path
+        } else {
+            const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+            src = URL.createObjectURL(
+                new Blob([bytes], { type: file.filetype }),
+            );
+            attachmentBlobUrl = src;
+        }
+        // No on-screen source thumbnail for attachments → scale from centre.
+        zoomSourceRect.value = null;
+        selectedImageSrc.value = src;
+        selectedImageAlt.value = file.filename || "";
+        imageModalOpen.value = true;
+    } catch (error) {
+        console.error("Failed to open attachment:", error);
+    }
+};
+
+const deleteAttachment = async (attachment) => {
+    try {
+        await $fetch(`/api/data/attachment?id=${attachment.id}`, {
+            method: "DELETE",
+        });
+        attachments.value = attachments.value.filter(
+            (a) => a.id !== attachment.id,
+        );
+        // Keep the board tile's attachment count (and other viewers) in sync.
+        emits("card-updated", {
+            id: props.cardID,
+            attachmentCount: attachments.value.length,
+            attachments: attachments.value.map(({ filedata, ...meta }) => meta),
+        });
+        socket.emit("cardUpdated", {
+            boardId: props.boardID,
+            attachments: attachments.value,
+            card: {
+                id: props.cardID,
+                attachmentCount: attachments.value.length,
+            },
+        });
+    } catch (error) {
+        console.error("Failed to delete attachment:", error);
+    }
+};
+
 // Function to save the card data
 // The title is a styled contenteditable, so a normal copy/cut puts the heading's
 // rendered HTML (font size/weight/colour) on the clipboard — pasting it into an
@@ -888,6 +996,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     socket.off("updateCard", onSocketUpdateCard);
+    revokeAttachmentBlob();
 });
 
 // Watch for changes in name, content, or currentStatus

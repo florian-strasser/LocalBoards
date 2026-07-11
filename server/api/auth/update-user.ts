@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event);
-    const { name, image } = body;
+    const { name, image, role } = body;
 
     // Validate input
     // HIGH FIX: Use generic error message
@@ -61,10 +61,39 @@ export default defineEventHandler(async (event) => {
 
     const db = await setupDatabase();
 
+    // Optional self role change. Only an admin may change their own role (this
+    // is the "demote myself to a normal user" case) — a normal user changing
+    // their own role would be privilege escalation, so it's rejected. Demoting
+    // the last admin is blocked so an instance can't end up with no admins.
+    const fields = ["`name` = ?", "`image` = ?"];
+    const values: any[] = [name.trim(), image || null];
+    if (role !== undefined && role !== session.user.role) {
+      if (session.user.role !== "admin") {
+        event.res.statusCode = 403;
+        return { error: "Forbidden" };
+      }
+      if (role !== "user" && role !== "admin") {
+        event.res.statusCode = 400;
+        return { error: "Invalid input" };
+      }
+      if (role === "user") {
+        const [adminRows]: any = await db.execute(
+          "SELECT COUNT(*) AS c FROM `user` WHERE `role` = 'admin'",
+        );
+        if ((adminRows[0]?.c ?? 0) <= 1) {
+          event.res.statusCode = 400;
+          return { error: "LAST_ADMIN" };
+        }
+      }
+      fields.push("`role` = ?");
+      values.push(role);
+    }
+    values.push(session.user.id);
+
     // Update user in database
     await db.execute(
-      "UPDATE `user` SET `name` = ?, `image` = ?, `updatedAt` = CURRENT_TIMESTAMP(3) WHERE `id` = ?",
-      [name.trim(), image || null, session.user.id],
+      `UPDATE \`user\` SET ${fields.join(", ")}, \`updatedAt\` = CURRENT_TIMESTAMP(3) WHERE \`id\` = ?`,
+      values,
     );
 
     // Return updated user data

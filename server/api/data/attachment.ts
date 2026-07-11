@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   }
   const userId = auth.userId;
 
-  if (method !== "GET") {
+  if (method !== "GET" && method !== "DELETE") {
     event.res.statusCode = 405;
     return { error: "Method not allowed" };
   }
@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
       return { error: "Resource not found" };
     }
 
-    // Verify the board exists and check read access
+    // Verify the board exists and check access (read to view, edit to delete).
     const [boardRows] = await db.execute(
       "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
       [card.area],
@@ -65,10 +65,56 @@ export default defineEventHandler(async (event) => {
       return { error: "Resource not found" };
     }
 
-    const decision = await authorizeBoard(db, board, userId, "read");
+    const decision = await authorizeBoard(
+      db,
+      board,
+      userId,
+      method === "DELETE" ? "edit" : "read",
+    );
     if (!decision.ok) {
       event.res.statusCode = decision.status;
       return { error: decision.error };
+    }
+
+    if (method === "DELETE") {
+      await db.execute("DELETE FROM attachments WHERE id = ?", [attachment.id]);
+      // Best-effort removal of the on-disk file for path-based attachments
+      // (base64 attachments live entirely in the DB row we just deleted).
+      const data: string = attachment.filedata || "";
+      const match = data.match(/\/(?:api\/)?uploads\/([A-Za-z0-9._-]+)$/);
+      if (match) {
+        try {
+          const { unlink } = await import("node:fs/promises");
+          const { join } = await import("node:path");
+          await unlink(join(process.cwd(), "public", "uploads", match[1]));
+        } catch {
+          // File may already be gone or shared; ignore.
+        }
+      }
+      return { success: true, id: attachment.id };
+    }
+
+    // Raw mode: serve the actual file (inline) so it can be opened in a new
+    // browser tab — e.g. a PDF, whose in-page <iframe> rendering is unreliable
+    // on mobile. URL/path-based attachments redirect to the servable file;
+    // base64 ones are decoded and streamed.
+    if (getQuery(event).raw) {
+      const data: string = attachment.filedata || "";
+      if (/^https?:\/\//.test(data) || data.startsWith("/")) {
+        return sendRedirect(event, data, 302);
+      }
+      const buffer = Buffer.from(data, "base64");
+      setHeader(
+        event,
+        "content-type",
+        attachment.filetype || "application/octet-stream",
+      );
+      setHeader(
+        event,
+        "content-disposition",
+        `inline; filename="${encodeURIComponent(attachment.filename || "file")}"`,
+      );
+      return buffer;
     }
 
     return {

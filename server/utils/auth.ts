@@ -9,7 +9,14 @@ import { logger } from "./logger";
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function createSession(event: any, userId: string) {
+export async function createSession(
+  event: any,
+  userId: string,
+  // When set (to an admin's user id), this session is an impersonation session:
+  // the cookie authenticates as `userId` but the session records who started it
+  // so the app can show a banner and offer a way back.
+  impersonatedBy: string | null = null,
+) {
   // Accept string or number, convert to string for backward compatibility
   const userIdStr = String(userId);
 
@@ -36,12 +43,13 @@ export async function createSession(event: any, userId: string) {
 
     // Create session in database
     await db.execute(
-      "INSERT INTO `session` (`id`, `expiresAt`, `token`, `userId`) VALUES (?, ?, ?, ?)",
+      "INSERT INTO `session` (`id`, `expiresAt`, `token`, `userId`, `impersonatedBy`) VALUES (?, ?, ?, ?, ?)",
       [
         uuidv4(),
         new Date(Date.now() + maxAgeSeconds * 1000),
         sessionToken,
         userIdStr,
+        impersonatedBy,
       ],
     );
 
@@ -176,6 +184,8 @@ export async function resolveSession(event: any): Promise<SessionResult> {
       expiresAt: session.expiresAt,
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
+      // Non-null only while an admin is impersonating this user.
+      impersonatedBy: session.impersonatedBy || null,
     },
     user: {
       id: user.id,

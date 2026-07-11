@@ -19,33 +19,8 @@
                 <template v-if="commentToDelete !== comment.id">
                     <template v-if="commentToEdit !== comment.id">
                         <div
-                            class="group/comment relative bg-dark/10 dark:bg-white/10 p-6 rounded-xl"
+                            class="rounded-xl border border-dark/10 bg-dark/5 p-4 dark:border-white/10 dark:bg-white/5 sm:p-5"
                         >
-                            <!-- Edit + delete grouped in a small pill: revealed on
-                                 hover on pointer devices, always shown on touch.
-                                 Named group so it doesn't collide with the tooltip
-                                 directive's own (unnamed) `group`. -->
-                            <div
-                                v-if="comment.user === currentUserId"
-                                class="comment-actions absolute top-2 right-2 flex items-center gap-0.5 rounded-lg bg-white/70 dark:bg-slate/70 backdrop-blur-sm p-0.5 shadow-sm opacity-0 transition-opacity group-hover/comment:opacity-100 focus-within:opacity-100"
-                            >
-                                <button
-                                    type="button"
-                                    @click="startEditing(comment)"
-                                    v-tooltip="$t('edit')"
-                                    class="flex size-7 items-center justify-center rounded-md text-gray hover:bg-primary hover:text-white"
-                                >
-                                    <Pen class="size-3.5" />
-                                </button>
-                                <button
-                                    type="button"
-                                    @click="confirmDelete(comment.id)"
-                                    v-tooltip="$t('deleteMessage')"
-                                    class="flex size-7 items-center justify-center rounded-md text-gray hover:bg-primary hover:text-white"
-                                >
-                                    <Trash2 class="size-3.5" />
-                                </button>
-                            </div>
                             <CommentContent
                                 :content="comment.content"
                                 :commentId="comment.id"
@@ -55,74 +30,102 @@
                                 @updated="handleCommentPatched"
                             />
                         </div>
-                        <div class="flex mt-2 items-center gap-x-2">
-                            <div class="w-8 shrink-0 grow-0">
-                                <div
-                                    class="relative aspect-square rounded-full overflow-clip"
-                                >
-                                    <img
-                                        v-if="comment.userImage"
-                                        :src="comment.userImage"
-                                        class="absolute top-0 left-0 w-full h-full object-cover"
-                                    />
-                                    <div
-                                        v-else
-                                        class="absolute top-0 left-0 w-full h-full bg-primary text-white flex justify-center items-center"
+                        <!-- Meta row below the card (not inside it): the comment
+                             is the point, so who wrote it and when — plus the
+                             owner's edit/delete actions — sit underneath. -->
+                        <div class="mt-2 flex items-center gap-3 px-1">
+                            <span
+                                class="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-sm text-white"
+                            >
+                                <img
+                                    v-if="comment.userImage"
+                                    :src="comment.userImage"
+                                    class="h-full w-full object-cover"
+                                />
+                                <template v-else>{{
+                                    (comment.userName || "?")
+                                        .substring(0, 1)
+                                        .toUpperCase()
+                                }}</template>
+                            </span>
+                            <div class="min-w-0 grow">
+                                <p class="truncate text-sm">
+                                    <span
+                                        class="font-medium text-dark dark:text-white"
+                                        >{{ comment.userName }}</span
                                     >
-                                        {{ comment.userName.substring(0, 1) }}
-                                    </div>
-                                </div>
+                                    <span class="ml-2 text-xs text-gray">{{
+                                        formatDate(comment.date)
+                                    }}</span>
+                                </p>
                             </div>
-                            <p class="text-sm grow shrink">
-                                {{ comment.userName }} |
-                                {{ formatDate(comment.date) }}
-                            </p>
+                            <div
+                                v-if="comment.user === currentUserId"
+                                class="flex shrink-0 items-center gap-1"
+                            >
+                                <button
+                                    type="button"
+                                    @click="startEditing(comment)"
+                                    v-tooltip="$t('edit')"
+                                    class="flex size-8 cursor-pointer items-center justify-center rounded-lg text-gray transition-colors hover:bg-primary/10 hover:text-primary"
+                                >
+                                    <Pen class="size-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="confirmDelete(comment.id)"
+                                    v-tooltip="$t('deleteMessage')"
+                                    class="flex size-8 cursor-pointer items-center justify-center rounded-lg text-gray transition-colors hover:bg-primary/10 hover:text-primary"
+                                >
+                                    <Trash2 class="size-4" />
+                                </button>
+                            </div>
                         </div>
                     </template>
                     <template v-else>
-                        <div class="bg-dark/10 dark:bg-white/10 p-6 rounded-xl">
+                        <div
+                            class="rounded-xl border border-dark/10 bg-dark/5 p-4 dark:border-white/10 dark:bg-white/5 sm:p-5"
+                        >
                             <CardEditor v-model="editingContent" />
-                        </div>
-                        <div class="flex gap-2 flex-wrap mt-2">
-                            <button
-                                type="button"
-                                @click="saveEdit(comment.id)"
-                                class="bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
-                            >
-                                {{ $t("save") }}
-                            </button>
-                            <button
-                                type="button"
-                                @click="cancelEdit"
-                                class="px-4 bg-primary/10 text-primary dark:bg-white/10 dark:text-white hover:bg-secondary hover:text-white rounded-lg"
-                            >
-                                <X class="size-5" />
-                            </button>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    @click="saveEdit(comment.id)"
+                                    class="rounded-lg bg-primary px-4 py-2 text-white hover:bg-secondary"
+                                >
+                                    {{ $t("save") }}
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="cancelEdit"
+                                    class="rounded-lg bg-primary/10 px-4 text-primary hover:bg-secondary hover:text-white dark:bg-white/10 dark:text-white"
+                                >
+                                    <X class="size-5" />
+                                </button>
+                            </div>
                         </div>
                     </template>
                 </template>
                 <template v-else>
                     <div
-                        class="flex flex-col gap-y-2 bg-dark/10 dark:bg-white/10 p-6 rounded-xl"
+                        class="rounded-xl border border-dark/10 bg-dark/5 p-4 dark:border-white/10 dark:bg-white/5 sm:p-5"
                     >
-                        <p>
-                            {{ $t("confirmDeleteComment") }}
-                        </p>
-                    </div>
-                    <div class="flex gap-2 flex-wrap mt-2">
-                        <button
-                            type="button"
-                            class="bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
-                            @click="executeDelete(comment.id)"
-                            v-html="$t('delete')"
-                        />
-                        <button
-                            type="button"
-                            @click="cancelDelete"
-                            class="px-4 bg-primary/10 text-primary dark:bg-white/10 dark:text-white hover:bg-secondary hover:text-white rounded-lg"
-                        >
-                            <X class="size-5" />
-                        </button>
+                        <p>{{ $t("confirmDeleteComment") }}</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                class="rounded-lg bg-primary px-4 py-2 text-white hover:bg-secondary"
+                                @click="executeDelete(comment.id)"
+                                v-html="$t('delete')"
+                            />
+                            <button
+                                type="button"
+                                @click="cancelDelete"
+                                class="rounded-lg bg-primary/10 px-4 text-primary hover:bg-secondary hover:text-white dark:bg-white/10 dark:text-white"
+                            >
+                                <X class="size-5" />
+                            </button>
+                        </div>
                     </div>
                 </template>
             </div>

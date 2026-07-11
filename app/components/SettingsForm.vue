@@ -3,8 +3,11 @@
         @submit.prevent="handleSettings"
         class="relative space-y-4 bg-white dark:bg-slate rounded-xl p-5"
     >
-        <div class="flex flex-col md:flex-row gap-y-4 gap-x-5">
-            <div class="w-full md:w-88 shrink-0">
+        <!-- Picker on the left with the name/role beside it on wider screens;
+             stacks vertically on narrow/mobile viewports so the name and role
+             don't get squeezed. -->
+        <div class="flex flex-col gap-4 md:flex-row">
+            <div class="w-92 max-w-full shrink-0 grow-0">
                 <InputImage
                     :label="$t('settingsProfilePicture')"
                     :images="[
@@ -18,8 +21,27 @@
                     v-model="image"
                 />
             </div>
-            <div class="grow shrink">
+            <div class="shrink grow space-y-3">
                 <InputField type="text" label="Name" required v-model="name" />
+                <div>
+                    <label class="mb-1 block text-sm/6 font-medium text-gray">{{
+                        $t("role")
+                    }}</label>
+                    <!-- Admins can demote themselves to a normal user; everyone
+                         else just sees their role read-only. -->
+                    <SegmentedControl
+                        v-if="isAdmin"
+                        :values="[
+                            { value: 'user', label: $t('user') },
+                            { value: 'admin', label: $t('admin') },
+                        ]"
+                        name="role"
+                        v-model="role"
+                    />
+                    <p v-else class="text-sm/6 text-dark dark:text-white">
+                        {{ role === "admin" ? $t("admin") : $t("user") }}
+                    </p>
+                </div>
             </div>
         </div>
         <input
@@ -37,6 +59,12 @@ const { data: session } = await useFetch("/api/auth/get-session");
 
 const name = ref(session.value?.data?.user?.name || "");
 const image = ref(session.value?.data?.user?.image || undefined);
+
+// Only admins may change their own role (to demote themselves). Others see it
+// read-only. The backend enforces this and blocks demoting the last admin.
+const isAdmin = session.value?.data?.user?.role === "admin";
+const originalRole = session.value?.data?.user?.role || "user";
+const role = ref(originalRole);
 
 const schema = z.object({
     name: z
@@ -59,10 +87,18 @@ const handleSettings = async () => {
             body: {
                 name: name.value,
                 image: image.value,
+                role: role.value,
             },
         });
 
         if (response.success) {
+            // A role change affects the whole session (header admin links, what
+            // the user may do). Reload so the refreshed session is picked up
+            // everywhere instead of lagging until the next navigation.
+            if (role.value !== originalRole) {
+                window.location.reload();
+                return;
+            }
             await nuxtApp.callHook("app:toast", {
                 message: $t("settingsSavedUserData"),
             });
@@ -78,8 +114,11 @@ const handleSettings = async () => {
             });
             // You can display these errors to the user
         } else {
+            // Surface the server's error code (e.g. LAST_ADMIN when an admin
+            // tries to demote themselves while being the only admin).
             await nuxtApp.callHook("app:toast", {
-                message: e.message || "Failed to update user settings",
+                message:
+                    e?.data?.error || e?.message || $t("error_UPDATING_USER"),
             });
         }
     }

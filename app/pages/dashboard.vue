@@ -7,8 +7,21 @@
                 asButton
                 onboardingTarget="new-board"
                 @sectionHeaderButtonClicked="openCreateBoard"
-                >{{ $t("yourBoards") }}</SectionHeader
             >
+                {{ $t("yourBoards") }}
+                <template #actions>
+                    <ActionMenu :tooltip="$t('moreOptions')">
+                        <button
+                            type="button"
+                            @click="openImport"
+                            class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-primary/10 hover:text-primary dark:text-white"
+                        >
+                            <Import class="size-4 shrink-0" />
+                            {{ $t("importFromTrello") }}
+                        </button>
+                    </ActionMenu>
+                </template>
+            </SectionHeader>
             <YourBoards
                 v-if="session"
                 :userID="session.data.user.id"
@@ -88,9 +101,42 @@
                 </form>
             </div>
         </ModalWindow>
+        <ModalWindow v-model="importBoard">
+            <form @submit.prevent="importTrelloBoard" class="space-y-5 text-left">
+                <h2 class="text-4xl text-dark dark:text-white">
+                    {{ $t("importFromTrello") }}
+                </h2>
+                <p class="text-sm text-gray">{{ $t("trelloImportHint") }}</p>
+                <label class="block w-full space-y-1">
+                    <span class="block text-sm"
+                        >{{ $t("trelloUrlLabel")
+                        }}<span class="ml-1 text-primary">*</span></span
+                    >
+                    <input
+                        type="url"
+                        v-model="trelloUrl"
+                        required
+                        placeholder="https://trello.com/b/…"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                        class="form-control"
+                    />
+                </label>
+                <input
+                    type="submit"
+                    :disabled="importing"
+                    :value="importing ? $t('importing') : $t('importBoardBtn')"
+                    class="button w-full cursor-pointer rounded-lg bg-primary px-6 py-3 text-center text-white hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary"
+                />
+            </form>
+        </ModalWindow>
     </div>
 </template>
 <script setup lang="ts">
+import { Import } from "lucide-vue-next";
+
 const nuxtApp = useNuxtApp();
 
 useHead({
@@ -118,6 +164,56 @@ const newBoardImage = ref(null);
 const openCreateBoard = () => {
     createBoard.value = true;
     document.body.style.overflow = "hidden";
+};
+
+// --- Import a board from Trello -------------------------------------------
+const importBoard = ref(false);
+const trelloUrl = ref("");
+const importing = ref(false);
+
+const openImport = () => {
+    trelloUrl.value = "";
+    importBoard.value = true;
+    document.body.style.overflow = "hidden";
+};
+
+// Map the server's error codes to a localized message.
+const trelloErrorMessage = (code) => {
+    const map = {
+        TRELLO_INVALID_URL: $t("trelloErrorInvalidUrl"),
+        TRELLO_NOT_ACCESSIBLE: $t("trelloErrorNotAccessible"),
+        TRELLO_EMPTY: $t("trelloErrorEmpty"),
+    };
+    return map[code] || $t("trelloErrorGeneric");
+};
+
+const importTrelloBoard = async () => {
+    if (importing.value) return;
+    const url = trelloUrl.value.trim();
+    if (!url) return;
+    importing.value = true;
+    try {
+        const data = await $fetch("/api/data/import/trello", {
+            method: "POST",
+            body: { url },
+        });
+        if (data?.success && data.board) {
+            importBoard.value = false;
+            document.body.style.overflow = "auto";
+            await nuxtApp.callHook("app:toast", {
+                message: $t("boardImported"),
+            });
+            await navigateTo(`/board/${data.board.id}`);
+        } else {
+            throw new Error(data?.error || "TRELLO_IMPORT_FAILED");
+        }
+    } catch (e) {
+        await nuxtApp.callHook("app:toast", {
+            message: trelloErrorMessage(e?.data?.error || e?.message),
+        });
+    } finally {
+        importing.value = false;
+    }
 };
 
 const saveBoard = async () => {

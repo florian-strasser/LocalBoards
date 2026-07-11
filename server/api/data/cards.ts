@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
           const placeholders = cardIds.map(() => "?").join(",");
 
           const [commentRows] = await db.execute(
-            `SELECT comments.id AS id, comments.card AS card, comments.user AS user, user.name AS userName, user.image AS userImage, comments.content AS content, comments.date AS date FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.card IN (${placeholders}) ORDER BY comments.date DESC`,
+            `SELECT comments.id AS id, comments.card AS card, comments.user AS user, COALESCE(user.name, comments.authorName) AS userName, user.image AS userImage, comments.content AS content, comments.date AS date FROM comments LEFT JOIN user ON comments.user = user.id WHERE comments.card IN (${placeholders}) ORDER BY comments.date DESC`,
             cardIds,
           );
 

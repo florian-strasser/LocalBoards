@@ -47,10 +47,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="block text-sm/6 font-medium text-gray">{{
+                    <label class="mb-1 block text-sm/6 font-medium text-gray">{{
                         $t("role")
                     }}</label>
-                    <RadioList
+                    <SegmentedControl
                         :values="[
                             { value: 'user', label: $t('user') },
                             { value: 'admin', label: $t('admin') },

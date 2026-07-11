@@ -8,6 +8,7 @@ const handleLogout = async () => {
 };
 </script>
 <template>
+    <ImpersonationBanner />
     <header v-if="session" class="w-full pt-6">
         <div class="container mx-auto flex justify-between items-center">
             <NuxtLinkLocale

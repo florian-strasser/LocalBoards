@@ -66,17 +66,23 @@
             class="w-full grow shrink-0 pb-10 overflow-scroll hide-scrollbar bg-slate dark:bg-dark"
             :style="anyModalOpen ? { overflowX: 'hidden' } : undefined"
         >
-            <div class="container">
-                <div
-                    v-if="!accessError"
-                    ref="areasWrapper"
-                    data-onboarding="areas"
-                    class="mt-4"
-                    :class="{
-                        'flex items-start gap-x-5': boardStyle === 'kanban',
-                        'space-y-5': boardStyle === 'todo',
-                    }"
-                >
+            <!-- The horizontal padding lives on the areas wrapper itself (not a
+                 wrapping .container) and, for kanban, the wrapper is sized to
+                 w-max so its right padding is part of the scroll width. That
+                 keeps a 2rem gutter on both ends — at maximum scroll the last
+                 area lines up with the header's right edge instead of running to
+                 the viewport edge (Safari otherwise drops a flex container's
+                 padding-right on overflow). -->
+            <div
+                v-if="!accessError"
+                ref="areasWrapper"
+                data-onboarding="areas"
+                class="mt-4 px-8"
+                :class="{
+                    'flex w-max items-start gap-x-5': boardStyle === 'kanban',
+                    'space-y-5': boardStyle === 'todo',
+                }"
+            >
                     <div
                         v-for="(area, areaIndex) in areas"
                         :key="area.id"
@@ -172,7 +178,6 @@
                         </form>
                     </div>
                 </div>
-            </div>
         </div>
         <BoardScrollbar :target="scrollRegion" />
         <ModalWindow v-model="optionsActive">

@@ -6,13 +6,13 @@
             @change="handleCheckboxChange"
             @click="handleContentClick"
         />
-        <ImageWindow v-model="imageModalOpen" bare>
-            <img
-                :src="selectedImageSrc"
-                class="w-full h-full object-contain max-h-[calc(100vh-4rem)]"
-                :alt="selectedImageAlt || 'Enlarged image'"
-            />
-        </ImageWindow>
+        <ImageWindow
+            v-model="imageModalOpen"
+            bare
+            :image-src="selectedImageSrc"
+            :alt="selectedImageAlt || 'Enlarged image'"
+            :source-rect="zoomSourceRect"
+        />
     </div>
 </template>
 <script setup lang="ts">
@@ -29,11 +29,19 @@ const emits = defineEmits(["updated"]);
 const imageModalOpen = ref(false);
 const selectedImageSrc = ref("");
 const selectedImageAlt = ref("");
+const zoomSourceRect = ref(null);
 
 const handleContentClick = (event: MouseEvent) => {
     const target = event.target as HTMLElement;
     if (target.tagName === "IMG") {
         event.preventDefault();
+        const r = target.getBoundingClientRect();
+        zoomSourceRect.value = {
+            left: r.left,
+            top: r.top,
+            width: r.width,
+            height: r.height,
+        };
         selectedImageSrc.value = target.getAttribute("src") || "";
         selectedImageAlt.value = target.getAttribute("alt") || "";
         imageModalOpen.value = true;
@@ -96,7 +104,16 @@ const handleCheckboxChange = async (event: Event) => {
 };
 </script>
 <style>
+/* Images in rendered content (card description + comments) are click-to-zoom;
+   the zoom cursor and a subtle lift on hover signal that they're openable. */
 .wysiwyg-wrapper img {
-    cursor: pointer;
+    cursor: zoom-in;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+.wysiwyg-wrapper img:hover {
+    transform: scale(1.015);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 </style>

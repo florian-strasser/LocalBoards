@@ -26,6 +26,21 @@
                     />
                 </div>
 
+                <div class="form-group">
+                    <label
+                        class="mb-1 block text-sm/6 font-medium text-gray"
+                        >{{ $t("role") }}</label
+                    >
+                    <SegmentedControl
+                        :values="[
+                            { value: 'user', label: $t('user') },
+                            { value: 'admin', label: $t('admin') },
+                        ]"
+                        name="role"
+                        v-model="role"
+                    />
+                </div>
+
                 <input
                     type="submit"
                     class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
@@ -61,6 +76,7 @@ const currentUser = computed(() => {
 
 const name = ref(currentUser.value?.username || "");
 const email = ref(currentUser.value?.email || "");
+const role = ref(currentUser.value?.role || "user");
 
 const savedUser = ref(false);
 
@@ -72,6 +88,7 @@ const handleSaveUser = async () => {
                 userId: props.id,
                 name: name.value,
                 email: email.value,
+                role: role.value,
             },
         });
 
