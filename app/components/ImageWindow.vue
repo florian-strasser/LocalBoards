@@ -29,7 +29,7 @@
                 <button
                     type="button"
                     @click="closeModal"
-                    class="flex size-12 items-center justify-center rounded-full bg-primary text-white hover:bg-secondary"
+                    class="flex size-12 items-center justify-center rounded-full bg-primary text-white hover:bg-primary-hover"
                 >
                     <X class="size-5" stroke-width="2" />
                 </button>
@@ -68,7 +68,7 @@ watch(
     modal.isOpen,
     (locked) => {
         if (import.meta.client) {
-            document.body.style.overflowY = locked ? "hidden" : "auto";
+            setBodyScrollLock(locked);
         }
     },
     { immediate: true },

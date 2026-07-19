@@ -8,7 +8,7 @@
                 <button
                     @click="deleteCard"
                     type="button"
-                    class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
+                    class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
                 >
                     {{ $t("deleteCardBtn") }}
                 </button>
@@ -43,7 +43,7 @@
                     <button
                         type="button"
                         @click="addAttachments = false"
-                        class="hover:text-secondary"
+                        class="hover:text-primary-hover"
                     >
                         {{ $t("back") }}
                     </button>
@@ -57,7 +57,7 @@
                         class="flex items-center justify-center size-8 rounded-full shrink-0 grow-0"
                         @click="toggleStatus"
                         :class="{
-                            'bg-primary border-2 border-primary text-white':
+                            'bg-secondary border-2 border-secondary text-white':
                                 currentStatus,
                             'border-2 border-gray hover:border-primary text-white dark:text-slate':
                                 !currentStatus && writeAccess,
@@ -83,7 +83,7 @@
                         <button
                             v-if="writeAccess"
                             type="button"
-                            class="block hover:text-secondary"
+                            class="block hover:text-primary-hover"
                             @click="deleteModal = true"
                         >
                             <Trash2 class="size-5" />
@@ -145,7 +145,7 @@
                                             <button
                                                 type="button"
                                                 @click="removeReminder(m)"
-                                                class="hover:text-secondary"
+                                                class="hover:text-primary-hover"
                                             >
                                                 <X class="size-4" />
                                             </button>
@@ -172,7 +172,7 @@
                                     v-if="dueDate"
                                     type="button"
                                     @click="clearDueDate"
-                                    class="flex items-center gap-1 text-sm text-primary hover:text-secondary"
+                                    class="flex items-center gap-1 text-sm text-primary hover:text-primary-hover"
                                 >
                                     <X class="size-4" />
                                     <span>{{ $t("delete") }}</span>
@@ -294,7 +294,7 @@
                         <CardEditor v-model="content" />
                         <button
                             type="button"
-                            class="mt-2 bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
+                            class="mt-2 bg-primary hover:bg-primary-hover px-4 py-2 rounded-lg text-white"
                             @click="editingDescription = false"
                         >
                             {{ $t("save") }}
@@ -310,7 +310,7 @@
                         <button
                             v-if="writeAccess"
                             type="button"
-                            class="mt-4 bg-primary hover:bg-secondary px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
+                            class="mt-4 bg-primary hover:bg-primary-hover px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
                             @click="editingDescription = true"
                         >
                             <Pencil class="size-5" />
@@ -339,7 +339,7 @@
                                 <button
                                     type="button"
                                     @click="openAttachment(attachment)"
-                                    class="fade-clip shrink grow min-w-0 px-3 py-2 text-left rounded-lg hover:text-secondary"
+                                    class="fade-clip shrink grow min-w-0 px-3 py-2 text-left rounded-lg hover:text-primary-hover"
                                 >
                                     {{ attachment.filename }}
                                 </button>
@@ -347,7 +347,7 @@
                                     type="button"
                                     @click="downloadAttachment(attachment)"
                                     v-tooltip="$t('download')"
-                                    class="shrink-0 flex size-9 items-center justify-center rounded-lg hover:text-secondary"
+                                    class="shrink-0 flex size-9 items-center justify-center rounded-lg hover:text-primary-hover"
                                 >
                                     <Download class="size-5" />
                                 </button>
@@ -356,7 +356,7 @@
                                     type="button"
                                     @click="deleteAttachment(attachment)"
                                     v-tooltip="$t('remove')"
-                                    class="shrink-0 flex size-9 items-center justify-center rounded-lg hover:text-secondary"
+                                    class="shrink-0 flex size-9 items-center justify-center rounded-lg hover:text-primary-hover"
                                 >
                                     <Trash2 class="size-5" />
                                 </button>
@@ -366,7 +366,7 @@
                     <button
                         v-if="writeAccess"
                         type="button"
-                        class="flex gap-x-2 items-center hover:text-secondary"
+                        class="flex gap-x-2 items-center hover:text-primary-hover"
                         @click="addAttachments = true"
                     >
                         <Paperclip class="size-5 shrink-0 grow-0" />
@@ -951,7 +951,7 @@ const deleteCard = async () => {
             message: $t("cardDeleted"),
         });
         boxOpen.value = false;
-        document.body.style.overflowY = "auto";
+        setBodyScrollLock(false);
         emits("card-deleted", props.card);
         socket.emit("cardDeleted", {
             boardId: props.boardID,

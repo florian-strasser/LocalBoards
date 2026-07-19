@@ -49,7 +49,7 @@
                         </div>
                         <button
                             @click="removeInvitation(invitation.user)"
-                            class="text-primary hover:text-secondary"
+                            class="text-primary hover:text-primary-hover"
                             v-tooltip="$t('remove')"
                         >
                             <Trash class="size-4" />
@@ -165,7 +165,7 @@
             <input
                 type="submit"
                 :disabled="!selectedUser"
-                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
+                class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
                 :value="$t('sendInvitation')"
             />
         </form>

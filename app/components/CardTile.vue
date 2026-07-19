@@ -11,7 +11,7 @@
             <div
                 class="w-6 h-6 rounded-full flex justify-center items-center shrink-0 grow-0"
                 :class="{
-                    'border-2 border-primary bg-primary text-white':
+                    'border-2 border-secondary bg-secondary text-white':
                         props.card.status,
                     'border-2 border-gray': !props.card.status,
                 }"
@@ -61,7 +61,7 @@
             <div
                 v-if="props.card.dueDate"
                 class="flex gap-x-1.5 shrink-0 items-center"
-                :class="{ 'text-secondary font-semibold': isOverdue }"
+                :class="{ 'text-dark dark:text-white font-semibold': isOverdue }"
             >
                 <Clock class="size-4 shrink-0 grow-0" />
                 <span class="shrink-0 grow-0">{{ dueDateLabel }}</span>
@@ -118,6 +118,6 @@ const dueDateLabel = computed(() => {
 });
 const openModal = (modalId) => {
     cardModal.value = modalId;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
 };
 </script>

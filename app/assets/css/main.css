@@ -2,8 +2,15 @@
 
 @theme {
     --color-*: initial;
+    /* Two brand colours with distinct jobs:
+     * primary   — the action colour: buttons, links, focus, selection.
+     * secondary — completion and positive state: done cards, checkboxes,
+     *             "live" indicators.
+     * primary-hover is the darker/lighter shade of primary used on hover — the
+     * job secondary used to do, which is why it had to be another blue. */
     --color-primary: #0066cc;
-    --color-secondary: #004c99;
+    --color-primary-hover: #004c99;
+    --color-secondary: #12784f;
     --color-white: #ffffff;
     --color-gray: #4e4e52;
     --color-slate: #f5f5f7;
@@ -32,7 +39,8 @@ body {
     @media (prefers-color-scheme: dark) {
         :root {
             --color-primary: #0f72de;
-            --color-secondary: #1c84ec;
+            --color-primary-hover: #1c84ec;
+            --color-secondary: #17996a;
             --color-gray: #aeaeb2;
             --color-slate: #2c2c2e;
             --color-code-bg: #161618;
@@ -299,7 +307,9 @@ select.form-control,
     display: none;
 }
 /* Task-list checkboxes: a small rounded-square checkbox (not a round radio) that
- * fills with the primary colour and shows a check when ticked. */
+ * fills with the secondary colour and shows a check when ticked — the same
+ * "this is done" colour as a card's status tick, which is the same idea at a
+ * larger size. */
 .tiptap ul[data-type="taskList"] input[type="checkbox"],
 .wysiwyg-wrapper ul[data-type="taskList"] input[type="checkbox"] {
     appearance: none;
@@ -319,8 +329,8 @@ select.form-control,
 }
 .tiptap ul[data-type="taskList"] input[type="checkbox"]:checked,
 .wysiwyg-wrapper ul[data-type="taskList"] input[type="checkbox"]:checked {
-    background-color: var(--color-primary);
-    border-color: var(--color-primary);
+    background-color: var(--color-secondary);
+    border-color: var(--color-secondary);
 }
 .tiptap ul[data-type="taskList"] input[type="checkbox"]:checked::after,
 .wysiwyg-wrapper ul[data-type="taskList"] input[type="checkbox"]:checked::after {

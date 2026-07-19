@@ -7,7 +7,7 @@
         <button
             @click="confirmDelete"
             type="button"
-            class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
+            class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
         >
             {{ confirmButtonText }}
         </button>

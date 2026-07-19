@@ -9,7 +9,8 @@ All colors support both light and dark mode variants. For dark mode colors, appe
 | Variable | Default (Light) | Default (Dark) |
 |----------|----------------|----------------|
 | `NUXT_PUBLIC_COLOR_PRIMARY` | `#0066CC` | `#0F72DE` |
-| `NUXT_PUBLIC_COLOR_SECONDARY` | `#004C99` | `#1C84EC` |
+| `NUXT_PUBLIC_COLOR_PRIMARY_HOVER` | `#004C99` | `#1C84EC` |
+| `NUXT_PUBLIC_COLOR_SECONDARY` | `#12784F` | `#17996A` |
 | `NUXT_PUBLIC_COLOR_WHITE` | `#ffffff` | `#ffffff` |
 | `NUXT_PUBLIC_COLOR_GRAY` | `#4E4E52` | `#AEAEB2` |
 | `NUXT_PUBLIC_COLOR_SLATE` | `#F5F5F7` | `#2C2C2E` |

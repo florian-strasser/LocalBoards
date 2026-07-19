@@ -16,7 +16,7 @@
             <div class="w-12">
                 <button
                     type="button"
-                    class="size-12 bg-primary text-white hover:bg-secondary rounded-full flex justify-center items-center"
+                    class="size-12 bg-primary text-white hover:bg-primary-hover rounded-full flex justify-center items-center"
                     @click="openDeleteKeyModal"
                     v-tooltip="$t('delete')"
                 >
@@ -32,7 +32,7 @@
             <button
                 @click="deleteKey()"
                 type="button"
-                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
+                class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
             >
                 {{ $t("deleteKeyButton") }}
             </button>
@@ -67,7 +67,7 @@ const formattedExpires = computed(() => {
 
 const openDeleteKeyModal = () => {
     deleteKeyModal.value = true;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
 };
 
 const deleteKey = async () => {
@@ -82,7 +82,7 @@ const deleteKey = async () => {
 
         if (response.success) {
             deleteKeyModal.value = false;
-            document.body.style.overflowY = "auto";
+            setBodyScrollLock(false);
             emits("key-deleted", keyId);
             await nuxtApp.callHook("app:toast", {
                 message: $t("keyDeleted"),

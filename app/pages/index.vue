@@ -13,7 +13,7 @@
                             <NuxtLink
                                 v-if="allowSignup"
                                 to="/sign-up/"
-                                class="text-primary dark:text-white hover:text-secondary text-center block py-3 px-5 rounded-bl-lg bg-slate dark:bg-dark"
+                                class="text-primary dark:text-white hover:text-primary-hover text-center block py-3 px-5 rounded-bl-lg bg-slate dark:bg-dark"
                             >
                                 {{ $t("signUp") }}
                             </NuxtLink>
@@ -44,14 +44,14 @@
                             />
                             <input
                                 type="submit"
-                                class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-secondary text-white"
+                                class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-primary-hover text-white"
                                 :value="$t('loginBtn')"
                             />
                         </form>
                     </div>
                     <div class="text-center mt-4 text-sm">
                         <NuxtLink
-                            class="text-primary dark:text-gray hover:text-secondary"
+                            class="text-primary dark:text-gray hover:text-primary-hover"
                             to="/lost-password/"
                         >
                             {{ $t("lostPasswordQuestion") }}

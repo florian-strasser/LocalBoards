@@ -20,7 +20,7 @@
                 </div>
                 <input
                     type="submit"
-                    class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
+                    class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white"
                     :value="$t('lostPasswordBtn')"
                 />
             </form>
@@ -34,7 +34,7 @@
             </div>
             <div class="text-center mt-4 text-sm">
                 <NuxtLink
-                    class="text-primary dark:text-gray hover:text-secondary"
+                    class="text-primary dark:text-gray hover:text-primary-hover"
                     to="/"
                 >
                     {{ $t("backToLogin") }}

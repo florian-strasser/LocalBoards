@@ -13,7 +13,7 @@
             <div class="absolute top-1 right-1 w-9">
                 <button
                     type="button"
-                    class="size-9 flex justify-center items-center bg-primary hover:bg-secondary rounded-lg text-white"
+                    class="size-9 flex justify-center items-center bg-primary hover:bg-primary-hover rounded-lg text-white"
                     @click="handleCopy"
                     v-tooltip="$t('createdKeyCopyTip')"
                 >
@@ -67,7 +67,7 @@
         </div>
         <input
             type="submit"
-            class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-secondary text-white"
+            class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-primary-hover text-white"
             :value="$t('settingsSaveNewKey')"
         />
     </form>

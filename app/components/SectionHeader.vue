@@ -12,7 +12,7 @@
                 v-if="props.asButton"
                 type="button"
                 :data-onboarding="props.onboardingTarget || undefined"
-                class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
+                class="size-12 bg-primary text-white hover:bg-primary-hover flex justify-center items-center rounded-full"
                 @click="handleClick"
                 v-tooltip="props.tooltip"
             >
@@ -21,7 +21,7 @@
             <NuxtLink
                 v-if="!props.asButton && props.url"
                 :to="props.url"
-                class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
+                class="size-12 bg-primary text-white hover:bg-primary-hover flex justify-center items-center rounded-full"
                 v-tooltip="props.tooltip"
                 ><Plus class="size-5"
             /></NuxtLink>

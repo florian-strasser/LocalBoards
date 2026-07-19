@@ -30,7 +30,7 @@
                     <div v-if="data" class="absolute top-1 right-1">
                         <button
                             type="button"
-                            class="flex justify-center items-center w-8 h-7 bg-primary hover:bg-secondary text-white rounded-md"
+                            class="flex justify-center items-center w-8 h-7 bg-primary hover:bg-primary-hover text-white rounded-md"
                             @click.stop="data = undefined"
                             v-tooltip="$t('remove')"
                         >

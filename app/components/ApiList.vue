@@ -38,7 +38,7 @@ if (data.value?.apiKeys) {
 
 const openCreateKey = () => {
     createKey.value = true;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
 };
 
 const handleKeyDeleted = async (id) => {

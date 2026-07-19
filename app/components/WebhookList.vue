@@ -85,7 +85,7 @@
                 <input
                     type="submit"
                     :disabled="!boardId || !url"
-                    class="block w-full cursor-pointer rounded-lg bg-primary px-4 py-2 text-white hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary"
+                    class="block w-full cursor-pointer rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary"
                     :value="$t('webhookAdd')"
                 />
             </form>

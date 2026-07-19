@@ -32,7 +32,7 @@
                      instead of pushing the menu away. -->
                 <div v-else class="flex justify-between items-start gap-4">
                     <h1
-                        class="min-w-0 text-3xl sm:text-5xl text-dark dark:text-white transform -translate-y-1"
+                        class="min-w-0 text-3xl sm:text-5xl text-dark dark:text-white"
                     >
                         {{ boardName }}
                     </h1>
@@ -42,9 +42,15 @@
                          The owner manages the board; everyone else can only
                          show themselves out (a board needs its owner, so there
                          is no "leave" for them — they delete it instead). -->
-                    <ActionMenu
+                    <!-- The wrapper carries the one-line height that aligns
+                         the button with the title's first line. ActionMenu's own
+                         root must stay a plain block: its dropdown sets no `top`
+                         and relies on its static position to sit below. -->
+                    <div
                         v-if="!accessError"
-                        class="shrink-0"
+                        class="flex h-9 shrink-0 items-center sm:h-12"
+                    >
+                    <ActionMenu
                         :tooltip="$t('moreOptions')"
                         :data-onboarding="
                             userID === boardUser ? 'invite' : undefined
@@ -86,11 +92,12 @@
                             {{ $t("leaveBoard") }}
                         </button>
                     </ActionMenu>
+                    </div>
                 </div>
             </div>
         </div>
         <div
-            class="w-full grow min-h-0 pb-10 overflow-x-auto overflow-y-hidden bg-slate dark:bg-dark"
+            class="@container w-full grow min-h-0 pb-10 overflow-x-auto overflow-y-hidden bg-slate dark:bg-dark"
             :style="anyModalOpen ? { overflowX: 'hidden' } : undefined"
         >
             <!-- The horizontal padding lives on the areas wrapper itself (not a
@@ -115,7 +122,7 @@
                         :key="area.id"
                         class="p-4 space-y-2 rounded-lg bg-white dark:bg-slate"
                         :class="{
-                            'w-92 max-w-[calc(100vw-4rem)] shrink-0 grow-0':
+                            'w-92 max-w-[calc(100cqw-4rem)] shrink-0 grow-0':
                                 boardStyle == 'kanban',
                             'w-full': boardStyle == 'todo',
                         }"
@@ -130,7 +137,7 @@
                             <button
                                 v-if="writeAccess"
                                 @click="openDeleteAreaModal(area.id)"
-                                class="text-primary hover:text-secondary shrink-0 grow-0"
+                                class="text-primary hover:text-primary-hover shrink-0 grow-0"
                                 v-tooltip="$t('delete')"
                             >
                                 <Trash2 class="size-5" />
@@ -163,14 +170,11 @@
                     <div
                         v-if="writeAccess"
                         :class="{
-                            // Only claim a full column while the form is open.
-                            // Idle it is just a button, and reserving 23rem for
-                            // it made a board whose areas fit comfortably scroll
-                            // sideways for nothing.
-                            'w-92 max-w-[calc(100vw-4rem)] shrink-0 grow-0':
-                                boardStyle == 'kanban' && newAreaCreation,
-                            'w-auto shrink-0 grow-0':
-                                boardStyle == 'kanban' && !newAreaCreation,
+                            // Always a column's width, open or not: sizing it
+                            // to its content while idle made the whole board jump
+                            // sideways the moment the form appeared.
+                            'w-92 max-w-[calc(100cqw-4rem)] shrink-0 grow-0':
+                                boardStyle == 'kanban',
                             'w-full': boardStyle == 'todo',
                         }"
                     >
@@ -178,7 +182,7 @@
                             v-if="!newAreaCreation"
                             @click="createNewArea"
                             data-onboarding="new-area"
-                            class="bg-white dark:bg-slate text-dark dark:text-white hover:bg-secondary hover:text-white p-4 rounded-lg flex w-full items-center gap-x-1"
+                            class="bg-white dark:bg-slate text-dark dark:text-white hover:bg-primary-hover hover:text-white p-4 rounded-lg flex w-full items-center gap-x-1"
                         >
                             <Plus :stroke-width="1.5" class="size-5" /><span>{{
                                 $t("createNewArea")
@@ -198,13 +202,13 @@
                             <div class="flex gap-x-1 mt-2">
                                 <input
                                     type="submit"
-                                    class="bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
+                                    class="bg-primary hover:bg-primary-hover px-4 py-2 rounded-lg text-white"
                                     :value="$t('createArea')"
                                 />
                                 <button
                                     type="button"
                                     @click="newAreaCreation = false"
-                                    class="px-4 bg-primary/10 dark:bg-white/10 text-primary dark:text-white hover:bg-secondary hover:text-white rounded-lg"
+                                    class="px-4 bg-primary/10 dark:bg-white/10 text-primary dark:text-white hover:bg-primary-hover hover:text-white rounded-lg"
                                 >
                                     <X class="size-5" />
                                 </button>
@@ -279,7 +283,7 @@
                     </div>
                     <input
                         type="submit"
-                        class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
+                        class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white"
                         :value="$t('saveBoard')"
                     />
                 </form>
@@ -293,7 +297,7 @@
             <button
                 @click="deleteBoard"
                 type="button"
-                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
+                class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
             >
                 {{ $t("deleteBoardBtn") }}
             </button>
@@ -306,7 +310,7 @@
             <button
                 @click="leaveBoard"
                 type="button"
-                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
+                class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
             >
                 {{ $t("leaveBoardBtn") }}
             </button>
@@ -322,7 +326,7 @@
             <button
                 @click="deleteArea(deleteAreaModal)"
                 type="button"
-                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
+                class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
             >
                 {{ $t("deleteAreaButton") }}
             </button>
@@ -546,7 +550,7 @@ watch(
         const id = card ? card * 1 : false;
         if (id !== cardModal.value) {
             cardModal.value = id;
-            if (id) document.body.style.overflowY = "hidden";
+            if (id) setBodyScrollLock(true);
         }
     },
 );
@@ -736,7 +740,7 @@ const deleteArea = async (areaId) => {
         // Remove the cards for the area
         delete cards.value[areaId];
         deleteAreaModal.value = false;
-        document.body.style.overflowY = "auto";
+        setBodyScrollLock(false);
         socket.emit("areaDeleted", {
             boardId: boardID.value,
             area: areaId,
@@ -756,15 +760,15 @@ const openModal = () => {
     newBoardStatus.value = boardStatus.value;
     newBoardImage.value = boardImage.value;
     optionsActive.value = true;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
 };
 const openDeleteAreaModal = (id) => {
     deleteAreaModal.value = id;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
 };
 const openInviteModal = () => {
     inviteModal.value = true;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
     // Final tour step — opening the invite dialog completes the walkthrough.
     onboarding.advance("invite");
 };
@@ -794,7 +798,7 @@ const saveBoard = async () => {
             boardStatus.value = newBoardStatus.value;
             boardImage.value = newBoardImage.value;
             optionsActive.value = false;
-            document.body.style.overflowY = "auto";
+            setBodyScrollLock(false);
             socket.emit("boardUpdated", {
                 boardID: boardID.value,
                 boardName: boardName.value,
@@ -900,18 +904,18 @@ const handleCommentCountUpdated = ({ cardId, commentCount, comments }) => {
 const menuItemClass =
     "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-primary/10 hover:text-primary dark:text-white";
 const menuItemDestructiveClass =
-    "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-secondary/10 hover:text-secondary dark:text-white";
+    "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-primary-hover/10 hover:text-primary-hover dark:text-white";
 
 const openDeleteBoard = () => {
     deleteModal.value = true;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
 };
 
 const leaveModal = ref(false);
 
 const openLeaveBoard = () => {
     leaveModal.value = true;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
 };
 
 // Leaving removes the caller's own invitation. The board itself is untouched —
@@ -923,7 +927,7 @@ const leaveBoard = async () => {
             body: { boardId: boardID.value },
         });
         await nuxtApp.callHook("app:toast", { message: $t("boardLeft") });
-        document.body.style.overflowY = "auto";
+        setBodyScrollLock(false);
         await navigateTo("/dashboard/");
     } catch (error) {
         console.error("Error leaving board:", error);
@@ -954,7 +958,7 @@ const deleteBoard = async () => {
             socket.emit("boardDeleted", {
                 boardID: boardID.value,
             });
-            document.body.style.overflowY = "auto";
+            setBodyScrollLock(false);
             await navigateTo("/dashboard/");
         }
     } catch (err) {
@@ -1148,7 +1152,7 @@ onMounted(() => {
             cardModal.value = false;
             cardModalOpen.value = false;
         } else {
-            document.body.style.overflowY = "hidden";
+            setBodyScrollLock(true);
         }
     }
     initSort();

@@ -8,22 +8,24 @@
             :style="{ opacity: backdropOpacity }"
             @click="closeModal"
         />
-        <!-- The whole card scrolls (not an inner region). -->
-        <div
+        <!-- The whole card scrolls (not an inner region). The enter/exit
+             transform sits on THIS element, not on the card inside it: this is
+             the scroll container, so its padding edge is the clip boundary, and
+             a card animating past it would simply be cut off. Moving the
+             container instead carries its contents along untouched. -->
+        <motion.div
             class="relative w-full max-h-full py-8 overflow-y-auto overflow-x-hidden"
+            :style="{ y, opacity: cardOpacity }"
             @click.self="closeModal"
         >
-            <motion.div
-                class="relative w-full max-w-lg mx-auto"
-                :style="{ y, opacity: cardOpacity }"
-            >
+            <div class="relative w-full max-w-lg mx-auto">
                 <div
                     class="absolute top-0 right-0 w-12 transform sm:translate-x-1/2 -translate-y-1/2 z-30"
                 >
                     <button
                         type="button"
                         @click="closeModal"
-                        class="flex justify-center items-center bg-primary text-white hover:bg-secondary size-12 rounded-full"
+                        class="flex justify-center items-center bg-primary text-white hover:bg-primary-hover size-12 rounded-full"
                     >
                         <X class="size-5" stroke-width="2" />
                     </button>
@@ -33,8 +35,8 @@
                 >
                     <slot />
                 </div>
-            </motion.div>
-        </div>
+            </div>
+        </motion.div>
     </div>
 </template>
 <script setup lang="ts">
@@ -55,6 +57,8 @@ const open = defineModel();
 const ENTER_Y = 32;
 const EXIT_Y = -32;
 const DURATION = 0.4;
+// The card fades out in a little over half the time the backdrop takes.
+const CARD_EXIT_DURATION = 0.22;
 const EASE = [0.22, 1, 0.36, 1];
 const y = useMotionValue(ENTER_Y);
 const cardOpacity = useMotionValue(0);
@@ -80,8 +84,13 @@ const applyState = (isOpen, animated) => {
             backdropOpacity.set(1);
         }
     } else if (animated && visible.value) {
+        // The card leaves faster than the backdrop. A scrolled dialog is clipped
+        // to a hard-edged rectangle by its scroll container, and if it were still
+        // faintly visible once the backdrop had gone it would read as a torn-off
+        // fragment floating over the board. Fading it out first means the board
+        // is still dimmed for as long as any of the card can be seen.
         animate(y, EXIT_Y, { duration: DURATION, ease: EASE });
-        animate(cardOpacity, 0, { duration: DURATION, ease: EASE });
+        animate(cardOpacity, 0, { duration: CARD_EXIT_DURATION, ease: EASE });
         animate(backdropOpacity, 0, { duration: DURATION, ease: EASE });
         hideTimer = setTimeout(() => (visible.value = false), DURATION * 1000);
     } else {
@@ -112,12 +121,16 @@ const syncCount = (isOpen) => {
         counted = false;
     }
 };
-watch(() => open.value, syncCount, { immediate: true });
+// Driven by `visible`, not `open`: the modal stays on screen through its exit
+// animation, so releasing the lock the moment `open` flips restores the page's
+// scrollbar while the modal's own one is still there — two scrollbars for the
+// length of the animation.
+watch(() => visible.value, syncCount, { immediate: true });
 watch(
     modal.isOpen,
     (locked) => {
         if (import.meta.client) {
-            document.body.style.overflowY = locked ? "hidden" : "auto";
+            setBodyScrollLock(locked);
         }
     },
     { immediate: true },

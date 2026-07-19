@@ -91,14 +91,14 @@
                                 <button
                                     type="button"
                                     @click="saveEdit(comment.id)"
-                                    class="rounded-lg bg-primary px-4 py-2 text-white hover:bg-secondary"
+                                    class="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-hover"
                                 >
                                     {{ $t("save") }}
                                 </button>
                                 <button
                                     type="button"
                                     @click="cancelEdit"
-                                    class="rounded-lg bg-primary/10 px-4 text-primary hover:bg-secondary hover:text-white dark:bg-white/10 dark:text-white"
+                                    class="rounded-lg bg-primary/10 px-4 text-primary hover:bg-primary-hover hover:text-white dark:bg-white/10 dark:text-white"
                                 >
                                     <X class="size-5" />
                                 </button>
@@ -114,14 +114,14 @@
                         <div class="mt-3 flex flex-wrap gap-2">
                             <button
                                 type="button"
-                                class="rounded-lg bg-primary px-4 py-2 text-white hover:bg-secondary"
+                                class="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-hover"
                                 @click="executeDelete(comment.id)"
                                 v-html="$t('delete')"
                             />
                             <button
                                 type="button"
                                 @click="cancelDelete"
-                                class="rounded-lg bg-primary/10 px-4 text-primary hover:bg-secondary hover:text-white dark:bg-white/10 dark:text-white"
+                                class="rounded-lg bg-primary/10 px-4 text-primary hover:bg-primary-hover hover:text-white dark:bg-white/10 dark:text-white"
                             >
                                 <X class="size-5" />
                             </button>

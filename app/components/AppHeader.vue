@@ -13,7 +13,7 @@ const handleLogout = async () => {
         <div class="container mx-auto flex justify-between items-center">
             <NuxtLinkLocale
                 to="/dashboard/"
-                class="text-primary hover:text-secondary cursor-pointer block"
+                class="text-primary hover:text-primary-hover cursor-pointer block"
             >
                 <Logo />
             </NuxtLinkLocale>
@@ -26,7 +26,7 @@ const handleLogout = async () => {
                 <li v-if="session.data.user.role === 'admin'">
                     <NuxtLinkLocale
                         to="/users/"
-                        class="text-gray hover:text-secondary cursor-pointer block"
+                        class="text-gray hover:text-primary-hover cursor-pointer block"
                         v-tooltip="$t('headerUsers')"
                     >
                         <UsersRound class="size-5" />
@@ -35,7 +35,7 @@ const handleLogout = async () => {
                 <li>
                     <NuxtLinkLocale
                         to="/settings/"
-                        class="text-gray hover:text-secondary cursor-pointer block"
+                        class="text-gray hover:text-primary-hover cursor-pointer block"
                         v-tooltip="$t('headerSettings')"
                     >
                         <UserRoundPen class="size-5" />
@@ -44,7 +44,7 @@ const handleLogout = async () => {
                 <li>
                     <button
                         @click="handleLogout"
-                        class="text-gray hover:text-secondary cursor-pointer block"
+                        class="text-gray hover:text-primary-hover cursor-pointer block"
                         v-tooltip="$t('headerLogout')"
                     >
                         <LogOut class="size-5" />

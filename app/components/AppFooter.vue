@@ -5,7 +5,7 @@
             <a
                 href="https://github.com/florian-strasser"
                 target="_blank"
-                class="text-gray hover:text-secondary"
+                class="text-gray hover:text-primary-hover"
                 >Florian Strasser</a
             >
         </div>

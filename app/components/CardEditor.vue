@@ -8,7 +8,7 @@
                 <button
                     type="button"
                     @click="emojiSelect = false"
-                    class="block hover:text-secondary"
+                    class="block hover:text-primary-hover"
                     v-tooltip="$t('back')"
                 >
                     <ArrowLeft class="size-5" />
@@ -29,7 +29,7 @@
                     type="button"
                     @click="editor.chain().focus().toggleBold().run()"
                     :disabled="!editor.can().chain().focus().toggleBold().run()"
-                    class="block hover:text-secondary"
+                    class="block hover:text-primary-hover"
                     :class="{ 'text-primary': editor.isActive('bold') }"
                     v-tooltip="$t('editorBold')"
                 >
@@ -43,7 +43,7 @@
                     :disabled="
                         !editor.can().chain().focus().toggleItalic().run()
                     "
-                    class="block hover:text-secondary"
+                    class="block hover:text-primary-hover"
                     :class="{ 'text-primary': editor.isActive('italic') }"
                     v-tooltip="$t('editorItalic')"
                 >
@@ -57,7 +57,7 @@
                     :disabled="
                         !editor.can().chain().focus().toggleStrike().run()
                     "
-                    class="block hover:text-secondary"
+                    class="block hover:text-primary-hover"
                     :class="{ 'text-primary': editor.isActive('strike') }"
                     v-tooltip="$t('editorStrike')"
                 >
@@ -68,7 +68,7 @@
                 <button
                     type="button"
                     @click="editor.chain().focus().toggleBulletList().run()"
-                    class="block hover:text-secondary"
+                    class="block hover:text-primary-hover"
                     :class="{ 'text-primary': editor.isActive('bulletList') }"
                     v-tooltip="$t('editorBulletList')"
                 >
@@ -79,7 +79,7 @@
                 <button
                     type="button"
                     @click="editor.chain().focus().toggleOrderedList().run()"
-                    class="block hover:text-secondary"
+                    class="block hover:text-primary-hover"
                     :class="{
                         'text-primary': editor.isActive('orderedList'),
                     }"
@@ -92,7 +92,7 @@
                 <button
                     type="button"
                     @click="editor.chain().focus().toggleTaskList().run()"
-                    class="block hover:text-secondary"
+                    class="block hover:text-primary-hover"
                     :class="{
                         'text-primary': editor.isActive('taskList'),
                     }"
@@ -105,7 +105,7 @@
                 <button
                     type="button"
                     @click="addImage"
-                    class="block hover:text-secondary"
+                    class="block hover:text-primary-hover"
                     :class="{ 'text-primary': editor.isActive('image') }"
                     v-tooltip="$t('editorImage')"
                 >
@@ -116,7 +116,7 @@
                 <button
                     type="button"
                     @click="editor.chain().focus().toggleCodeBlock().run()"
-                    class="block hover:text-secondary"
+                    class="block hover:text-primary-hover"
                     :class="{ 'text-primary': editor.isActive('codeBlock') }"
                     v-tooltip="$t('editorCodeblock')"
                 >
@@ -127,7 +127,7 @@
                 <button
                     type="button"
                     @click="emojiSelect = true"
-                    class="block hover:text-secondary"
+                    class="block hover:text-primary-hover"
                     v-tooltip="$t('editorEmojis')"
                 >
                     <Smile class="size-5" />

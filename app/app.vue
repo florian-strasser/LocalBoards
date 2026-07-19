@@ -40,6 +40,7 @@ useHead({
             innerHTML: `
               :root {
                 --color-primary: ${config.colorPrimary};
+                --color-primary-hover: ${config.colorPrimaryHover};
                 --color-secondary: ${config.colorSecondary};
                 --color-white: ${config.colorWhite};
                 --color-gray: ${config.colorGray};
@@ -50,6 +51,7 @@ useHead({
               @media (prefers-color-scheme: dark) {
                 :root {
                   --color-primary: ${config.colorPrimaryDark};
+                  --color-primary-hover: ${config.colorPrimaryHoverDark};
                   --color-secondary: ${config.colorSecondaryDark};
                   --color-gray: ${config.colorGrayDark};
                   --color-slate: ${config.colorSlateDark};

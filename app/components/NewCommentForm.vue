@@ -4,7 +4,7 @@
             <button
                 @click="createNewComment"
                 type="button"
-                class="bg-primary hover:bg-secondary px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
+                class="bg-primary hover:bg-primary-hover px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
             >
                 <Plus class="size-5" /><span>{{ $t("writeAComment") }}</span>
             </button>
@@ -14,13 +14,13 @@
             <div class="flex gap-x-1 mt-2">
                 <input
                     type="submit"
-                    class="bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
+                    class="bg-primary hover:bg-primary-hover px-4 py-2 rounded-lg text-white"
                     :value="$t('createComment')"
                 />
                 <button
                     type="button"
                     @click="newCommentCreation = false"
-                    class="px-4 bg-primary/10 text-primary dark:bg-white/10 dark:text-white hover:bg-secondary hover:text-white rounded-lg"
+                    class="px-4 bg-primary/10 text-primary dark:bg-white/10 dark:text-white hover:bg-primary-hover hover:text-white rounded-lg"
                 >
                     <X class="size-5" />
                 </button>

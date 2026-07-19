@@ -46,7 +46,7 @@ export default defineNuxtConfig({
   },
   mcp: {
     name: process.env.NUXT_APP_NAME || "LocalBoards",
-    version: "0.20.0",
+    version: "0.20.1",
     enabled: process.env.NUXT_MCP || true,
   },
   runtimeConfig: {
@@ -55,9 +55,13 @@ export default defineNuxtConfig({
       signup: process.env.NUXT_PUBLIC_SIGNUP || true,
       colorPrimary: process.env.NUXT_PUBLIC_COLOR_PRIMARY || "#0066CC",
       colorPrimaryDark: process.env.NUXT_PUBLIC_COLOR_PRIMARY_DARK || "#0F72DE",
-      colorSecondary: process.env.NUXT_PUBLIC_COLOR_SECONDARY || "#004C99",
+      colorPrimaryHover:
+        process.env.NUXT_PUBLIC_COLOR_PRIMARY_HOVER || "#004C99",
+      colorPrimaryHoverDark:
+        process.env.NUXT_PUBLIC_COLOR_PRIMARY_HOVER_DARK || "#1C84EC",
+      colorSecondary: process.env.NUXT_PUBLIC_COLOR_SECONDARY || "#12784F",
       colorSecondaryDark:
-        process.env.NUXT_PUBLIC_COLOR_SECONDARY_DARK || "#1C84EC",
+        process.env.NUXT_PUBLIC_COLOR_SECONDARY_DARK || "#17996A",
       colorWhite: process.env.NUXT_PUBLIC_COLOR_WHITE || "#ffffff",
       colorGray: process.env.NUXT_PUBLIC_COLOR_GRAY || "#4E4E52",
       colorGrayDark: process.env.NUXT_PUBLIC_COLOR_GRAY_DARK || "#AEAEB2",

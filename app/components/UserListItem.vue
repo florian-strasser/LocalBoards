@@ -21,7 +21,7 @@
             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <NuxtLink
                     :to="'/edit-user/' + props.id"
-                    class="font-semibold break-words text-dark hover:text-secondary dark:text-white"
+                    class="font-semibold break-words text-dark hover:text-primary-hover dark:text-white"
                     >{{ props.name || "—" }}</NuxtLink
                 >
                 <span
@@ -98,7 +98,7 @@ const props = defineProps({
 
 const openDeleteModal = () => {
     model.value = props.id;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
 };
 
 const impersonate = async () => {

@@ -7,7 +7,7 @@
                         <div class="bg-white dark:bg-slate">
                             <NuxtLink
                                 to="/"
-                                class="text-primary dark:text-white hover:text-secondary text-center block py-3 px-5 rounded-br-lg bg-slate dark:bg-dark"
+                                class="text-primary dark:text-white hover:text-primary-hover text-center block py-3 px-5 rounded-br-lg bg-slate dark:bg-dark"
                             >
                                 {{ $t("login") }}
                             </NuxtLink>
@@ -46,7 +46,7 @@
                             <InputCheckbox
                                 :label="
                                     $t('signUpHintBefore') +
-                                    ' <a class=\'text-primary hover:text-secondary\' href=\'' +
+                                    ' <a class=\'text-primary hover:text-primary-hover\' href=\'' +
                                     privacyURL +
                                     '\'>' +
                                     $t('privacyPolicy') +
@@ -58,7 +58,7 @@
                             />
                             <input
                                 type="submit"
-                                class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-secondary text-white"
+                                class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-primary-hover text-white"
                                 :value="$t('signUpBtn')"
                             />
                         </form>

@@ -19,14 +19,14 @@
                     <button
                         type="button"
                         @click="start"
-                        class="button bg-primary hover:bg-secondary w-full px-6 py-3 rounded-lg text-white"
+                        class="button bg-primary hover:bg-primary-hover w-full px-6 py-3 rounded-lg text-white"
                     >
                         {{ $t("onboardingStart") }}
                     </button>
                     <button
                         type="button"
                         @click="skip"
-                        class="text-gray hover:text-secondary"
+                        class="text-gray hover:text-primary-hover"
                     >
                         {{ $t("onboardingSkip") }}
                     </button>
@@ -69,7 +69,7 @@
                 <button
                     type="button"
                     @click="cancel"
-                    class="shrink-0 text-gray hover:text-secondary"
+                    class="shrink-0 text-gray hover:text-primary-hover"
                     v-tooltip="$t('onboardingCancel')"
                 >
                     <X class="size-5" />

@@ -37,7 +37,7 @@
                         />
                         <button
                             type="button"
-                            class="bg-primary text-white hover:bg-secondary px-4 h-11 rounded-lg"
+                            class="bg-primary text-white hover:bg-primary-hover px-4 h-11 rounded-lg"
                             v-tooltip="$t('generatePassword')"
                             @click="password = generateRandomPassword()"
                         >
@@ -96,7 +96,7 @@
 
                 <input
                     type="submit"
-                    class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
+                    class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white"
                     :value="$t('createAccount')"
                 />
             </form>

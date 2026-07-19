@@ -5,7 +5,7 @@
                 @click="createNewCard"
                 type="button"
                 data-testid="new-card-button"
-                class="bg-primary hover:bg-secondary px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
+                class="bg-primary hover:bg-primary-hover px-4 py-2 flex gap-x-1 items-center rounded-lg text-white"
             >
                 <Plus class="size-5" /><span>{{ $t("createNewCard") }}</span>
             </button>
@@ -23,13 +23,13 @@
                 <input
                     type="submit"
                     data-testid="new-card-submit"
-                    class="bg-primary hover:bg-secondary px-4 py-2 rounded-lg text-white"
+                    class="bg-primary hover:bg-primary-hover px-4 py-2 rounded-lg text-white"
                     :value="$t('createCard')"
                 />
                 <button
                     type="button"
                     @click="newCardCreation = false"
-                    class="px-4 bg-primary/10 text-primary dark:bg-white/10 dark:text-white hover:bg-secondary hover:text-white rounded-lg"
+                    class="px-4 bg-primary/10 text-primary dark:bg-white/10 dark:text-white hover:bg-primary-hover hover:text-white rounded-lg"
                 >
                     <X class="size-5" />
                 </button>

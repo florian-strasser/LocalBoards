@@ -95,7 +95,7 @@
                     </div>
                     <input
                         type="submit"
-                        class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
+                        class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white"
                         :value="$t('createBoard')"
                     />
                 </form>
@@ -128,7 +128,7 @@
                     type="submit"
                     :disabled="importing"
                     :value="importing ? $t('importing') : $t('importBoardBtn')"
-                    class="button w-full cursor-pointer rounded-lg bg-primary px-6 py-3 text-center text-white hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary"
+                    class="button w-full cursor-pointer rounded-lg bg-primary px-6 py-3 text-center text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary"
                 />
             </form>
         </ModalWindow>
@@ -163,7 +163,7 @@ const newBoardImage = ref(null);
 
 const openCreateBoard = () => {
     createBoard.value = true;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
 };
 
 // --- Import a board from Trello -------------------------------------------
@@ -174,7 +174,7 @@ const importing = ref(false);
 const openImport = () => {
     trelloUrl.value = "";
     importBoard.value = true;
-    document.body.style.overflowY = "hidden";
+    setBodyScrollLock(true);
 };
 
 // Map the server's error codes to a localized message.
@@ -199,7 +199,7 @@ const importTrelloBoard = async () => {
         });
         if (data?.success && data.board) {
             importBoard.value = false;
-            document.body.style.overflowY = "auto";
+            setBodyScrollLock(false);
             await nuxtApp.callHook("app:toast", {
                 message: $t("boardImported"),
             });
@@ -232,7 +232,7 @@ const saveBoard = async () => {
                 status: newBoardStatus.value,
             },
         });
-        document.body.style.overflowY = "auto";
+        setBodyScrollLock(false);
         if (!data) {
             await nuxtApp.callHook("app:toast", {
                 message: $t("error_creating_board"),

@@ -55,7 +55,7 @@
         </div>
         <input
             type="submit"
-            class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-secondary text-white"
+            class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-primary-hover text-white"
             :value="$t('settingsSaveChanges')"
         />
     </form>

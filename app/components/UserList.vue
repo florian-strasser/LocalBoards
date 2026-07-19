@@ -115,7 +115,7 @@
                 @click="deleteUser"
                 type="button"
                 :disabled="deleteReason.trim() === ''"
-                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
+                class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
             >
                 {{ $t("deleteUser") }}
             </button>
@@ -243,6 +243,6 @@ const deleteUser = async () => {
     }
 
     deleteModal.value = false;
-    document.body.style.overflowY = "auto";
+    setBodyScrollLock(false);
 };
 </script>
