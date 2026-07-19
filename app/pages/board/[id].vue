@@ -17,6 +17,7 @@
                 @area-updated="handleAreaUpdated"
                 @area-deleted="handleDeleteArea"
                 @comment-count-updated="handleCommentCountUpdated"
+                @presence-updated="handlePresenceUpdated"
             />
             <div class="container">
                 <div
@@ -25,45 +26,71 @@
                 >
                     {{ accessError }}
                 </div>
-                <div v-else class="flex justify-between flex-wrap gap-4">
+                <!-- Title and menu share one row: wrapping the menu onto its
+                     own line cost a whole band of vertical space on a phone.
+                     min-w-0 lets a long board name wrap inside its column
+                     instead of pushing the menu away. -->
+                <div v-else class="flex justify-between items-start gap-4">
                     <h1
-                        class="text-5xl text-dark dark:text-white transform -translate-y-1"
+                        class="min-w-0 text-3xl sm:text-5xl text-dark dark:text-white transform -translate-y-1"
                     >
                         {{ boardName }}
                     </h1>
-                    <div
-                        v-if="userID === boardUser"
-                        class="flex gap-x-4 items-center"
+                    <!-- One menu instead of a row of icon buttons: it keeps the
+                         header compact on small screens and new actions cost a
+                         list entry rather than another icon to tell apart.
+                         The owner manages the board; everyone else can only
+                         show themselves out (a board needs its owner, so there
+                         is no "leave" for them — they delete it instead). -->
+                    <ActionMenu
+                        v-if="!accessError"
+                        class="shrink-0"
+                        :tooltip="$t('moreOptions')"
+                        :data-onboarding="
+                            userID === boardUser ? 'invite' : undefined
+                        "
                     >
+                        <template v-if="userID === boardUser">
+                            <button
+                                type="button"
+                                @click="openModal"
+                                :class="menuItemClass"
+                            >
+                                <Pencil class="size-4 shrink-0" />
+                                {{ $t("boardSettings") }}
+                            </button>
+                            <button
+                                type="button"
+                                @click="openInviteModal"
+                                :class="menuItemClass"
+                            >
+                                <UserRoundPlus class="size-4 shrink-0" />
+                                {{ $t("inviteUsers") }}
+                            </button>
+                            <button
+                                type="button"
+                                @click="openDeleteBoard"
+                                :class="menuItemDestructiveClass"
+                            >
+                                <Trash2 class="size-4 shrink-0" />
+                                {{ $t("deleteBoard") }}
+                            </button>
+                        </template>
                         <button
-                            @click="openModal"
-                            class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
-                            v-tooltip="$t('boardSettings')"
+                            v-else
+                            type="button"
+                            @click="openLeaveBoard"
+                            :class="menuItemDestructiveClass"
                         >
-                            <Pencil class="size-5" />
+                            <Ban class="size-4 shrink-0" />
+                            {{ $t("leaveBoard") }}
                         </button>
-                        <button
-                            @click="openInviteModal"
-                            data-onboarding="invite"
-                            class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
-                            v-tooltip="$t('inviteUsers')"
-                        >
-                            <UserRoundPlus class="size-5" />
-                        </button>
-                        <button
-                            @click="openDeleteBoard"
-                            class="size-12 bg-primary text-white hover:bg-secondary flex justify-center items-center rounded-full"
-                            v-tooltip="$t('deleteBoard')"
-                        >
-                            <Trash2 class="size-5" />
-                        </button>
-                    </div>
+                    </ActionMenu>
                 </div>
             </div>
         </div>
         <div
-            ref="scrollRegion"
-            class="w-full grow shrink-0 pb-10 overflow-scroll hide-scrollbar bg-slate dark:bg-dark"
+            class="w-full grow min-h-0 pb-10 overflow-x-auto overflow-y-hidden bg-slate dark:bg-dark"
             :style="anyModalOpen ? { overflowX: 'hidden' } : undefined"
         >
             <!-- The horizontal padding lives on the areas wrapper itself (not a
@@ -88,7 +115,7 @@
                         :key="area.id"
                         class="p-4 space-y-2 rounded-lg bg-white dark:bg-slate"
                         :class="{
-                            'max-w-full w-92 shrink-0 grow-0':
+                            'w-92 max-w-[calc(100vw-4rem)] shrink-0 grow-0':
                                 boardStyle == 'kanban',
                             'w-full': boardStyle == 'todo',
                         }"
@@ -118,6 +145,7 @@
                                 v-for="card in cards[area.id]"
                                 :card="card"
                                 :has-unread="unreadCardIds.has(card.id)"
+                                :viewers="viewersFor(card.id)"
                                 v-model="cardModal"
                             />
                         </div>
@@ -135,8 +163,14 @@
                     <div
                         v-if="writeAccess"
                         :class="{
-                            'max-w-full w-92 shrink-0 grow-0':
-                                boardStyle == 'kanban',
+                            // Only claim a full column while the form is open.
+                            // Idle it is just a button, and reserving 23rem for
+                            // it made a board whose areas fit comfortably scroll
+                            // sideways for nothing.
+                            'w-92 max-w-[calc(100vw-4rem)] shrink-0 grow-0':
+                                boardStyle == 'kanban' && newAreaCreation,
+                            'w-auto shrink-0 grow-0':
+                                boardStyle == 'kanban' && !newAreaCreation,
                             'w-full': boardStyle == 'todo',
                         }"
                     >
@@ -179,7 +213,6 @@
                     </div>
                 </div>
         </div>
-        <BoardScrollbar :target="scrollRegion" />
         <ModalWindow v-model="optionsActive">
             <div>
                 <form @submit.prevent="saveBoard" class="text-left space-y-5">
@@ -265,6 +298,19 @@
                 {{ $t("deleteBoardBtn") }}
             </button>
         </ModalWindow>
+        <ModalWindow v-if="userID !== boardUser" v-model="leaveModal">
+            <h2 class="text-4xl text-dark dark:text-white mb-3">
+                {{ $t("leaveBoardTitle") }}
+            </h2>
+            <p class="mb-6">{{ $t("leaveBoardText") }}</p>
+            <button
+                @click="leaveBoard"
+                type="button"
+                class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer"
+            >
+                {{ $t("leaveBoardBtn") }}
+            </button>
+        </ModalWindow>
         <ModalWindow v-if="userID === boardUser" v-model="inviteModal">
             <InviteModal :boardID="boardID" :invitations="invitations" />
         </ModalWindow>
@@ -289,6 +335,7 @@
                 :boardID="boardID * 1"
                 :writeAccess="writeAccess"
                 :userID="userID"
+                :currentUser="session.data.user"
                 :openInEditMode="editCardId === cardModal"
                 v-model="cardModalOpen"
                 @card-updated="handleCardUpdated"
@@ -301,7 +348,7 @@
 <script setup lang="ts">
 import { socket } from "~/lib/socket";
 import Sortable from "sortablejs";
-import { Pencil, UserRoundPlus, Trash2, X } from "lucide-vue-next";
+import { Pencil, UserRoundPlus, Ban, Trash2, X } from "lucide-vue-next";
 import { Plus } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
@@ -352,7 +399,6 @@ const fetchInvitations = async () => {
 };
 
 const areasWrapper = ref(null);
-const scrollRegion = ref(null); // horizontal scroll container for the areas
 // Lock horizontal scrolling of the board while a modal is open.
 const { isOpen: anyModalOpen } = useModalOpen();
 const areas = ref([]);
@@ -500,7 +546,7 @@ watch(
         const id = card ? card * 1 : false;
         if (id !== cardModal.value) {
             cardModal.value = id;
-            if (id) document.body.style.overflow = "hidden";
+            if (id) document.body.style.overflowY = "hidden";
         }
     },
 );
@@ -690,7 +736,7 @@ const deleteArea = async (areaId) => {
         // Remove the cards for the area
         delete cards.value[areaId];
         deleteAreaModal.value = false;
-        document.body.style.overflow = "auto";
+        document.body.style.overflowY = "auto";
         socket.emit("areaDeleted", {
             boardId: boardID.value,
             area: areaId,
@@ -710,15 +756,15 @@ const openModal = () => {
     newBoardStatus.value = boardStatus.value;
     newBoardImage.value = boardImage.value;
     optionsActive.value = true;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflowY = "hidden";
 };
 const openDeleteAreaModal = (id) => {
     deleteAreaModal.value = id;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflowY = "hidden";
 };
 const openInviteModal = () => {
     inviteModal.value = true;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflowY = "hidden";
     // Final tour step — opening the invite dialog completes the walkthrough.
     onboarding.advance("invite");
 };
@@ -748,7 +794,7 @@ const saveBoard = async () => {
             boardStatus.value = newBoardStatus.value;
             boardImage.value = newBoardImage.value;
             optionsActive.value = false;
-            document.body.style.overflow = "auto";
+            document.body.style.overflowY = "auto";
             socket.emit("boardUpdated", {
                 boardID: boardID.value,
                 boardName: boardName.value,
@@ -815,6 +861,22 @@ const handleBoardDeleted = async () => {
     await navigateTo("/dashboard/");
 };
 
+// Who is currently viewing each card, keyed by card id. A snapshot (on join)
+// replaces the map wholesale; single-card updates patch one entry.
+const cardViewers = ref({});
+
+const handlePresenceUpdated = (entries, isSnapshot = false) => {
+    const next = isSnapshot ? {} : { ...cardViewers.value };
+    for (const { cardID, users } of entries) {
+        if (users?.length) next[cardID] = users;
+        else delete next[cardID];
+    }
+    cardViewers.value = next;
+};
+
+const viewersFor = (cardId) =>
+    (cardViewers.value[cardId] || []).filter((v) => v.id !== userID);
+
 const handleCommentCountUpdated = ({ cardId, commentCount, comments }) => {
     // Find the card and update its comment count
     for (const areaId in cards.value) {
@@ -833,9 +895,43 @@ const handleCommentCountUpdated = ({ cardId, commentCount, comments }) => {
     }
 };
 
+// Menu item styling, matching the dashboard's action menu. Destructive entries
+// (delete, leave) use the secondary colour so they don't read as routine.
+const menuItemClass =
+    "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-primary/10 hover:text-primary dark:text-white";
+const menuItemDestructiveClass =
+    "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-secondary/10 hover:text-secondary dark:text-white";
+
 const openDeleteBoard = () => {
     deleteModal.value = true;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflowY = "hidden";
+};
+
+const leaveModal = ref(false);
+
+const openLeaveBoard = () => {
+    leaveModal.value = true;
+    document.body.style.overflowY = "hidden";
+};
+
+// Leaving removes the caller's own invitation. The board itself is untouched —
+// the owner still has it, and can invite them back.
+const leaveBoard = async () => {
+    try {
+        await $fetch("/api/data/leaveBoard", {
+            method: "POST",
+            body: { boardId: boardID.value },
+        });
+        await nuxtApp.callHook("app:toast", { message: $t("boardLeft") });
+        document.body.style.overflowY = "auto";
+        await navigateTo("/dashboard/");
+    } catch (error) {
+        console.error("Error leaving board:", error);
+        await nuxtApp.callHook("app:toast", {
+            message: $t("leaveBoardFailed"),
+            type: "error",
+        });
+    }
 };
 
 const deleteBoard = async () => {
@@ -858,7 +954,7 @@ const deleteBoard = async () => {
             socket.emit("boardDeleted", {
                 boardID: boardID.value,
             });
-            document.body.style.overflow = "auto";
+            document.body.style.overflowY = "auto";
             await navigateTo("/dashboard/");
         }
     } catch (err) {
@@ -1052,7 +1148,7 @@ onMounted(() => {
             cardModal.value = false;
             cardModalOpen.value = false;
         } else {
-            document.body.style.overflow = "hidden";
+            document.body.style.overflowY = "hidden";
         }
     }
     initSort();

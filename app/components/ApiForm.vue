@@ -49,6 +49,22 @@
                 v-model="expiresIn"
             />
         </div>
+        <div>
+            <label class="mb-1 block text-sm/6 font-medium text-gray">{{
+                $t("settingsKeyAccess")
+            }}</label>
+            <SegmentedControl
+                :values="[
+                    { value: 'full', label: $t('settingsKeyAccessFull') },
+                    { value: 'read', label: $t('settingsKeyAccessReadonly') },
+                ]"
+                name="access"
+                v-model="access"
+            />
+            <p class="mt-1 text-xs text-gray">
+                {{ $t("settingsKeyAccessHint") }}
+            </p>
+        </div>
         <input
             type="submit"
             class="block w-full rounded-lg px-4 py-2 bg-primary hover:bg-secondary text-white"
@@ -64,6 +80,7 @@ const nuxtApp = useNuxtApp();
 const createdKey = ref(false);
 const name = ref("");
 const expiresIn = ref(30);
+const access = ref("full");
 
 const emits = defineEmits(["key-created"]);
 
@@ -74,6 +91,7 @@ const handleNewKey = async () => {
             body: {
                 name: name.value || $t("settingsKeyNameUnknown"),
                 expiresIn: 60 * 60 * 24 * expiresIn.value,
+                readOnly: access.value === "read",
             },
         });
 

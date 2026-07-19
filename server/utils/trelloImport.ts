@@ -1,8 +1,8 @@
-import { sanitizeHtml } from "../../app/utils/sanitizeHtml";
-
 // Pure helpers for the Trello board import (server/api/data/import/trello.ts).
-// Kept here — free of DB/HTTP — so the parsing and Markdown→HTML conversion can
-// be unit-tested in isolation.
+// Kept here — free of DB/HTTP — so the parsing can be unit-tested in isolation.
+// Card descriptions and comments are stored as Markdown, and Trello's own
+// descriptions/comments are already Markdown, so we largely pass them through
+// (only checklists and link attachments are assembled into Markdown).
 
 // Guard rails so a pathological board can't create an unbounded amount of data.
 export const MAX_LISTS = 500;
@@ -18,121 +18,30 @@ export function parseTrelloShortLink(input: string): string | null {
   return match ? match[1] : null;
 }
 
-function escapeHtml(s: unknown): string {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-// Best-effort inline Markdown → HTML on already-escaped text: code spans, links,
-// bold and italics. Not a full parser — just the common cases Trello uses.
-function inlineMarkdown(escaped: string): string {
-  return escaped
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(
-      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer nofollow">$1</a>',
-    )
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/__([^_]+)__/g, "<strong>$1</strong>")
-    .replace(/\*([^*\n]+)\*/g, "<em>$1</em>")
-    .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?])/g, "$1<em>$2</em>");
-}
-
-// Convert a Trello card description (Markdown) to HTML. Block level: headings,
-// bullet/numbered lists and paragraphs (single newlines inside a paragraph
-// become <br>).
-export function descriptionToHtml(desc: string): string {
-  if (!desc || !desc.trim()) return "";
-  const lines = desc.replace(/\r\n?/g, "\n").split("\n");
-  const out: string[] = [];
-  let paragraph: string[] = [];
-  let listType: "ul" | "ol" | null = null;
-  let listItems: string[] = [];
-
-  const flushParagraph = () => {
-    if (paragraph.length) {
-      out.push(`<p>${paragraph.join("<br>")}</p>`);
-      paragraph = [];
-    }
-  };
-  const flushList = () => {
-    if (listType && listItems.length) {
-      out.push(`<${listType}>${listItems.join("")}</${listType}>`);
-    }
-    listType = null;
-    listItems = [];
-  };
-
-  for (const raw of lines) {
-    const line = raw.trimEnd();
-    const heading = line.match(/^(#{1,6})\s+(.*)$/);
-    const bullet = line.match(/^\s*[-*]\s+(.*)$/);
-    const ordered = line.match(/^\s*\d+\.\s+(.*)$/);
-
-    if (heading) {
-      flushParagraph();
-      flushList();
-      const level = heading[1].length;
-      out.push(
-        `<h${level}>${inlineMarkdown(escapeHtml(heading[2]))}</h${level}>`,
-      );
-    } else if (bullet) {
-      flushParagraph();
-      if (listType !== "ul") flushList();
-      listType = "ul";
-      listItems.push(`<li><p>${inlineMarkdown(escapeHtml(bullet[1]))}</p></li>`);
-    } else if (ordered) {
-      flushParagraph();
-      if (listType !== "ol") flushList();
-      listType = "ol";
-      listItems.push(
-        `<li><p>${inlineMarkdown(escapeHtml(ordered[1]))}</p></li>`,
-      );
-    } else if (line.trim() === "") {
-      flushParagraph();
-      flushList();
-    } else {
-      flushList();
-      paragraph.push(inlineMarkdown(escapeHtml(line)));
-    }
-  }
-  flushParagraph();
-  flushList();
-  return out.join("");
-}
-
-// Render a Trello checklist as a TipTap task list so it comes across as an
-// interactive checklist rather than plain text.
-export function checklistToHtml(
+// Render a Trello checklist as a Markdown task list.
+export function checklistToMarkdown(
   name: string,
   items: Array<{ name: string; state: string; pos: number }>,
 ): string {
   const ordered = [...(items || [])].sort((a, b) => (a.pos || 0) - (b.pos || 0));
-  const lis = ordered
-    .map((it) => {
-      const checked = it.state === "complete";
-      const box = checked
-        ? '<input type="checkbox" checked>'
-        : '<input type="checkbox">';
-      return `<li data-type="taskItem" data-checked="${checked}"><label>${box}<span></span></label><div><p>${inlineMarkdown(
-        escapeHtml(it.name || ""),
-      )}</p></div></li>`;
-    })
-    .join("");
-  const heading = name ? `<p><strong>${escapeHtml(name)}</strong></p>` : "";
-  return `${heading}<ul data-type="taskList">${lis}</ul>`;
+  const heading = name ? `**${String(name).trim()}**` : "";
+  if (ordered.length === 0) return heading;
+  const lines = ordered
+    .map(
+      (it) =>
+        `- [${it.state === "complete" ? "x" : " "}] ${String(it.name || "").trim()}`,
+    )
+    .join("\n");
+  return heading ? `${heading}\n\n${lines}` : lines;
 }
 
 // Trello has two kinds of attachment. **Link** attachments (isUpload false) are
-// just URLs — there's no file to host, so we keep them as links appended to the
-// card description. **File** attachments (isUpload true) are real uploads; their
-// download URL 302-redirects to a public S3 file for public boards, so the
+// just URLs — there's no file to host, so we keep them as a Markdown link list
+// appended to the card. **File** attachments (isUpload true) are real uploads;
+// their download URL 302-redirects to a public S3 file for public boards, so the
 // import endpoint downloads and re-hosts those as normal LocalBoards
 // attachments (see ImportedAttachment below).
-export function linkAttachmentsToHtml(attachments: any[]): string {
+export function linkAttachmentsToMarkdown(attachments: any[]): string {
   const list = (attachments || []).filter(
     (a: any) => a && a.isUpload !== true && (a.url || a.name),
   );
@@ -140,15 +49,12 @@ export function linkAttachmentsToHtml(attachments: any[]): string {
   const items = list
     .sort((a: any, b: any) => (a.pos || 0) - (b.pos || 0))
     .map((a: any) => {
-      const label = escapeHtml(a.name || a.fileName || a.url || "attachment");
+      const label = String(a.name || a.fileName || a.url || "attachment").trim();
       const url = typeof a.url === "string" ? a.url : "";
-      if (/^https?:\/\//i.test(url)) {
-        return `<li><p><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer nofollow">${label}</a></p></li>`;
-      }
-      return `<li><p>${label}</p></li>`;
+      return /^https?:\/\//i.test(url) ? `- [${label}](${url})` : `- ${label}`;
     })
-    .join("");
-  return `<p><strong>Links</strong></p><ul>${items}</ul>`;
+    .join("\n");
+  return `**Links**\n\n${items}`;
 }
 
 export interface ImportedComment {
@@ -181,8 +87,8 @@ export interface ImportedBoard {
 
 // Transform a parsed Trello board-JSON export into the structure LocalBoards
 // stores: a board name, its open lists (areas) in order, and each list's open
-// cards (name + description + checklists + attachment links, as sanitized HTML,
-// plus comments). Returns null when the payload isn't a readable board export.
+// cards (name + description + checklists + attachment links, as Markdown, plus
+// comments). Returns null when the payload isn't a readable board export.
 export function trelloJsonToBoard(trello: any): ImportedBoard | null {
   if (!trello || typeof trello !== "object" || !Array.isArray(trello.lists)) {
     return null;
@@ -217,7 +123,8 @@ export function trelloJsonToBoard(trello: any): ImportedBoard | null {
 
   // Comments live in the board's action feed (capped at ~1000 by Trello's
   // export), keyed by the card they belong to. The Trello author's name is kept
-  // for display; the comment isn't linked to any local user account.
+  // for display; the comment isn't linked to any local user account. The text is
+  // already Markdown, so it's stored as-is.
   const commentsByCard = new Map<string, ImportedComment[]>();
   for (const action of trello.actions || []) {
     if (!action || action.type !== "commentCard") continue;
@@ -235,7 +142,7 @@ export function trelloJsonToBoard(trello: any): ImportedBoard | null {
     if (!commentsByCard.has(cardId)) commentsByCard.set(cardId, []);
     commentsByCard.get(cardId)!.push({
       authorName: String(author).slice(0, NAME_MAX),
-      content: sanitizeHtml(descriptionToHtml(text)),
+      content: String(text).trim(),
       date: typeof action.date === "string" ? action.date : null,
     });
   }
@@ -257,15 +164,22 @@ export function trelloJsonToBoard(trello: any): ImportedBoard | null {
 
   const areas = lists.map((list: any) => {
     const cards = (cardsByList.get(list.id) || []).map((card: any) => {
-      let content = descriptionToHtml(card.desc || "");
+      // Assemble the card body as Markdown: description, then each checklist,
+      // then link attachments — separated by blank lines.
+      const parts: string[] = [];
+      const desc = String(card.desc || "").trim();
+      if (desc) parts.push(desc);
       const checklists = (checklistsByCard.get(card.id) || []).sort(byPos);
       for (const cl of checklists) {
-        content += checklistToHtml(cl.name || "", cl.checkItems || []);
+        const block = checklistToMarkdown(cl.name || "", cl.checkItems || []);
+        if (block) parts.push(block);
       }
-      // Link attachments go in the description; uploaded files are downloaded
-      // and re-hosted by the endpoint.
       const rawAttachments = card.attachments || [];
-      content += linkAttachmentsToHtml(rawAttachments);
+      const links = linkAttachmentsToMarkdown(rawAttachments);
+      if (links) parts.push(links);
+      const content = parts.join("\n\n");
+
+      // Uploaded files are downloaded and re-hosted by the endpoint.
       const attachments: ImportedAttachment[] = rawAttachments
         .filter(
           (a: any) =>
@@ -296,7 +210,7 @@ export function trelloJsonToBoard(trello: any): ImportedBoard | null {
 
       return {
         name: String(card.name || "").slice(0, NAME_MAX) || "—",
-        content: sanitizeHtml(content),
+        content,
         status,
         comments,
         attachments,

@@ -3,6 +3,8 @@ import { Server as Engine } from "engine.io";
 import { Server } from "socket.io";
 import { defineEventHandler } from "h3";
 import { setServerSocket } from "../utils/socket";
+import { setupDatabase } from "../../app/lib/databaseSetup";
+import { authorizeBoard, resolveSessionToken } from "../utils/auth";
 
 export default defineNitroPlugin((nitroApp: NitroApp) => {
   const engine = new Engine();
@@ -23,25 +25,207 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
   io.bind(engine);
 
+  const db = setupDatabase();
+
+  // Sockets carry the same session cookie as the rest of the app, so the
+  // connection can be tied to a real account instead of trusting whatever the
+  // client claims to be. Anonymous connections are still allowed (the handshake
+  // is shared with clients that only listen), but they are given no identity and
+  // pass no access check, so they can neither read nor inject anything.
+  const sessionUser = async (socket: any) => {
+    if (socket.data.userLoaded) return socket.data.user;
+    socket.data.userLoaded = true;
+    socket.data.user = null;
+    try {
+      const cookie = socket.handshake.headers?.cookie || "";
+      const token = cookie
+        .split(";")
+        .map((c: string) => c.trim())
+        .find((c: string) => c.startsWith("session_token="))
+        ?.slice("session_token=".length);
+      if (!token) return null;
+      const result = await resolveSessionToken(decodeURIComponent(token));
+      if (result.status === "ok") socket.data.user = result.user;
+    } catch (err) {
+      logger.error("Socket session resolution failed:", err);
+    }
+    return socket.data.user;
+  };
+
+  // Board access for a socket, memoised briefly: these checks sit in front of
+  // every realtime event, and a board's membership does not change per keystroke.
+  const ACCESS_TTL_MS = 30_000;
+  const canAccessBoard = async (socket: any, boardId: any) => {
+    const id = Number(boardId);
+    if (!Number.isInteger(id) || id <= 0) return false;
+    const user = await sessionUser(socket);
+    if (!user) return false;
+
+    socket.data.access ??= new Map<number, { ok: boolean; at: number }>();
+    const cached = socket.data.access.get(id);
+    if (cached && Date.now() - cached.at < ACCESS_TTL_MS) return cached.ok;
+
+    let ok = false;
+    try {
+      const [[board]]: any = await db.query(
+        "SELECT * FROM `boards` WHERE id = ?",
+        [id],
+      );
+      if (board) {
+        const decision = await authorizeBoard(db, board, user.id, "read");
+        ok = !!decision.ok;
+      }
+    } catch (err) {
+      logger.error("Socket board access check failed:", err);
+    }
+    socket.data.access.set(id, { ok, at: Date.now() });
+    return ok;
+  };
+
+  // Which board a card belongs to. Cached because comment events are per card.
+  const boardOfCard = async (cardID: any) => {
+    const id = Number(cardID);
+    if (!Number.isInteger(id) || id <= 0) return null;
+    try {
+      const [[row]]: any = await db.query(
+        "SELECT a.board AS board FROM cards c JOIN areas a ON a.id = c.area WHERE c.id = ?",
+        [id],
+      );
+      return row?.board ?? null;
+    } catch (err) {
+      logger.error("Socket card lookup failed:", err);
+      return null;
+    }
+  };
+
+  const canAccessCard = async (socket: any, cardID: any) => {
+    const boardId = await boardOfCard(cardID);
+    return boardId ? canAccessBoard(socket, boardId) : false;
+  };
+
+  // Live presence: who currently has a card open, keyed by card id then socket
+  // id. Purely in-memory — it describes "right now", so losing it on restart is
+  // correct. Multiple tabs of the same person collapse to one entry.
+  const cardPresence = new Map<string, Map<string, any>>();
+
+  // Which board a card belongs to, learned from joinCard. Needed so presence can
+  // also be broadcast to everyone looking at the board (the faces on the tiles),
+  // not just to those inside the card.
+  const cardBoard = new Map<string, string>();
+
+  const presenceUsers = (cardID: string | number) => {
+    const sockets = cardPresence.get(String(cardID));
+    if (!sockets) return [];
+    const byUser = new Map<string, any>();
+    for (const user of sockets.values()) {
+      if (user?.id) byUser.set(user.id, user);
+    }
+    return Array.from(byUser.values());
+  };
+
+  const broadcastPresence = (cardID: string | number) => {
+    const payload = {
+      cardID: Number(cardID),
+      users: presenceUsers(cardID),
+    };
+    io.to(`card-${cardID}`).emit("cardPresence", payload);
+    const boardId = cardBoard.get(String(cardID));
+    if (boardId) io.to(`board-${boardId}`).emit("cardPresence", payload);
+  };
+
+  const dropPresence = (socketId: string, cardID?: string) => {
+    const keys = cardID ? [String(cardID)] : Array.from(cardPresence.keys());
+    for (const key of keys) {
+      const sockets = cardPresence.get(key);
+      if (sockets?.delete(socketId)) {
+        if (sockets.size === 0) cardPresence.delete(key);
+        broadcastPresence(key);
+        // Forget the board mapping only once nobody is left on the card, so the
+        // broadcast above can still reach the board room.
+        if (!cardPresence.has(key)) cardBoard.delete(key);
+      }
+    }
+  };
+
+  // Everything currently open on a board — sent to a client as it joins, since
+  // it would otherwise only learn about presence from the next change.
+  const boardPresence = (boardId: string | number) => {
+    const entries = [];
+    for (const [cardID, board] of cardBoard) {
+      if (String(board) !== String(boardId)) continue;
+      const users = presenceUsers(cardID);
+      if (users.length) entries.push({ cardID: Number(cardID), users });
+    }
+    return entries;
+  };
+
   io.on("connection", (socket) => {
     logger.debug("A user connected:", socket.id);
 
     // Handle joining a board
-    socket.on("joinBoard", ({ boardId }) => {
+    socket.on("joinBoard", async ({ boardId }) => {
+      // Room membership is what decides who receives a board's realtime events
+      // and its presence, so it has to be gated on real access — not on the
+      // client asking nicely.
+      if (!(await canAccessBoard(socket, boardId))) return;
       socket.join(`board-${boardId}`);
       socket.join(`user-${socket.id}`);
+      // Catch the joiner up on who is currently in which card.
+      socket.emit("boardPresence", {
+        boardId: Number(boardId),
+        cards: boardPresence(boardId),
+      });
       logger.debug(`User ${socket.id} joined board ${boardId}`);
     });
 
-    // Handle joining a card
-    socket.on("joinCard", ({ cardID }) => {
+    // Handle joining a card. When the client sends its `user`, the socket also
+    // counts towards the card's live presence (the faces shown in the modal).
+    socket.on("joinCard", async ({ cardID, boardID, user: _ignored }) => {
+      // The identity shown to everyone else comes from the session, never from
+      // the client: otherwise anyone could put someone else's face on a card.
+      const me = await sessionUser(socket);
+      const boardId = await boardOfCard(cardID);
+      if (!boardId || !(await canAccessBoard(socket, boardId))) return;
+
       socket.join(`card-${cardID}`);
       socket.join(`user-${socket.id}`);
+      if (me?.id) {
+        const key = String(cardID);
+        cardBoard.set(key, String(boardId));
+        if (!cardPresence.has(key)) cardPresence.set(key, new Map());
+        cardPresence.get(key)!.set(socket.id, {
+          id: me.id,
+          name: me.name,
+          image: me.image,
+          type: me.type || "human",
+        });
+        broadcastPresence(cardID);
+      } else {
+        // No identity to add (e.g. an API/read-only client), but the joiner
+        // still needs to know who is already on the card — otherwise it sees
+        // nobody until the next person comes or goes.
+        socket.emit("cardPresence", {
+          cardID: Number(cardID),
+          users: presenceUsers(cardID),
+        });
+      }
       logger.debug(`User ${socket.id} joined card ${cardID}`);
+    });
+
+    // Leaving a card (modal closed) — drop presence and stop receiving its events.
+    socket.on("leaveCard", ({ cardID }) => {
+      socket.leave(`card-${cardID}`);
+      dropPresence(socket.id, String(cardID));
+    });
+
+    // A closed tab / lost connection leaves every card it was present on.
+    socket.on("disconnect", () => {
+      dropPresence(socket.id);
     });
 
     // CommentCreated
     socket.on("commentCreated", async ({ cardID, comment }) => {
+      if (!(await canAccessCard(socket, cardID))) return;
       logger.debug(
         `Kommentar ${comment.id} wurde auf Card ${cardID} erstellt (user-${socket.id})`,
       );
@@ -53,6 +237,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CommentDeleted
     socket.on("commentDeleted", async ({ cardID, commentId }) => {
+      if (!(await canAccessCard(socket, cardID))) return;
       logger.debug(
         `Kommentar ${commentId} wurde auf Card ${cardID} gelöscht (user-${socket.id})`,
       );
@@ -66,6 +251,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CommentUpdated
     socket.on("commentUpdated", async ({ cardID, comment }) => {
+      if (!(await canAccessCard(socket, cardID))) return;
       logger.debug(
         `Kommentar ${comment.id} wurde auf Card ${cardID} aktualisiert (user-${socket.id})`,
       );
@@ -81,6 +267,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
     socket.on(
       "boardUpdated",
       async ({ boardID, boardName, boardStatus, boardStyle }) => {
+        if (!(await canAccessBoard(socket, boardID))) return;
         logger.debug(`Board ${boardID} wurde aktualisiert (user-${socket.id})`);
         io.except(`user-${socket.id}`)
           .to(`board-${boardID}`)
@@ -95,6 +282,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // BoardDeleted
     socket.on("boardDeleted", async ({ boardID }) => {
+      if (!(await canAccessBoard(socket, boardID))) return;
       logger.debug(`Board ${boardID} wurde gelöscht (user-${socket.id})`);
       io.except(`user-${socket.id}`)
         .to(`board-${boardID}`)
@@ -105,6 +293,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // AreasUpdated
     socket.on("areasUpdated", async ({ boardId, areas }) => {
+      if (!(await canAccessBoard(socket, boardId))) return;
       logger.debug(
         `Area-Sortierung wurde auf Board ${boardId} angepasst (user-${socket.id})`,
       );
@@ -118,6 +307,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // AreaCreated
     socket.on("areaCreated", async ({ boardId, area }) => {
+      if (!(await canAccessBoard(socket, boardId))) return;
       logger.debug(
         `Area ${area.id} wurde auf Board ${boardId} erstellt (user-${socket.id})`,
       );
@@ -129,6 +319,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // AreaUpdated
     socket.on("areaUpdated", async ({ boardId, area }) => {
+      if (!(await canAccessBoard(socket, boardId))) return;
       logger.debug(
         `Area ${area.id} wurde auf Board ${boardId} aktualisiert (user-${socket.id})`,
       );
@@ -140,6 +331,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // AreaDeleted
     socket.on("areaDeleted", async ({ boardId, area }) => {
+      if (!(await canAccessBoard(socket, boardId))) return;
       logger.debug(
         `Area ${area} wurde auf Board ${boardId} gelöscht (user-${socket.id})`,
       );
@@ -151,6 +343,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CardCreated
     socket.on("cardCreated", async ({ boardId, card }) => {
+      if (!(await canAccessBoard(socket, boardId))) return;
       logger.debug(
         `Karte ${card.id} wurde auf Board ${boardId} erstellt (user-${socket.id})`,
       );
@@ -162,6 +355,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CardUpdated
     socket.on("cardUpdated", async ({ boardId, attachments, card }) => {
+      if (!(await canAccessBoard(socket, boardId))) return;
       logger.debug(
         `Karte ${card.id} wurde auf Board ${boardId} aktualisiert (user-${socket.id})`,
       );
@@ -176,6 +370,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
     socket.on(
       "cardMoved",
       async ({ boardId, cardId, fromAreaId, toAreaId, newIndex }) => {
+        if (!(await canAccessBoard(socket, boardId))) return;
         logger.debug(
           `Karte ${cardId} wurde von Area #${fromAreaId} zu #${toAreaId} auf Board ${boardId} geschoben (user-${socket.id})`,
         );
@@ -193,6 +388,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CardOrderd
     socket.on("cardOrderd", async ({ boardId, cardId, areaId, newIndex }) => {
+      if (!(await canAccessBoard(socket, boardId))) return;
       logger.debug(
         `Karte ${cardId} wurde innerhalb von Area #${areaId} auf Board ${boardId} sortiert (user-${socket.id})`,
       );
@@ -206,6 +402,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
 
     // CardDeleted
     socket.on("cardDeleted", async ({ boardId, card }) => {
+      if (!(await canAccessBoard(socket, boardId))) return;
       logger.debug(
         `Card ${card.id} wurde auf Board ${boardId} gelöscht (user-${socket.id})`,
       );
@@ -221,6 +418,7 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
     socket.on(
       "commentCountUpdated",
       async ({ boardId, cardId, commentCount }) => {
+        if (!(await canAccessBoard(socket, boardId))) return;
         logger.debug(
           `Comment count updated for card ${cardId} on board ${boardId} (user-${socket.id})`,
         );

@@ -1,5 +1,6 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { dispatchWebhooks } from "../../utils/webhooks";
 import { getServerSocket } from "../../utils/socket";
 
 // Function to handle file uploads
@@ -201,6 +202,13 @@ export default defineEventHandler(async (event) => {
             card: rows[0],
           });
         }
+
+        dispatchWebhooks({
+          boardId: boardRows[0]?.boardId,
+          event: "card.created",
+          actorUserId: userId,
+          card: { id: card?.id, name: card?.name, areaId: card?.area },
+        });
 
         return { card };
       }
@@ -441,6 +449,13 @@ export default defineEventHandler(async (event) => {
             card: rows[0],
           });
         }
+
+        dispatchWebhooks({
+          boardId: board?.id,
+          event: "card.updated",
+          actorUserId: userId,
+          card: { id: card?.id, name: card?.name, done: !!card?.status },
+        });
 
         return { card, attachments };
       }

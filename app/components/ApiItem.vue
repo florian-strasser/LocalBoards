@@ -67,7 +67,7 @@ const formattedExpires = computed(() => {
 
 const openDeleteKeyModal = () => {
     deleteKeyModal.value = true;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflowY = "hidden";
 };
 
 const deleteKey = async () => {
@@ -82,7 +82,7 @@ const deleteKey = async () => {
 
         if (response.success) {
             deleteKeyModal.value = false;
-            document.body.style.overflow = "auto";
+            document.body.style.overflowY = "auto";
             emits("key-deleted", keyId);
             await nuxtApp.callHook("app:toast", {
                 message: $t("keyDeleted"),

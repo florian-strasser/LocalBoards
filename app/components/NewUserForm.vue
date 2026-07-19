@@ -61,6 +61,26 @@
                 </div>
 
                 <div class="form-group">
+                    <label class="mb-1 block text-sm/6 font-medium text-gray">{{
+                        $t("userType")
+                    }}</label>
+                    <SegmentedControl
+                        :values="[
+                            { value: 'human', label: $t('userTypeHuman') },
+                            {
+                                value: 'artificial',
+                                label: $t('userTypeArtificial'),
+                            },
+                        ]"
+                        name="type"
+                        v-model="type"
+                    />
+                    <p class="mt-1 text-xs text-gray">
+                        {{ $t("userTypeHint") }}
+                    </p>
+                </div>
+
+                <div class="form-group">
                     <InputCheckbox
                         v-model="sendWelcomeEmail"
                         :label="$t('sendCredentialsByEmail')"
@@ -119,6 +139,7 @@ const name = ref("");
 const email = ref("");
 const password = ref(generateRandomPassword());
 const role = ref("user");
+const type = ref("human");
 // Off by default so existing behaviour (admin copies the credentials) is
 // unchanged; when on, the new user is emailed their login details.
 const sendWelcomeEmail = ref(false);
@@ -140,6 +161,7 @@ const handleNewUser = async () => {
                 email: email.value,
                 password: password.value,
                 role: role.value,
+                type: type.value,
                 sendEmail: sendWelcomeEmail.value,
                 onboarding: showOnboarding.value,
             },

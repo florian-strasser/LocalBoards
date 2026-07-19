@@ -16,6 +16,16 @@ const DATA_TABLES = [
   "session",
   "user",
   "verification",
+  "webhooks",
+];
+
+// Written by migration 0007 rather than by the app. They are keyed by row id and
+// record which rows have already been converted, so a test that re-inserts
+// card id 1 must start from an empty backup or its content is (correctly)
+// treated as already migrated.
+const MIGRATION_TABLES = [
+  "cards_content_html_backup",
+  "comments_content_html_backup",
 ];
 
 export function db() {
@@ -33,6 +43,11 @@ export async function resetData() {
   await pool.query("SET FOREIGN_KEY_CHECKS=0");
   for (const table of DATA_TABLES) {
     await pool.query(`TRUNCATE TABLE \`${table}\``);
+  }
+  for (const table of MIGRATION_TABLES) {
+    // Dropped, not truncated: the migration recreates it with CREATE TABLE IF
+    // NOT EXISTS, and it may not exist yet on a fresh database.
+    await pool.query(`DROP TABLE IF EXISTS \`${table}\``);
   }
   await pool.query("SET FOREIGN_KEY_CHECKS=1");
 }

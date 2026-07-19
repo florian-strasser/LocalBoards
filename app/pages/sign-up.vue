@@ -2,7 +2,7 @@
     <div class="relative min-h-svh flex flex-col">
         <main class="flex flex-col justify-center py-8 grow shrink-0">
             <div class="container mx-auto">
-                <div class="max-w-md mx-auto">
+                <div class="max-w-lg mx-auto">
                     <div class="grid grid-cols-2 text-sm">
                         <div class="bg-white dark:bg-slate">
                             <NuxtLink

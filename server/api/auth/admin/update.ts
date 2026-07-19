@@ -28,7 +28,13 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event);
-    const { userId, name, email, password, role } = body;
+    const { userId, name, email, password, role, type, emailNotifications } =
+      body;
+
+    if (type !== undefined && type !== "human" && type !== "artificial") {
+      event.res.statusCode = 400;
+      return { error: "INVALID_TYPE" };
+    }
 
     // Validate input with length limits
     // MEDIUM FIX: Validate userId is UUID format
@@ -146,6 +152,18 @@ export default defineEventHandler(async (event) => {
         }
         updateFields.push("`role` = ?");
         updateValues.push(role);
+      }
+
+      // Human vs artificial (AI agent) account.
+      if (type && type !== user.type) {
+        updateFields.push("`type` = ?");
+        updateValues.push(type);
+      }
+
+      // Whether this account receives notification e-mails.
+      if (emailNotifications !== undefined) {
+        updateFields.push("`emailNotifications` = ?");
+        updateValues.push(emailNotifications ? 1 : 0);
       }
 
       // Update user record if there are changes

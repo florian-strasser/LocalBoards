@@ -1,82 +1,31 @@
-import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import {
+  requireUserId,
+  requireCard,
+  requireId,
+  cardIdInput,
+  serializeCard,
+} from "../../utils/mcpHelpers";
 
 const db = setupDatabase();
 
 export default defineMcpTool({
   name: "getCard",
-  description: "Get a specific card by its ID",
-  annotations: {
-    readOnlyHint: true,
-  },
-  inputSchema: {
-    cardID: z.number().describe("The id of the card"),
-  },
-  handler: async ({ cardID }) => {
-    const event = useEvent();
-    const userId = event.context.userId as string;
-
-    if (!cardID) {
-      return textResult("cardID required.");
-    }
-
-    if (!userId) {
-      return textResult(
-        "Authentication required. Please provide a valid API key.",
-      );
-    }
-
-    try {
-      // Fetch card details
-      const [cardRows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
-        cardID,
-      ]);
-      const card = cardRows[0];
-
-      if (!card) {
-        return textResult("Card not found.");
-      }
-
-      // Get the board information
-      const [boardRows] = await db.execute(
-        "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
-        [card.area],
-      );
-      const board = boardRows[0];
-
-      if (!board) {
-        return textResult("Board not found.");
-      }
-
-      // Check if the user has access to the board
-      let readAccess = false;
-      if (board.status === "private" && board.user !== userId) {
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ?",
-          [board.id, userId],
-        );
-
-        if (invitationRows.length > 0) {
-          readAccess = true;
-        }
-      } else if (board.user === userId) {
-        readAccess = true;
-      } else if (board.status === "public") {
-        readAccess = true;
-      }
-
-      if (!readAccess) {
-        return textResult("Unauthorized access.");
-      }
-
-      // Convert status from number to boolean
-      card.status = !!card.status;
-
-      return jsonResult({ card });
-    } catch (error) {
-      logger.error("Database error:", error);
-      return textResult("Internal server error.");
-    }
+  title: "Get a card",
+  description:
+    "Get a single card by id: id, areaId, name, Markdown content, done (boolean), dueDate (ISO 8601 or null), assigneeId, position, and comment/attachment counts. Use listComments for the actual comments.",
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  inputSchema: { ...cardIdInput },
+  inputExamples: [{ cardId: 1 }],
+  handler: async ({ cardId, cardID }) => {
+    const userId = requireUserId();
+    const id = requireId(cardId, cardID, "cardId");
+    const { card } = await requireCard(id, userId, "read");
+    const [[counts]]: any = await db.query(
+      "SELECT (SELECT COUNT(*) FROM comments WHERE card = ?) AS commentCount, (SELECT COUNT(*) FROM attachments WHERE card = ?) AS attachmentCount",
+      [id, id],
+    );
+    return jsonResult({ card: serializeCard({ ...card, ...counts }) });
   },
 });

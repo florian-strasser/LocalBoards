@@ -171,6 +171,7 @@ export default defineEventHandler(async (event) => {
 
       // Delete all invitations associated with the board
       await db.execute("DELETE FROM invitations WHERE board = ?", [id]);
+      await db.execute("DELETE FROM `webhooks` WHERE board = ?", [id]);
 
       // Delete all notifications associated with the cards in the board's areas
       await db.execute(`DELETE FROM notifications WHERE boardId = ?`, [id]);

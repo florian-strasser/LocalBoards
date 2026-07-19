@@ -237,9 +237,11 @@ const sendNotification = async () => {
         return `<li style='margin-bottom:0.4em; padding:0.8em 1.5em 0.33em 1.5em; background:rgba(0,0,0,0.1); border-radius:0.5em;'>${translateNotification(notification.message)}</li>`;
       });
 
-      // Fetch the user's email address from the user table
+      // Fetch the user's email address — only for accounts that still want
+      // notification mails (opt-out lives on the profile; artificial/AI
+      // accounts default to off).
       const [userRows] = await db.execute(
-        "SELECT email FROM user WHERE id = ?",
+        "SELECT email FROM user WHERE id = ? AND emailNotifications = 1",
         [userId],
       );
       const userEmail = userRows[0]?.email;

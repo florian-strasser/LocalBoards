@@ -2,84 +2,54 @@ import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { getServerSocket } from "../../utils/socket";
+import {
+  requireUserId,
+  requireWriteAccess,
+  requireBoard,
+  requireId,
+  boardIdInput,
+  serializeArea,
+} from "../../utils/mcpHelpers";
 
 const db = setupDatabase();
 
 export default defineMcpTool({
   name: "createArea",
-  description: "Create a new area",
-  annotations: {
-    readOnlyHint: false,
-  },
+  title: "Create an area",
+  description:
+    "Add an area (column/list) to the end of a board. Needs edit access to the board.",
+  annotations: { readOnlyHint: false, openWorldHint: false },
   inputSchema: {
-    boardId: z.number().describe("The id of the board"),
-    name: z.string().describe("The name of the area"),
+    ...boardIdInput,
+    name: z.string().min(1).describe("The area name (e.g. 'Backlog', 'Done')."),
   },
-  handler: async ({ id, boardId, name }) => {
-    const event = useEvent();
-    const userId = event.context.userId as string;
+  inputExamples: [{ boardId: 1, name: "In Progress" }],
+  handler: async ({ boardId, boardID, name }) => {
+    const userId = requireUserId();
+    requireWriteAccess();
+    const bid = requireId(boardId, boardID, "boardId");
+    await requireBoard(bid, userId, "edit");
 
-    if (!boardId || !name) {
-      return textResult("boardId and name are required.");
+    const [countRows]: any = await db.execute(
+      "SELECT COUNT(*) AS n FROM areas WHERE board = ?",
+      [bid],
+    );
+    const sort = (countRows[0]?.n ?? 0) + 1;
+
+    const [result]: any = await db.execute(
+      "INSERT INTO areas (board, name, sort) VALUES (?, ?, ?)",
+      [bid, name, sort],
+    );
+    const [rows]: any = await db.execute("SELECT * FROM areas WHERE id = ?", [
+      result.insertId,
+    ]);
+    const area = rows[0];
+
+    const serverSocket = getServerSocket();
+    if (serverSocket) {
+      serverSocket.to(`board-${bid}`).emit("addArea", { area, boardId: bid });
     }
 
-    if (!userId) {
-      return textResult(
-        "Authentication required. Please provide a valid API key.",
-      );
-    }
-
-    try {
-      // Check if the board exists
-      const [boardRows] = await db.execute(
-        "SELECT * FROM boards WHERE id = ?",
-        [boardId],
-      );
-      const board = boardRows[0];
-
-      if (!board) {
-        return textResult("Board not found.");
-      }
-
-
-      // Require write access: owner or an `edit` invitation. Public boards are
-      // read-only (shared, tested helper — keeps this in sync with the REST API).
-      const decision = await authorizeBoard(db, board, userId, "edit");
-      if (!decision.ok) {
-        return textResult("Unauthorized access.");
-      }
-
-      // Get the current number of areas in the board to determine the sort order
-      const [arows] = await db.execute("SELECT * FROM areas WHERE board = ?", [
-        boardId,
-      ]);
-      const areaCount = arows ? arows.length + 1 : 0;
-
-      // Create new area
-      const [result] = await db.execute(
-        "INSERT INTO areas (board, name, sort) VALUES (?, ?, ?)",
-        [boardId, name, areaCount],
-      );
-
-      // Fetch the created area
-      const [rows] = await db.execute("SELECT * FROM areas WHERE id = ?", [
-        result.insertId,
-      ]);
-      const area = rows[0];
-
-      // Emit socket event for area creation
-      const serverSocket = getServerSocket();
-      if (serverSocket) {
-        serverSocket.to(`board-${boardId}`).emit("addArea", {
-          area,
-          boardId,
-        });
-      }
-
-      return jsonResult({ area });
-    } catch (error) {
-      logger.error("Database error:", error);
-      return textResult("Internal server error.");
-    }
+    return jsonResult({ area: serializeArea(area) });
   },
 });

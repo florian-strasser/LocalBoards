@@ -2,106 +2,98 @@ import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { getServerSocket } from "../../utils/socket";
+import {
+  requireUserId,
+  requireWriteAccess,
+  requireBoard,
+  requireId,
+  boardIdInput,
+  serializeBoard,
+  McpError,
+} from "../../utils/mcpHelpers";
 
 const db = setupDatabase();
 
 export default defineMcpTool({
   name: "updateBoard",
-  description: "Update an existing board",
+  title: "Update a board",
+  description:
+    "Change a board's settings (name, style, status, cover image). Partial update — pass only what changes. Board settings can only be changed by the board's owner.",
   annotations: {
     readOnlyHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
   },
   inputSchema: {
-    id: z.number().describe("The id of the board to update"),
-    name: z.string().describe("The name of the board"),
-    style: z
-      .string()
-      .describe("The style of the board, can be defined as 'kanban' or 'todo'"),
-    image: z.string().optional().describe("The image URL for the board"),
-    status: z.string().describe("The status of the board (public or private)"),
+    ...boardIdInput,
+    id: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Deprecated alias for boardId."),
+    name: z.string().min(1).optional().describe("New board name."),
+    style: z.enum(["kanban", "todo"]).optional().describe("New layout."),
+    status: z
+      .enum(["private", "public"])
+      .optional()
+      .describe("New visibility."),
+    image: z.string().optional().describe("New cover image URL ('' to clear)."),
   },
-  handler: async ({ id, name, style, image, status }) => {
-    const event = useEvent();
-    const userId = event.context.userId as string;
-
-    if (!name || !style || !status) {
-      return textResult("name, style, and status are required.");
-    }
-
-    if (!userId) {
-      return textResult(
-        "Authentication required. Please provide a valid API key.",
+  inputExamples: [{ boardId: 1, status: "public" }],
+  handler: async ({ boardId, boardID, id, name, style, status, image }) => {
+    const userId = requireUserId();
+    requireWriteAccess();
+    const bid = requireId(boardId, boardID ?? id, "boardId");
+    const board = await requireBoard(bid, userId, "edit");
+    if (board.user !== userId) {
+      throw new McpError(
+        "FORBIDDEN",
+        "Only the board owner can change board settings.",
       );
     }
 
-    try {
-      // Update existing board
-      const [brows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
-        id,
-      ]);
-      const board = brows[0];
-
-      if (!board) {
-        return textResult("Board not found.");
-      }
-
-      // Check if the user has permission to update the board
-      let writeAccess = false;
-
-      if (board.user !== userId) {
-        // Check if the user has an invitation with edit permission
-        const [invitationRows] = await db.execute(
-          "SELECT permission FROM invitations WHERE board = ? AND user = ? AND permission = 'edit'",
-          [id, userId],
-        );
-
-        if (invitationRows.length > 0) {
-          writeAccess = invitationRows[0].permission === "edit";
-        }
-      } else {
-        // User is the creator of the board, so they have write access
-        writeAccess = true;
-      }
-
-      if (!writeAccess) {
-        return textResult("Unauthorized access.");
-      }
-
-      const imageVal = image ? image : null;
-
-      // Update existing board
-      const [result] = await db.execute(
-        "UPDATE boards SET name = ?, style = ?, image = ?, status = ? WHERE id = ? AND user = ?",
-        [name, style, imageVal, status, id, userId],
-      );
-
-      if (result.affectedRows === 0) {
-        return textResult(
-          "Board not found or you do not have permission to edit it.",
-        );
-      }
-
-      // Fetch the updated board
-      const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [
-        id,
-      ]);
-      const returnBoard = rows[0];
-
-      // Emit socket event for board update
-      const serverSocket = getServerSocket();
-      if (serverSocket) {
-        serverSocket.to(`board-${id}`).emit("updateBoard", {
-          boardID: id,
-          boardName: returnBoard.name,
-          boardStatus: returnBoard.status,
-          boardStyle: returnBoard.style,
-        });
-      }
-
-      return jsonResult({ board: returnBoard });
-    } catch (error) {
-      logger.error("Database error:", error);
-      return textResult("Internal server error.");
+    const fields: string[] = [];
+    const values: any[] = [];
+    if (name !== undefined) {
+      fields.push("name = ?");
+      values.push(name);
     }
+    if (style !== undefined) {
+      fields.push("style = ?");
+      values.push(style);
+    }
+    if (status !== undefined) {
+      fields.push("status = ?");
+      values.push(status);
+    }
+    if (image !== undefined) {
+      fields.push("image = ?");
+      values.push(image === "" ? null : image);
+    }
+    if (fields.length === 0) {
+      throw new McpError("VALIDATION", "Provide at least one field to update.");
+    }
+
+    await db.execute(`UPDATE boards SET ${fields.join(", ")} WHERE id = ?`, [
+      ...values,
+      bid,
+    ]);
+    const [rows]: any = await db.execute("SELECT * FROM boards WHERE id = ?", [
+      bid,
+    ]);
+    const updated = rows[0];
+
+    const serverSocket = getServerSocket();
+    if (serverSocket) {
+      serverSocket.to(`board-${bid}`).emit("updateBoard", {
+        boardID: bid,
+        boardName: updated.name,
+        boardStatus: updated.status,
+        boardStyle: updated.style,
+      });
+    }
+
+    return jsonResult({ board: serializeBoard(updated) });
   },
 });

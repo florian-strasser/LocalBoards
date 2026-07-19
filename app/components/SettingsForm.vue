@@ -42,6 +42,15 @@
                         {{ role === "admin" ? $t("admin") : $t("user") }}
                     </p>
                 </div>
+                <div>
+                    <InputCheckbox
+                        v-model="emailNotifications"
+                        :label="$t('emailNotifications')"
+                    />
+                    <p class="mt-1 text-xs text-gray">
+                        {{ $t("emailNotificationsHint") }}
+                    </p>
+                </div>
             </div>
         </div>
         <input
@@ -65,6 +74,9 @@ const image = ref(session.value?.data?.user?.image || undefined);
 const isAdmin = session.value?.data?.user?.role === "admin";
 const originalRole = session.value?.data?.user?.role || "user";
 const role = ref(originalRole);
+const emailNotifications = ref(
+    session.value?.data?.user?.emailNotifications !== false,
+);
 
 const schema = z.object({
     name: z
@@ -88,6 +100,7 @@ const handleSettings = async () => {
                 name: name.value,
                 image: image.value,
                 role: role.value,
+                emailNotifications: emailNotifications.value,
             },
         });
 

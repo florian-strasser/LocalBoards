@@ -2,83 +2,58 @@ import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { getServerSocket } from "../../utils/socket";
+import {
+  requireUserId,
+  requireWriteAccess,
+  requireArea,
+  requireId,
+  areaIdInput,
+  serializeArea,
+} from "../../utils/mcpHelpers";
 
 const db = setupDatabase();
 
 export default defineMcpTool({
   name: "updateArea",
-  description: "Update an existing area",
+  title: "Rename an area",
+  description:
+    "Rename an area (column). To reorder areas use moveAreas. Needs edit access to the board.",
   annotations: {
     readOnlyHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
   },
   inputSchema: {
-    id: z.number().describe("The id of the area to update (if updating)"),
-    boardId: z.number().describe("The id of the board"),
-    name: z.string().describe("The name of the area"),
+    ...areaIdInput,
+    id: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Deprecated alias for areaId."),
+    name: z.string().min(1).describe("The new area name."),
   },
-  handler: async ({ id, boardId, name }) => {
-    const event = useEvent();
-    const userId = event.context.userId as string;
+  inputExamples: [{ areaId: 1, name: "Doing" }],
+  handler: async ({ areaId, areaID, id, name }) => {
+    const userId = requireUserId();
+    requireWriteAccess();
+    const aid = requireId(areaId, areaID ?? id, "areaId");
+    const { board } = await requireArea(aid, userId, "edit");
 
-    if (!boardId || !name) {
-      return textResult("boardId and name are required.");
+    await db.execute("UPDATE areas SET name = ? WHERE id = ?", [name, aid]);
+    const [rows]: any = await db.execute("SELECT * FROM areas WHERE id = ?", [
+      aid,
+    ]);
+    const area = rows[0];
+
+    const serverSocket = getServerSocket();
+    if (serverSocket) {
+      serverSocket.to(`board-${board.id}`).emit("updateArea", {
+        area,
+        boardId: board.id,
+      });
     }
 
-    if (!userId) {
-      return textResult(
-        "Authentication required. Please provide a valid API key.",
-      );
-    }
-
-    try {
-      // Check if the board exists
-      const [boardRows] = await db.execute(
-        "SELECT * FROM boards WHERE id = ?",
-        [boardId],
-      );
-      const board = boardRows[0];
-
-      if (!board) {
-        return textResult("Board not found.");
-      }
-
-
-      // Require write access: owner or an `edit` invitation. Public boards are
-      // read-only (shared, tested helper — keeps this in sync with the REST API).
-      const decision = await authorizeBoard(db, board, userId, "edit");
-      if (!decision.ok) {
-        return textResult("Unauthorized access.");
-      }
-
-      // Update existing area
-      const [result] = await db.execute(
-        "UPDATE areas SET name = ? WHERE id = ? AND board = ?",
-        [name, id, boardId],
-      );
-
-      if (result.affectedRows === 0) {
-        return textResult(
-          "Area not found or you do not have permission to edit it.",
-        );
-      }
-
-      // Fetch the updated area
-      const [rows] = await db.execute("SELECT * FROM areas WHERE id = ?", [id]);
-      const area = rows[0];
-
-      // Emit socket event for area update
-      const serverSocket = getServerSocket();
-      if (serverSocket) {
-        serverSocket.to(`board-${boardId}`).emit("updateArea", {
-          area,
-          boardId,
-        });
-      }
-
-      return jsonResult({ area });
-    } catch (error) {
-      logger.error("Database error:", error);
-      return textResult("Internal server error.");
-    }
+    return jsonResult({ area: serializeArea(area) });
   },
 });

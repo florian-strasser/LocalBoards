@@ -1,5 +1,6 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import { dispatchWebhooks } from "../../utils/webhooks";
 import { getServerSocket } from "../../utils/socket";
 
 export default defineEventHandler(async (event) => {
@@ -193,6 +194,14 @@ export default defineEventHandler(async (event) => {
             );
           }
         }
+
+        dispatchWebhooks({
+          boardId: board?.id,
+          event: "comment.created",
+          actorUserId: userId,
+          card: { id: cardItem?.id, name: cardItem?.name },
+          comment: { id: comment?.id, content: comment?.content ?? "" },
+        });
 
         return { comment };
       }

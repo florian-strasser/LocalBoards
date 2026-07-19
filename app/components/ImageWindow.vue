@@ -68,7 +68,7 @@ watch(
     modal.isOpen,
     (locked) => {
         if (import.meta.client) {
-            document.body.style.overflow = locked ? "hidden" : "auto";
+            document.body.style.overflowY = locked ? "hidden" : "auto";
         }
     },
     { immediate: true },

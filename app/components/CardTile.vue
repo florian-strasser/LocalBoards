@@ -29,10 +29,20 @@
                 props.card.commentCount ||
                 props.card.attachmentCount ||
                 props.card.dueDate ||
-                props.card.assignee
+                props.card.assignee ||
+                props.viewers.length
             "
             class="pl-8 mt-1 flex items-center text-sm gap-x-3 flex-wrap text-gray"
         >
+            <!-- Who has this card open right now (excluding yourself). Sits
+                 with the other card info on the left; the assignee stays on
+                 the right so the two are never confused. -->
+            <PresenceAvatars
+                v-if="props.viewers.length"
+                :users="props.viewers"
+                :max="3"
+                size="sm"
+            />
             <div class="flex gap-x-1.5 shrink-0" v-if="props.card.commentCount">
                 <MessageSquareText class="size-4 shrink-0 grow-0" />
                 <div class="shrink-0 grow-0">
@@ -56,22 +66,24 @@
                 <Clock class="size-4 shrink-0 grow-0" />
                 <span class="shrink-0 grow-0">{{ dueDateLabel }}</span>
             </div>
-            <div
-                v-if="props.card.assignee"
-                class="ml-auto shrink-0"
-                v-tooltip="props.card.assigneeName || ''"
-            >
-                <img
-                    v-if="props.card.assigneeImage"
-                    :src="props.card.assigneeImage"
-                    class="w-6 h-6 rounded-full object-cover"
-                    :alt="props.card.assigneeName || ''"
-                />
+            <div class="ml-auto flex shrink-0 items-center gap-2">
                 <div
-                    v-else
-                    class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs"
+                    v-if="props.card.assignee"
+                    class="shrink-0"
+                    v-tooltip="props.card.assigneeName || ''"
                 >
-                    {{ (props.card.assigneeName || "?").substring(0, 1) }}
+                    <img
+                        v-if="props.card.assigneeImage"
+                        :src="props.card.assigneeImage"
+                        class="w-6 h-6 rounded-full object-cover"
+                        :alt="props.card.assigneeName || ''"
+                    />
+                    <div
+                        v-else
+                        class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs"
+                    >
+                        {{ (props.card.assigneeName || "?").substring(0, 1) }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -84,6 +96,8 @@ const props = defineProps({
     card: Object,
     // Whether this card has unread notifications for the current user.
     hasUnread: { type: Boolean, default: false },
+    // Users currently viewing this card (already excludes the current user).
+    viewers: { type: Array, default: () => [] },
 });
 
 const isOverdue = computed(
@@ -104,6 +118,6 @@ const dueDateLabel = computed(() => {
 });
 const openModal = (modalId) => {
     cardModal.value = modalId;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflowY = "hidden";
 };
 </script>

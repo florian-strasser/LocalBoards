@@ -1,9 +1,9 @@
 <template>
     <div class="flex justify-between mb-8">
-        <h1 v-if="!props.asH2" class="text-5xl text-dark dark:text-white">
+        <h1 v-if="!props.asH2" class="text-3xl sm:text-5xl text-dark dark:text-white">
             <slot />
         </h1>
-        <h2 v-else class="text-5xl text-dark dark:text-white"><slot /></h2>
+        <h2 v-else class="text-3xl sm:text-5xl text-dark dark:text-white"><slot /></h2>
         <!-- Optional extra action buttons rendered to the left of the primary
              (+) button — e.g. the dashboard's "import from Trello". -->
         <div class="flex shrink-0 items-center gap-3">

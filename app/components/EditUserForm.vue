@@ -41,6 +41,37 @@
                     />
                 </div>
 
+                <div class="form-group">
+                    <label
+                        class="mb-1 block text-sm/6 font-medium text-gray"
+                        >{{ $t("userType") }}</label
+                    >
+                    <SegmentedControl
+                        :values="[
+                            { value: 'human', label: $t('userTypeHuman') },
+                            {
+                                value: 'artificial',
+                                label: $t('userTypeArtificial'),
+                            },
+                        ]"
+                        name="type"
+                        v-model="type"
+                    />
+                    <p class="mt-1 text-xs text-gray">
+                        {{ $t("userTypeHint") }}
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <InputCheckbox
+                        v-model="emailNotifications"
+                        :label="$t('emailNotifications')"
+                    />
+                    <p class="mt-1 text-xs text-gray">
+                        {{ $t("emailNotificationsHint") }}
+                    </p>
+                </div>
+
                 <input
                     type="submit"
                     class="button bg-primary hover:bg-secondary w-full text-center px-6 py-3 rounded-lg text-white"
@@ -77,6 +108,8 @@ const currentUser = computed(() => {
 const name = ref(currentUser.value?.username || "");
 const email = ref(currentUser.value?.email || "");
 const role = ref(currentUser.value?.role || "user");
+const type = ref(currentUser.value?.type || "human");
+const emailNotifications = ref(currentUser.value?.emailNotifications !== false);
 
 const savedUser = ref(false);
 
@@ -89,6 +122,8 @@ const handleSaveUser = async () => {
                 name: name.value,
                 email: email.value,
                 role: role.value,
+                type: type.value,
+                emailNotifications: emailNotifications.value,
             },
         });
 

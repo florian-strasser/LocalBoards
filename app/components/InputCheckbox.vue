@@ -28,7 +28,10 @@
                 ></path>
             </svg>
         </div>
-        <div class="grow shrink">
+        <!-- text-sm to match the field labels in InputField; without it the
+             checkbox label inherited the 16px base size and sat noticeably
+             larger than every other label in the same form. -->
+        <div class="grow shrink text-sm">
             <span v-html="props.label" />
             <span v-if="props.required" class="text-primary ml-1">*</span>
         </div>

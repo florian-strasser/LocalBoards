@@ -4,7 +4,7 @@
             <form
                 v-if="!requestNew"
                 @submit.prevent="handleReset"
-                class="max-w-md mx-auto space-y-6 w-full px-8 pb-8 pt-7 bg-white dark:bg-slate rounded-xl mb-5 relative z-10"
+                class="max-w-lg mx-auto space-y-6 w-full px-8 pb-8 pt-7 bg-white dark:bg-slate rounded-xl mb-5 relative z-10"
             >
                 <ErrorMessage v-if="errorMessage">{{
                     errorMessage
@@ -26,7 +26,7 @@
             </form>
             <div
                 v-else
-                class="max-w-md mx-auto px-8 pb-8 pt-7 bg-white dark:bg-slate rounded-xl text-center"
+                class="max-w-lg mx-auto px-8 pb-8 pt-7 bg-white dark:bg-slate rounded-xl text-center"
             >
                 <h2 class="text-4xl text-dark dark:text-white mb-6">
                     {{ $t("requestedNewPasswordCheckYourInbox") }}

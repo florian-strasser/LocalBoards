@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   parseTrelloShortLink,
-  descriptionToHtml,
-  checklistToHtml,
-  linkAttachmentsToHtml,
+  checklistToMarkdown,
+  linkAttachmentsToMarkdown,
   trelloJsonToBoard,
 } from "../server/utils/trelloImport";
 
@@ -27,50 +26,24 @@ describe("parseTrelloShortLink", () => {
   });
 });
 
-describe("descriptionToHtml", () => {
-  it("converts common Markdown and escapes HTML", () => {
-    const html = descriptionToHtml(
-      "Hello **world** and [link](https://x.com)\nsecond\n\n- a\n- b\n\n# Head\n<b>x</b> & y",
-    );
-    expect(html).toContain("<strong>world</strong>");
-    expect(html).toContain(
-      '<a href="https://x.com" target="_blank" rel="noopener noreferrer nofollow">link</a>',
-    );
-    expect(html).toContain("second"); // single newline joined with <br>
-    expect(html).toContain("<br>");
-    expect(html).toContain("<ul><li><p>a</p></li><li><p>b</p></li></ul>");
-    expect(html).toContain("<h1>Head</h1>");
-    // raw HTML in the description is escaped, not passed through
-    expect(html).toContain("&lt;b&gt;x&lt;/b&gt; &amp; y");
-    expect(html).not.toContain("<b>x</b>");
-  });
-
-  it("returns empty string for blank input", () => {
-    expect(descriptionToHtml("")).toBe("");
-    expect(descriptionToHtml("   \n  ")).toBe("");
-  });
-});
-
-describe("checklistToHtml", () => {
-  it("renders a TipTap task list with checked state, ordered by pos", () => {
-    const html = checklistToHtml("Todo", [
+describe("checklistToMarkdown", () => {
+  it("renders a Markdown task list with checked state, ordered by pos", () => {
+    const md = checklistToMarkdown("Todo", [
       { name: "second", state: "incomplete", pos: 2 },
       { name: "first", state: "complete", pos: 1 },
     ]);
-    expect(html).toContain("<strong>Todo</strong>");
-    expect(html).toContain('data-type="taskList"');
+    expect(md).toContain("**Todo**");
     // ordered by pos: the complete "first" comes before "second"
-    expect(html.indexOf("first")).toBeLessThan(html.indexOf("second"));
-    expect(html).toContain('data-checked="true"');
-    expect(html).toContain('<input type="checkbox" checked>');
-    expect(html).toContain('<input type="checkbox">');
+    expect(md.indexOf("first")).toBeLessThan(md.indexOf("second"));
+    expect(md).toContain("- [x] first");
+    expect(md).toContain("- [ ] second");
   });
 });
 
-describe("linkAttachmentsToHtml", () => {
-  it("renders only link attachments (uploads are excluded) as links", () => {
-    expect(linkAttachmentsToHtml([])).toBe("");
-    const html = linkAttachmentsToHtml([
+describe("linkAttachmentsToMarkdown", () => {
+  it("renders only link attachments (uploads are excluded) as Markdown links", () => {
+    expect(linkAttachmentsToMarkdown([])).toBe("");
+    const md = linkAttachmentsToMarkdown([
       {
         name: "Blog post",
         url: "https://blog.example.com/x",
@@ -84,12 +57,10 @@ describe("linkAttachmentsToHtml", () => {
         isUpload: true,
       },
     ]);
-    expect(html).toContain("<strong>Links</strong>");
-    expect(html).toContain(
-      '<a href="https://blog.example.com/x" target="_blank" rel="noopener noreferrer nofollow">Blog post</a>',
-    );
+    expect(md).toContain("**Links**");
+    expect(md).toContain("- [Blog post](https://blog.example.com/x)");
     // an uploaded file is not a link — it's downloaded/re-hosted instead
-    expect(html).not.toContain("photo.png");
+    expect(md).not.toContain("photo.png");
   });
 });
 
@@ -177,11 +148,11 @@ describe("trelloJsonToBoard", () => {
     expect(first.cards.map((c) => c.name)).toEqual(["Card A", "Card B"]);
     const cardA = first.cards[0];
     const cardB = first.cards[1];
-    // description + checklist + LINK attachment, sanitized
-    expect(cardA.content).toContain("<strong>bold</strong>");
-    expect(cardA.content).toContain('data-type="taskList"');
-    expect(cardA.content).toContain("do it");
-    expect(cardA.content).toContain('href="https://example.com/doc"');
+    // description + checklist + LINK attachment, as Markdown
+    expect(cardA.content).toContain("**bold**");
+    expect(cardA.content).toContain("**Steps**");
+    expect(cardA.content).toContain("- [x] do it");
+    expect(cardA.content).toContain("[Doc](https://example.com/doc)");
     // the uploaded file is NOT in the description — it's queued for download
     expect(cardA.content).not.toContain("pic.png");
     expect(cardA.attachments.map((a) => a.name)).toEqual(["pic.png"]);

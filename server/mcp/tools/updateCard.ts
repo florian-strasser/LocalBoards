@@ -2,155 +2,196 @@ import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { getServerSocket } from "../../utils/socket";
+import { dispatchWebhooks } from "../../utils/webhooks";
+import {
+  requireUserId,
+  requireWriteAccess,
+  requireCard,
+  requireId,
+  cardIdInput,
+  serializeCard,
+  McpError,
+} from "../../utils/mcpHelpers";
 
 const db = setupDatabase();
 
 export default defineMcpTool({
   name: "updateCard",
-  description: "Update an existing card",
+  title: "Update a card",
+  description:
+    "Update fields of an existing card. Only the fields you pass are changed (partial update); pass at least one. `content` is Markdown. Set `dueDate` to an empty string to clear it, and `assigneeId` to an empty string to unassign. Needs edit access to the board.",
   annotations: {
     readOnlyHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
   },
   inputSchema: {
-    cardID: z.number().describe("The id of the card"),
-    name: z.string().describe("The name of the card"),
-    content: z.string().optional().describe("The content of the card"),
-    status: z
+    ...cardIdInput,
+    name: z.string().min(1).optional().describe("New card title."),
+    content: z
+      .string()
+      .optional()
+      .describe("New description, in Markdown. Pass '' to clear it."),
+    done: z
       .boolean()
       .optional()
+      .describe("Mark the card done (true) or open (false)."),
+    status: z.boolean().optional().describe("Deprecated alias for done."),
+    dueDate: z
+      .string()
+      .optional()
       .describe(
-        "The status of the card. 0 means uncompleted, 1 means completed.",
+        "Due date as ISO 8601 (e.g. 2026-08-01T09:00:00Z), or '' to clear.",
+      ),
+    assigneeId: z
+      .string()
+      .optional()
+      .describe(
+        "User id to assign (must be a board member; from listBoardMembers), or '' to unassign.",
       ),
   },
-  handler: async ({ cardID, name, content, status }) => {
-    const event = useEvent();
-    const userId = event.context.userId as string;
+  inputExamples: [
+    { cardId: 1, done: true },
+    {
+      cardId: 2,
+      name: "Redesign the logo",
+      content: "Keep it **simple**.\n\n- [ ] first pass",
+    },
+    { cardId: 3, dueDate: "2026-08-01T09:00:00Z", assigneeId: "u-ben" },
+  ],
+  handler: async ({
+    cardId,
+    cardID,
+    name,
+    content,
+    done,
+    status,
+    dueDate,
+    assigneeId,
+  }) => {
+    const userId = requireUserId();
+    requireWriteAccess();
+    const id = requireId(cardId, cardID, "cardId");
+    const { card, board } = await requireCard(id, userId, "edit");
 
-    if (!cardID || !name) {
-      return textResult("cardID and name are required.");
+    const doneVal = done ?? status;
+    const fields: string[] = [];
+    const values: any[] = [];
+    if (name !== undefined) {
+      fields.push("name = ?");
+      values.push(name);
+    }
+    if (content !== undefined) {
+      fields.push("content = ?");
+      values.push(content);
+    }
+    if (doneVal !== undefined) {
+      fields.push("status = ?");
+      values.push(doneVal ? 1 : 0);
+    }
+    if (dueDate !== undefined) {
+      if (dueDate === "") {
+        fields.push("dueDate = ?");
+        values.push(null);
+      } else {
+        const d = new Date(dueDate);
+        if (Number.isNaN(d.getTime())) {
+          throw new McpError(
+            "VALIDATION",
+            "dueDate must be an ISO 8601 date or ''.",
+          );
+        }
+        fields.push("dueDate = ?");
+        values.push(d);
+      }
+    }
+    if (assigneeId !== undefined) {
+      if (assigneeId === "") {
+        fields.push("assignee = ?");
+        values.push(null);
+      } else {
+        const [[member]]: any = await db.query(
+          "SELECT 1 AS ok FROM boards WHERE id = ? AND user = ? UNION SELECT 1 AS ok FROM invitations WHERE board = ? AND user = ? LIMIT 1",
+          [board.id, assigneeId, board.id, assigneeId],
+        );
+        if (!member) {
+          throw new McpError(
+            "VALIDATION",
+            `assigneeId '${assigneeId}' is not a member of this board (see listBoardMembers).`,
+          );
+        }
+        fields.push("assignee = ?");
+        values.push(assigneeId);
+      }
     }
 
-    if (!userId) {
-      return textResult(
-        "Authentication required. Please provide a valid API key.",
-      );
+    if (fields.length === 0) {
+      throw new McpError("VALIDATION", "Provide at least one field to update.");
     }
 
-    try {
-      // Fetch card details
-      const [cardRows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
-        cardID,
-      ]);
-      const card = cardRows[0];
+    await db.execute(`UPDATE cards SET ${fields.join(", ")} WHERE id = ?`, [
+      ...values,
+      id,
+    ]);
 
-      if (!card) {
-        return textResult("Card not found.");
-      }
-
-      // Get the board information
-      const [boardRows] = await db.execute(
-        "SELECT b.* FROM boards b JOIN areas a ON b.id = a.board WHERE a.id = ?",
-        [card.area],
-      );
-      const board = boardRows[0];
-
-      if (!board) {
-        return textResult("Board not found.");
-      }
-
-
-      // Require write access: owner or an `edit` invitation. Public boards are
-      // read-only (shared, tested helper — keeps this in sync with the REST API).
-      const decision = await authorizeBoard(db, board, userId, "edit");
-      if (!decision.ok) {
-        return textResult("Unauthorized access.");
-      }
-
-      // Fetch the original card to check if status changed
-      const [originalCardRows] = await db.execute(
-        "SELECT * FROM cards WHERE id = ?",
-        [cardID],
-      );
-      const originalCard = originalCardRows[0];
-      const originalStatus = !!originalCard.status;
-      const newStatus = !!status;
-
-      // Update the card
+    // A changed due date means the reminders should fire again — the same rule
+    // the web app applies (server/api/data/card.ts), otherwise a card
+    // rescheduled by an agent silently never reminds anyone again.
+    if (dueDate !== undefined) {
       await db.execute(
-        "UPDATE cards SET name = ?, content = ?, status = ? WHERE id = ?",
-        [name, content || "", status ? 1 : 0, cardID],
+        "UPDATE card_reminders SET notified = 0 WHERE card = ?",
+        [id],
       );
+    }
 
-      // Fetch the updated card
-      const [rows] = await db.execute("SELECT * FROM cards WHERE id = ?", [
-        cardID,
-      ]);
-      const updatedCard = rows[0];
+    const [rows]: any = await db.execute("SELECT * FROM cards WHERE id = ?", [
+      id,
+    ]);
+    const updatedCard = rows[0];
 
-      if (!updatedCard) {
-        return textResult("Card not found.");
-      }
-
-      // Convert status from number to boolean
-      updatedCard.status = !!updatedCard.status;
-
-      // Create notification if status changed
-      if (originalStatus !== newStatus) {
-        // Get board information for notifications
-        const [boardInfoRows] = await db.execute(
-          "SELECT user, id AS boardId FROM boards WHERE id = (SELECT board FROM areas WHERE id = ?)",
-          [updatedCard.area],
-        );
-        const boardOwner = boardInfoRows[0]?.user;
-        const boardId = boardInfoRows[0]?.boardId;
-
-        // Fetch all users who have access to the board (owner and invited users)
-        const [invitedUsers] = await db.execute(
-          "SELECT user FROM invitations WHERE board = (SELECT board FROM areas WHERE id = ?)",
-          [updatedCard.area],
-        );
-
-        // Create notifications for the board owner and invited users
-        const usersToNotify = [
-          boardOwner,
-          ...invitedUsers.map((inv) => inv.user),
-        ].filter(Boolean);
-
-        const statusText = newStatus ? "completed" : "reopened";
-        const notificationMessage = `Card "${updatedCard.name}" status changed to ${statusText}`;
-
-        for (const notifyUserId of usersToNotify) {
-          if (notifyUserId !== userId) {
-            // Don't notify the user who changed the status
-            await db.execute(
-              "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
-              [
-                notifyUserId,
-                "card_status_changed",
-                boardId,
-                updatedCard.id,
-                notificationMessage,
-              ],
-            );
-          }
+    // Notify collaborators when the done state actually changed.
+    if (doneVal !== undefined && !!card.status !== !!doneVal) {
+      const [invited]: any = await db.execute(
+        "SELECT user FROM invitations WHERE board = ?",
+        [board.id],
+      );
+      const usersToNotify = [
+        board.user,
+        ...invited.map((i: any) => i.user),
+      ].filter(Boolean);
+      const statusText = doneVal ? "completed" : "reopened";
+      for (const notifyUserId of usersToNotify) {
+        if (notifyUserId !== userId) {
+          await db.execute(
+            "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+            [
+              notifyUserId,
+              "card_status_changed",
+              board.id,
+              updatedCard.id,
+              `Card "${updatedCard.name}" was ${statusText}`,
+            ],
+          );
         }
       }
-
-      // Emit socket event for card update
-      const serverSocket = getServerSocket();
-      if (serverSocket) {
-        const boardId = board.id;
-        serverSocket.to(`board-${boardId}`).emit("updateCard", {
-          boardId: boardId,
-          attachments: [], // Note: attachments would need to be fetched if needed
-          card: updatedCard,
-        });
-      }
-
-      return jsonResult({ card: updatedCard });
-    } catch (error) {
-      logger.error("Database error:", error);
-      return textResult("Internal server error.");
     }
+
+    const serverSocket = getServerSocket();
+    if (serverSocket) {
+      serverSocket.to(`board-${board.id}`).emit("updateCard", {
+        boardId: board.id,
+        attachments: [],
+        card: { ...updatedCard, status: !!updatedCard.status },
+      });
+    }
+
+    dispatchWebhooks({
+      boardId: board.id,
+      event: "card.updated",
+      actorUserId: userId,
+      card: serializeCard(updatedCard),
+    });
+
+    return jsonResult({ card: serializeCard(updatedCard) });
   },
 });

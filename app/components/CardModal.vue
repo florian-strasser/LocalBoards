@@ -282,6 +282,12 @@
                         <span>{{ assigneeName }}</span>
                     </div>
                 </div>
+                <!-- Live presence: who else has this card open right now. On its
+                     own line below the metadata buttons so it never competes
+                     with them for width. -->
+                <div v-if="otherViewers.length" class="mb-4">
+                    <PresenceAvatars :users="otherViewers" variant="detailed" />
+                </div>
 
                 <div class="mb-4">
                     <template v-if="writeAccess && editingDescription">
@@ -298,7 +304,7 @@
                         <div
                             v-if="content"
                             class="wysiwyg-wrapper"
-                            v-html="sanitizeHtml(content)"
+                            v-html="renderMarkdown(content)"
                             @click="handleDescriptionClick"
                         />
                         <button
@@ -411,6 +417,8 @@ const props = defineProps({
     boardID: Number,
     writeAccess: Boolean,
     userID: String,
+    // The signed-in user, used to announce our presence on the card.
+    currentUser: { type: Object, default: () => ({}) },
     // True only when opening a freshly created card for the first time, so the
     // editor is shown immediately instead of the read-only view.
     openInEditMode: Boolean,
@@ -582,11 +590,14 @@ const handleDescriptionClick = (event) => {
     }
 };
 
-// Toggle the Nth checklist checkbox in `content` (rendered order matches the
-// stored order) and let the content watcher save it.
+// Toggle the Nth checklist checkbox and let the content watcher save it. The
+// content is Markdown, so render it to HTML, flip the box, then convert back.
 const toggleChecklistItem = (index) => {
     if (index < 0) return;
-    const doc = new DOMParser().parseFromString(content.value, "text/html");
+    const doc = new DOMParser().parseFromString(
+        markdownToHtml(content.value),
+        "text/html",
+    );
     const box = doc.querySelectorAll('input[type="checkbox"]')[index];
     if (!box) return;
     const li = box.closest("li");
@@ -597,7 +608,7 @@ const toggleChecklistItem = (index) => {
         box.setAttribute("checked", "checked");
         li?.setAttribute("data-checked", "true");
     }
-    content.value = doc.body.innerHTML;
+    content.value = htmlToMarkdown(doc.body.innerHTML);
 };
 
 const handleCommentCreated = (newComment) => {
@@ -940,7 +951,7 @@ const deleteCard = async () => {
             message: $t("cardDeleted"),
         });
         boxOpen.value = false;
-        document.body.style.overflow = "auto";
+        document.body.style.overflowY = "auto";
         emits("card-deleted", props.card);
         socket.emit("cardDeleted", {
             boardId: props.boardID,
@@ -990,6 +1001,52 @@ const onSocketUpdateCard = ({ card, attachments, boardId }) => {
         handleCardUpdated(card, attachments);
     }
 };
+// --- Live presence -------------------------------------------------------
+// Who else currently has this card open. The server tracks membership of the
+// card's socket room; we send our identity on join and drop out on close.
+const viewers = ref([]);
+const otherViewers = computed(() =>
+    viewers.value.filter((v) => v.id !== props.userID),
+);
+
+const onCardPresence = ({ cardID, users }) => {
+    if (Number(cardID) === Number(props.cardID)) viewers.value = users || [];
+};
+
+// Announce ourselves to the card room. The identity comes from the page (which
+// already resolved the session) rather than a fetch of our own: a fetch here
+// races the mount, and when the modal is deep-linked via ?card= it loses that
+// race, leaving the viewer invisible to everyone else.
+const joinCardRoom = () => {
+    const me = props.currentUser;
+    socket.emit("joinCard", {
+        cardID: props.cardID,
+        boardID: props.boardID,
+        user: me?.id
+            ? {
+                  id: me.id,
+                  name: me.name,
+                  image: me.image,
+                  type: me.type || "human",
+              }
+            : undefined,
+    });
+};
+
+onMounted(() => {
+    socket.on("cardPresence", onCardPresence);
+    // A reconnect gives us a new socket id, so the server no longer knows we
+    // are here — re-announce instead of silently vanishing from the card.
+    socket.on("connect", joinCardRoom);
+    joinCardRoom();
+});
+
+onBeforeUnmount(() => {
+    socket.off("cardPresence", onCardPresence);
+    socket.off("connect", joinCardRoom);
+    socket.emit("leaveCard", { cardID: props.cardID });
+});
+
 onMounted(() => {
     socket.on("updateCard", onSocketUpdateCard);
 });

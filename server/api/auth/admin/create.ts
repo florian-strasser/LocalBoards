@@ -39,9 +39,17 @@ export default defineEventHandler(async (event) => {
       email,
       password,
       role = "user",
+      type = "human",
       sendEmail: sendMail,
       onboarding = false,
     } = body;
+
+    // "artificial" marks a non-human account (an AI agent). Only admins can
+    // create one — public signup never sets this, so it defaults to human.
+    if (type !== "human" && type !== "artificial") {
+      event.res.statusCode = 400;
+      return { error: "INVALID_TYPE" };
+    }
 
     // Validate input with length limits for DoS protection
     if (!name || !email || !password) {
@@ -110,9 +118,20 @@ export default defineEventHandler(async (event) => {
 
       // Create user in database. `onboarded` is set from the admin's choice:
       // opt-in to the first-run tour (0) or skip it (1, the default).
+      // Bots don't read email, so artificial accounts start with notification
+      // mails switched off (still changeable later).
       await conn.execute(
-        "INSERT INTO `user` (`id`, `name`, `email`, `emailVerified`, `role`, `onboarded`) VALUES (?, ?, ?, ?, ?, ?)",
-        [userId, name.trim(), email, 1, role, onboarding ? 0 : 1],
+        "INSERT INTO `user` (`id`, `name`, `email`, `emailVerified`, `role`, `onboarded`, `type`, `emailNotifications`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          userId,
+          name.trim(),
+          email,
+          1,
+          role,
+          onboarding ? 0 : 1,
+          type,
+          type === "artificial" ? 0 : 1,
+        ],
       );
 
       // Create account entry

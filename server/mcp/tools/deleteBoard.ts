@@ -1,88 +1,66 @@
-import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { getServerSocket } from "../../utils/socket";
+import {
+  requireUserId,
+  requireWriteAccess,
+  requireBoard,
+  requireId,
+  boardIdInput,
+  McpError,
+} from "../../utils/mcpHelpers";
 
 const db = setupDatabase();
 
 export default defineMcpTool({
   name: "deleteBoard",
-  description: "Delete a board and all its associated data",
+  title: "Delete a board",
+  description:
+    "Permanently delete a board and everything in it (areas, cards, comments, attachments, invitations, notifications). This cannot be undone and only the board owner can do it.",
   annotations: {
     readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
   },
-  inputSchema: {
-    boardId: z.number().describe("The id of the board to delete"),
-  },
-  handler: async ({ boardId }) => {
-    const event = useEvent();
-    const userId = event.context.userId as string;
-
-    if (!boardId) {
-      return textResult("boardId is required.");
-    }
-
-    if (!userId) {
-      return textResult(
-        "Authentication required. Please provide a valid API key.",
+  inputSchema: { ...boardIdInput },
+  inputExamples: [{ boardId: 1 }],
+  handler: async ({ boardId, boardID }) => {
+    const userId = requireUserId();
+    requireWriteAccess();
+    const bid = requireId(boardId, boardID, "boardId");
+    const board = await requireBoard(bid, userId, "edit");
+    if (board.user !== userId) {
+      throw new McpError(
+        "FORBIDDEN",
+        "Only the board owner can delete a board.",
       );
     }
 
-    try {
-      // Check if the board exists
-      const [boardRows] = await db.execute(
-        "SELECT * FROM boards WHERE id = ?",
-        [boardId],
-      );
-      const board = boardRows[0];
+    const cardSubquery =
+      "SELECT id FROM cards WHERE area IN (SELECT id FROM areas WHERE board = ?)";
+    await db.execute(`DELETE FROM comments WHERE card IN (${cardSubquery})`, [
+      bid,
+    ]);
+    await db.execute(
+      `DELETE FROM attachments WHERE card IN (${cardSubquery})`,
+      [bid],
+    );
+    await db.execute("DELETE FROM invitations WHERE board = ?", [bid]);
+    await db.execute("DELETE FROM `webhooks` WHERE board = ?", [bid]);
+    await db.execute("DELETE FROM notifications WHERE boardId = ?", [bid]);
+    await db.execute(
+      "DELETE FROM cards WHERE area IN (SELECT id FROM areas WHERE board = ?)",
+      [bid],
+    );
+    await db.execute("DELETE FROM areas WHERE board = ?", [bid]);
+    await db.execute("DELETE FROM boards WHERE id = ?", [bid]);
 
-      if (!board) {
-        return textResult("Board not found.");
-      }
-
-      // Check if the user has permission to delete the board
-      if (board.user !== userId) {
-        return textResult("You don't have permission to delete this board.");
-      }
-
-      // Delete all invitations associated with the board
-      await db.execute("DELETE FROM invitations WHERE board = ?", [boardId]);
-
-      // Delete all notifications associated with the cards in the board's areas
-      await db.execute("DELETE FROM notifications WHERE boardId = ?", [
-        boardId,
-      ]);
-
-      // Delete all cards associated with the board's areas
-      await db.execute(
-        "DELETE FROM cards WHERE area IN (SELECT id FROM areas WHERE board = ?)",
-        [boardId],
-      );
-
-      // Delete all areas associated with the board
-      await db.execute("DELETE FROM areas WHERE board = ?", [boardId]);
-
-      // Delete the board
-      const [result] = await db.execute("DELETE FROM boards WHERE id = ?", [
-        boardId,
-      ]);
-
-      if (result.affectedRows === 0) {
-        return textResult("Board not found or already deleted.");
-      }
-
-      // Emit socket event for board deletion
-      const serverSocket = getServerSocket();
-      if (serverSocket) {
-        serverSocket.to(`board-${boardId}`).emit("deletedBoard", {
-          boardID: boardId,
-        });
-      }
-
-      return jsonResult({ message: "Board deleted successfully" });
-    } catch (error) {
-      logger.error("Database error:", error);
-      return textResult("Internal server error.");
+    const serverSocket = getServerSocket();
+    if (serverSocket) {
+      serverSocket.to(`board-${bid}`).emit("deletedBoard", { boardID: bid });
     }
+
+    return jsonResult({ deleted: true, boardId: bid });
   },
 });

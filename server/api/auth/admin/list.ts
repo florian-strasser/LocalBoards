@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
 
     // Get all users from database
     const [users] = await db.execute(
-      "SELECT id, name, email, image, role, createdAt, updatedAt FROM `user` ORDER BY createdAt DESC",
+      "SELECT id, name, email, image, role, type, emailNotifications, createdAt, updatedAt FROM `user` ORDER BY createdAt DESC",
     );
 
     // Format the users for response
@@ -35,6 +35,8 @@ export default defineEventHandler(async (event) => {
       email: user.email,
       image: user.image,
       role: user.role,
+      type: user.type || "human",
+      emailNotifications: !!user.emailNotifications,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     }));

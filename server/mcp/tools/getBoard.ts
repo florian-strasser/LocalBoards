@@ -1,43 +1,27 @@
-import { z } from "zod";
-import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server"; // optional
+import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
+import {
+  requireUserId,
+  requireBoard,
+  requireId,
+  boardIdInput,
+  serializeBoard,
+} from "../../utils/mcpHelpers";
 
 const db = setupDatabase();
 
 export default defineMcpTool({
   name: "getBoard",
-  description: "Get a specific board",
-  annotations: {
-    readOnlyHint: true,
-  },
-  inputSchema: {
-    boardID: z.number().describe("The id of the board"),
-  },
-  handler: async ({ boardID }) => {
-    const event = useEvent();
-    const userId = event.context.userId as string;
-
-    if (!boardID) {
-      return textResult("boardID required.");
-    }
-
-    if (!userId) {
-      return textResult(
-        "Authentication required. Please provide a valid API key.",
-      );
-    }
-    const [rows] = await db.execute(
-      `SELECT boards.*, 'own' as boardType
-       FROM boards
-       WHERE boards.user = ? AND boards.id = ?
-       UNION
-       SELECT boards.*, 'shared' as boardType
-       FROM boards
-       LEFT JOIN invitations ON boards.id = invitations.board
-       WHERE invitations.user = ? AND boards.user != ? AND boards.id = ?`,
-      [userId, boardID, userId, userId, boardID],
-    );
-    if (rows) return jsonResult({ board: rows[0] });
-    else return textResult("Could not find a board with the id.");
+  title: "Get a board",
+  description:
+    "Get a single board by id: name, style ('kanban'|'todo'), status ('private'|'public') and ownerId. To also load the board's areas and cards, call getBoardTree instead.",
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  inputSchema: { ...boardIdInput },
+  inputExamples: [{ boardId: 1 }],
+  handler: async ({ boardId, boardID }) => {
+    const userId = requireUserId();
+    const id = requireId(boardId, boardID, "boardId");
+    const board = await requireBoard(id, userId, "read");
+    return jsonResult({ board: serializeBoard(board) });
   },
 });

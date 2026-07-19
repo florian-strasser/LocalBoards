@@ -4,7 +4,6 @@
         <NuxtPage />
         <ToastHolder />
         <OnboardingOverlay />
-        <PageScrollbar />
     </div>
 </template>
 <script setup lang="ts">

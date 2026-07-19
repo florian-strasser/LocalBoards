@@ -163,7 +163,7 @@ const newBoardImage = ref(null);
 
 const openCreateBoard = () => {
     createBoard.value = true;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflowY = "hidden";
 };
 
 // --- Import a board from Trello -------------------------------------------
@@ -174,7 +174,7 @@ const importing = ref(false);
 const openImport = () => {
     trelloUrl.value = "";
     importBoard.value = true;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflowY = "hidden";
 };
 
 // Map the server's error codes to a localized message.
@@ -199,7 +199,7 @@ const importTrelloBoard = async () => {
         });
         if (data?.success && data.board) {
             importBoard.value = false;
-            document.body.style.overflow = "auto";
+            document.body.style.overflowY = "auto";
             await nuxtApp.callHook("app:toast", {
                 message: $t("boardImported"),
             });
@@ -232,7 +232,7 @@ const saveBoard = async () => {
                 status: newBoardStatus.value,
             },
         });
-        document.body.style.overflow = "auto";
+        document.body.style.overflowY = "auto";
         if (!data) {
             await nuxtApp.callHook("app:toast", {
                 message: $t("error_creating_board"),

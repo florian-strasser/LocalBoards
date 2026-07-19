@@ -33,6 +33,16 @@ const ALLOWED_TAGS = [
   "ol",
   "li",
   "hr", // StarterKit horizontalRule (e.g. typing `---`)
+  // GFM tables: markdown-it emits these, and content is authored as Markdown
+  // (including by agents over MCP). Without them DOMPurify drops the structure
+  // and leaves loose cell text behind.
+  "table",
+  "thead",
+  "tbody",
+  "tfoot",
+  "tr",
+  "th",
+  "td",
   "a",
   "img",
   "span", // emoji nodes
@@ -50,6 +60,8 @@ const ALLOWED_ATTR = [
   "title",
   "class",
   "start", // orderedList custom start number
+  "colspan",
+  "rowspan",
   // task list (ul/li[data-type][data-checked], input[type=checkbox])
   "data-type",
   "data-checked",

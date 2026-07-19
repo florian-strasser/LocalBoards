@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event);
-    const { name, expiresIn } = body;
+    const { name, expiresIn, readOnly } = body;
 
     // Validate input with length limits
     if (
@@ -55,10 +55,14 @@ export default defineEventHandler(async (event) => {
       ? new Date(Date.now() + expiresIn * 1000)
       : null;
 
+    // A read-only key is scoped to ["read"]; a full key stores no scopes (null =
+    // unrestricted). The MCP layer rejects write tools when "write" is absent.
+    const permissions = readOnly ? JSON.stringify(["read"]) : null;
+
     // Store only the SHA-256 hash of the key, never the plaintext, so a database
     // leak can't expose usable keys. `start` keeps the first 8 chars for display.
     await db.execute(
-      "INSERT INTO `apikey` (`id`, `name`, `start`, `key`, `expiresAt`, `referenceId`) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO `apikey` (`id`, `name`, `start`, `key`, `expiresAt`, `referenceId`, `permissions`) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         keyId,
         name.trim(),
@@ -66,6 +70,7 @@ export default defineEventHandler(async (event) => {
         hashApiKey(apiKey),
         expiresAt,
         session.user.id, // referenceId stores the userId
+        permissions,
       ],
     );
 

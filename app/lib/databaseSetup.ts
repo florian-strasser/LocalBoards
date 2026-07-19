@@ -21,8 +21,9 @@ const mysqlDatabase =
 // set NUXT_MYSQL_SSL_REJECT_UNAUTHORIZED=false only if the server presents a
 // certificate that can't be verified against a public CA.
 const mysqlSsl =
-  String(runtimeConfig?.mysqlSsl ?? process.env.NUXT_MYSQL_SSL).toLowerCase() ===
-  "true";
+  String(
+    runtimeConfig?.mysqlSsl ?? process.env.NUXT_MYSQL_SSL,
+  ).toLowerCase() === "true";
 const mysqlSslRejectUnauthorized =
   String(
     runtimeConfig?.mysqlSslRejectUnauthorized ??
@@ -68,6 +69,26 @@ interface Migration {
   // Stable, ordered identifier. Never change an id once it has shipped.
   id: string;
   up: (db: any) => Promise<void>;
+}
+
+// A migration's id is recorded only after `up()` resolves, so a crash between
+// two DDL statements re-runs the whole migration. MySQL has no
+// "ADD COLUMN IF NOT EXISTS", so ask the catalogue instead of letting the retry
+// die on "Duplicate column name" — which would wedge startup permanently.
+async function columnExists(db: any, table: string, column: string) {
+  const [rows]: any = await db.execute(
+    "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+    [table, column],
+  );
+  return rows.length > 0;
+}
+
+async function indexExists(db: any, table: string, index: string) {
+  const [rows]: any = await db.execute(
+    "SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?",
+    [table, index],
+  );
+  return rows.length > 0;
 }
 
 // Ordered list of migrations. To evolve the schema, append a new entry — never
@@ -320,9 +341,87 @@ const migrations: Migration[] = [
     },
   },
 
+  {
+    // Card descriptions and comments are now stored as Markdown instead of
+    // HTML (smaller, safe to render, native for AI agents via the MCP). Convert
+    // existing HTML content in place, backing up the original HTML first so the
+    // change is reversible. Fresh installs have no rows, so this is a no-op.
+    id: "0007_content_html_to_markdown",
+    up: async (db) => {
+      // Deferred import so turndown/markdown-it aren't pulled into every
+      // endpoint's module graph — only when this one-off migration runs.
+      const { convertContentColumnsToMarkdown } =
+        await import("./contentMarkdownMigration");
+      await convertContentColumnsToMarkdown(db);
+    },
+  },
+
+  {
+    // Accounts can now be marked as non-human ("artificial") so AI agents get
+    // their own identity — shown as a bot in the user list, on claimed cards and
+    // in card presence. Only admins can create/change them (public signup always
+    // creates humans). `emailNotifications` lets a user opt out of notification
+    // mails; artificial accounts default to off since bots don't read email.
+    id: "0008_user_type_and_email_prefs",
+    up: async (db) => {
+      if (!(await columnExists(db, "user", "type"))) {
+        await db.execute(
+          "ALTER TABLE `user` ADD COLUMN `type` varchar(10) NOT NULL DEFAULT 'human'",
+        );
+      }
+      if (!(await columnExists(db, "user", "emailNotifications"))) {
+        await db.execute(
+          "ALTER TABLE `user` ADD COLUMN `emailNotifications` tinyint(1) NOT NULL DEFAULT '1'",
+        );
+      }
+    },
+  },
+
+  {
+    // Lets an agent retry createCard safely: re-sending the same key returns the
+    // existing card instead of creating a duplicate. Unique per area; NULL is
+    // allowed many times over (MySQL unique indexes ignore NULLs).
+    id: "0009_card_idempotency_key",
+    up: async (db) => {
+      if (!(await columnExists(db, "cards", "idempotencyKey"))) {
+        await db.execute(
+          "ALTER TABLE `cards` ADD COLUMN `idempotencyKey` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL",
+        );
+      }
+      if (!(await indexExists(db, "cards", "cards_area_idempotency"))) {
+        await db.execute(
+          "CREATE UNIQUE INDEX `cards_area_idempotency` ON `cards` (`area`, `idempotencyKey`)",
+        );
+      }
+    },
+  },
+
+  {
+    // Per-user, per-board webhook subscriptions. Each collaborator subscribes
+    // their *own* endpoint to a board they can access, so on a shared instance
+    // one party's automation never fires from (or hijacks) another's.
+    // `ignoreOwnActions` prevents an agent's own writes re-triggering itself.
+    id: "0010_webhooks",
+    up: async (db) => {
+      await db.execute(`CREATE TABLE IF NOT EXISTS \`webhooks\` (
+        \`id\` int NOT NULL AUTO_INCREMENT,
+        \`user\` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+        \`board\` int NOT NULL,
+        \`url\` varchar(2048) COLLATE utf8mb4_general_ci NOT NULL,
+        \`secret\` varchar(128) COLLATE utf8mb4_general_ci DEFAULT NULL,
+        \`ignoreOwnActions\` tinyint(1) NOT NULL DEFAULT '1',
+        \`enabled\` tinyint(1) NOT NULL DEFAULT '1',
+        \`createdAt\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        KEY \`webhooks_board\` (\`board\`),
+        KEY \`webhooks_user\` (\`user\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
-  //   id: "0007_add_x",
+  //   id: "0011_add_x",
   //   up: async (db) => {
   //     await db.execute("ALTER TABLE `cards` ADD COLUMN `x` int NULL");
   //   },

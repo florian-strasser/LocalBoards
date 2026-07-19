@@ -35,6 +35,14 @@
                     {{ props.role === "admin" ? $t("admin") : $t("user") }}
                 </span>
                 <span
+                    v-if="props.type === 'artificial'"
+                    class="flex shrink-0 items-center gap-1 rounded-full bg-gray/15 px-2 py-0.5 text-xs font-medium text-gray"
+                    v-tooltip="$t('userTypeArtificial')"
+                >
+                    <Bot class="size-3.5" />
+                    {{ $t("userTypeArtificial") }}
+                </span>
+                <span
                     v-if="props.isSelf"
                     class="shrink-0 rounded-full bg-secondary/15 px-2 py-0.5 text-xs font-medium text-secondary"
                 >
@@ -74,7 +82,7 @@
     </div>
 </template>
 <script setup lang="ts">
-import { Trash2, SquarePen, VenetianMask } from "lucide-vue-next";
+import { Trash2, SquarePen, VenetianMask, Bot } from "lucide-vue-next";
 
 const nuxtApp = useNuxtApp();
 const model = defineModel();
@@ -84,12 +92,13 @@ const props = defineProps({
     email: String,
     image: String,
     role: String,
+    type: String,
     isSelf: Boolean,
 });
 
 const openDeleteModal = () => {
     model.value = props.id;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflowY = "hidden";
 };
 
 const impersonate = async () => {

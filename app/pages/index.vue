@@ -2,7 +2,7 @@
     <div class="relative min-h-svh flex flex-col">
         <main class="flex flex-col justify-center py-8 grow shrink-0">
             <div class="container mx-auto">
-                <div class="max-w-md mx-auto">
+                <div class="max-w-lg mx-auto">
                     <div class="grid grid-cols-2 text-sm relative">
                         <div
                             class="text-center block py-3 px-5 bg-white dark:bg-slate dark:text-white rounded-t-lg"

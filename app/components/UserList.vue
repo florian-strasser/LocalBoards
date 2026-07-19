@@ -88,6 +88,7 @@
                     :email="item.email"
                     :image="item.image"
                     :role="item.role"
+                    :type="item.type"
                     :is-self="item.id === currentUserId"
                     v-model="deleteModal"
                 />
@@ -242,6 +243,6 @@ const deleteUser = async () => {
     }
 
     deleteModal.value = false;
-    document.body.style.overflow = "auto";
+    document.body.style.overflowY = "auto";
 };
 </script>

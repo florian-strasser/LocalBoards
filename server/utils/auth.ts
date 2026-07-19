@@ -143,6 +143,17 @@ export async function resolveSession(event: any): Promise<SessionResult> {
     event.headers.get("authorization")?.replace("Bearer ", "") ||
     getCookie(event, "session_token");
 
+  return resolveSessionToken(sessionToken);
+}
+
+/**
+ * Resolve a session straight from its token. Split out of `resolveSession` so
+ * callers without an h3 event — notably the Socket.IO handshake, which only has
+ * a raw cookie header — can authenticate through exactly the same path.
+ */
+export async function resolveSessionToken(
+  sessionToken: any,
+): Promise<SessionResult> {
   // Basic format validation.
   if (
     !sessionToken ||
@@ -164,7 +175,7 @@ export async function resolveSession(event: any): Promise<SessionResult> {
   const session = sessions[0];
 
   const [users]: any = await db.execute(
-    "SELECT id, name, email, role, banned, banReason, image, banExpires, displayUsername, onboarded FROM `user` WHERE `id` = ?",
+    "SELECT id, name, email, role, banned, banReason, image, banExpires, displayUsername, onboarded, type, emailNotifications FROM `user` WHERE `id` = ?",
     [session.userId],
   );
   if (users.length === 0) {
@@ -195,6 +206,8 @@ export async function resolveSession(event: any): Promise<SessionResult> {
       image: user.image,
       displayUsername: user.displayUsername,
       onboarded: !!user.onboarded,
+      type: user.type || "human",
+      emailNotifications: !!user.emailNotifications,
     },
   };
 }
@@ -231,11 +244,15 @@ export async function getApiKeyUser(event: any) {
       return null;
     }
 
-    // Return user information from the API key
+    // Return user information from the API key, plus its permission scopes (or
+    // null for an unrestricted key) so the MCP layer can gate write tools.
     return {
       user: {
         id: result.key.userId,
       },
+      permissions: Array.isArray(result.key.permissions)
+        ? result.key.permissions
+        : null,
     };
   } catch (error) {
     logger.error("getApiKeyUser error:", error);
@@ -247,15 +264,41 @@ export async function getApiKeyUser(event: any) {
 // generic) error message the caller should return verbatim.
 export type AuthFailure = { ok: false; status: number; error: string };
 
-const UNAUTHORIZED: AuthFailure = { ok: false, status: 403, error: "Unauthorized access" };
+const UNAUTHORIZED: AuthFailure = {
+  ok: false,
+  status: 403,
+  error: "Unauthorized access",
+};
 // Returned when a user has NO access to a board that exists — deliberately the
 // same 404 as a missing board, so an authenticated user can't tell whether a
 // board id exists (existence oracle) by probing sequential ids.
-const NOT_FOUND: AuthFailure = { ok: false, status: 404, error: "Resource not found" };
+const NOT_FOUND: AuthFailure = {
+  ok: false,
+  status: 404,
+  error: "Resource not found",
+};
+const READ_ONLY_KEY: AuthFailure = {
+  ok: false,
+  status: 403,
+  error: "This API key is read-only",
+};
+
+/**
+ * Whether an API key may perform this request. `permissions` is the parsed
+ * array stored with the key (e.g. ["read"]); null means an older key with no
+ * scope recorded, which keeps full access so existing integrations don't break.
+ */
+export function apiKeyAllowsWrite(permissions: any, event: any): boolean {
+  if (!Array.isArray(permissions)) return true;
+  if (permissions.includes("write")) return true;
+  const method = String(
+    event?.method || event?.req?.method || "GET",
+  ).toUpperCase();
+  return method === "GET" || method === "HEAD" || method === "OPTIONS";
+}
 
 export type UserResolution =
-  | AuthFailure
-  | { ok: true; userId: string; viaApiKey: boolean };
+  AuthFailure | { ok: true; userId: string; viaApiKey: boolean };
 
 /**
  * Resolve the authenticated user from either an `x-api-key` header or the
@@ -270,6 +313,14 @@ export async function resolveUserId(event: any): Promise<UserResolution> {
   if (apiKey) {
     const data = await verifyApiKey(apiKey);
     if (data.error) return UNAUTHORIZED;
+
+    // A read-only key must be read-only everywhere, not just over MCP. Enforce
+    // it at the single choke point every data endpoint goes through, keyed on
+    // the HTTP method: GET/HEAD read, everything else writes. Keys created
+    // before permissions existed have `permissions === null` and stay
+    // unrestricted.
+    if (!apiKeyAllowsWrite(data.key.permissions, event)) return READ_ONLY_KEY;
+
     userIdFromApiKey = data.key.userId;
   }
 
@@ -284,8 +335,7 @@ export async function resolveUserId(event: any): Promise<UserResolution> {
 }
 
 export type AccessDecision =
-  | AuthFailure
-  | { ok: true; access: Exclude<BoardAccess, "none"> };
+  AuthFailure | { ok: true; access: Exclude<BoardAccess, "none"> };
 
 /**
  * Decide access for an already-loaded board row. This is the reusable core for

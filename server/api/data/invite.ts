@@ -227,13 +227,11 @@ export default defineEventHandler(async (event) => {
         return { error: "Resource not found" };
       }
 
-      // Remove the invitation
-      const [result] = await db.query(
-        "DELETE FROM invitations WHERE board = ? AND user = ?",
-        [boardId, invitedUserId],
-      );
+      // Remove the invitation and everything that hung off it (webhook
+      // subscriptions, notifications) — see removeBoardMember.
+      const removed = await removeBoardMember(db, boardId, invitedUserId);
 
-      if (result.affectedRows === 0) {
+      if (!removed) {
         // HIGH FIX: Generic error (should not happen due to check above, but kept for safety)
         event.res.statusCode = 404;
         return { error: "Resource not found" };

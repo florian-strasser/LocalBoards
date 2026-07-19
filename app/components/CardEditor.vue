@@ -173,7 +173,8 @@ const emojiList = [
 ];
 
 const editor = useEditor({
-    content: model.value,
+    // The model is Markdown; TipTap works in HTML, so convert on load/save.
+    content: markdownToHtml(model.value),
     extensions: [
         StarterKit.configure({
             Heading: false,
@@ -232,7 +233,7 @@ const editor = useEditor({
                         };
                     }
                 }
-                model.value = editor.value.getHTML();
+                model.value = htmlToMarkdown(editor.value.getHTML());
             },
             onPaste: async (currentEditor, files) => {
                 for (const file of files) {
@@ -275,14 +276,14 @@ const editor = useEditor({
                         };
                     }
                 }
-                model.value = editor.value.getHTML();
+                model.value = htmlToMarkdown(editor.value.getHTML());
             },
         }),
         TaskList,
         TaskItem,
     ],
     onBlur: () => {
-        model.value = editor.value.getHTML();
+        model.value = htmlToMarkdown(editor.value.getHTML());
     },
     injectCSS: false,
 });
@@ -355,12 +356,15 @@ watch(
     (value) => {
         if (!editor.value) return;
 
-        const isSame = editor.value.getHTML() === value;
+        // Compare in Markdown terms since the model is Markdown but the editor
+        // holds HTML — otherwise every external set would clobber the caret.
+        const isSame =
+            htmlToMarkdown(editor.value.getHTML()) === (value || "");
         if (isSame) {
             return;
         }
 
-        editor.value.commands.setContent(value);
+        editor.value.commands.setContent(markdownToHtml(value));
     },
     { immediate: false },
 );

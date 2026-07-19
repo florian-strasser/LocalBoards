@@ -65,188 +65,21 @@ body {
     }
 }
 
-.hide-scrollbar {
-    overflow-y: hidden;
-    overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
-}
-.hide-scrollbar::-webkit-scrollbar {
-    display: none; /* WebKit */
-}
+/* Scrollbars are deliberately left native and unstyled. A custom implementation
+ * has to re-create momentum, rubber-banding, scroll anchoring and the user's OS
+ * "show scroll bars" preference, and never quite matches. `color-scheme` above
+ * already renders them to match the active theme. Note `scrollbar-width` is not
+ * inherited, so setting it on :root only slimmed the page's own bar and left
+ * every inner one at full width — visibly mismatched. */
 
-/* Applied to <body> while a custom scrollbar thumb is being dragged, to stop
- * the drag from selecting page text. */
-.no-select {
-    user-select: none !important;
-    -webkit-user-select: none !important;
-}
-
-/* Hide only the native scrollbar (keep scrolling) — for containers that use a
- * custom overlay scrollbar instead. Unlike .hide-scrollbar it doesn't force the
- * overflow axes, so the element keeps its own overflow-x/y utilities. */
-.no-native-scrollbar {
-    scrollbar-width: none; /* Firefox */
-}
-.no-native-scrollbar::-webkit-scrollbar {
-    display: none; /* WebKit */
-}
-
-/* Hide the native page scrollbar — replaced by the custom PageScrollbar. */
-html,
+/* Only the board area scrolls sideways; the page itself never does. `clip`
+ * rather than `hidden` so <body> doesn't become a scroll container (which would
+ * break position: sticky/fixed descendants). Without this a single element a
+ * few pixels past the edge gives the window a horizontal scrollbar — and when
+ * scrollbars are set to always show, that bar steals ~15px of height and the
+ * page starts scrolling vertically too. */
 body {
-    scrollbar-width: none; /* Firefox */
-}
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-    display: none; /* WebKit */
-}
-
-/* Custom vertical scrollbar for the whole page — pinned to the right of the
- * viewport with a margin, fades in when the page overflows (PageScrollbar.vue).
- * Sits below modals (which bring their own ModalScrollbar). */
-.page-scrollbar {
-    position: fixed;
-    /* Top lines up with the header nav (its pt-6); the bottom keeps the 2rem
-     * inset so it meets the board scrollbar symmetrically at the corner. */
-    top: 1.5rem;
-    bottom: 2rem;
-    right: 0.75rem;
-    width: 10px;
-    z-index: 30;
-    border-radius: 9999px;
-    background: color-mix(in oklab, var(--color-gray) 16%, transparent);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease;
-    touch-action: none;
-}
-.page-scrollbar--visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-.page-scrollbar__thumb {
-    position: absolute;
-    left: 1px;
-    top: 0;
-    width: 8px;
-    min-height: 2.5rem;
-    border-radius: 9999px;
-    background: color-mix(in oklab, var(--color-gray) 55%, transparent);
-    cursor: grab;
-    transition: background 0.15s ease;
-    will-change: transform;
-}
-.page-scrollbar:hover .page-scrollbar__thumb,
-.page-scrollbar__thumb:active {
-    background: var(--color-primary);
-}
-.page-scrollbar__thumb:active {
-    cursor: grabbing;
-}
-
-/* Custom vertical scrollbar for modal windows — pinned to the right of the
- * viewport with a margin, fades in with the modal (see ModalScrollbar.vue). */
-.modal-scrollbar {
-    position: fixed;
-    top: 2rem;
-    bottom: 2rem;
-    right: 0.75rem;
-    width: 10px;
-    z-index: 50;
-    border-radius: 9999px;
-    background: color-mix(in oklab, var(--color-gray) 16%, transparent);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease;
-    touch-action: none;
-}
-.modal-scrollbar--visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-.modal-scrollbar__thumb {
-    position: absolute;
-    left: 1px;
-    top: 0;
-    width: 8px;
-    min-height: 2.5rem;
-    border-radius: 9999px;
-    background: color-mix(in oklab, var(--color-gray) 55%, transparent);
-    cursor: grab;
-    transition: background 0.15s ease;
-    will-change: transform;
-}
-.modal-scrollbar:hover .modal-scrollbar__thumb,
-.modal-scrollbar__thumb:active {
-    background: var(--color-primary);
-}
-.modal-scrollbar__thumb:active {
-    cursor: grabbing;
-}
-
-/* Custom horizontal scrollbar for the board areas — pinned to the bottom of
- * the viewport (so it's always reachable) and driven by BoardScrollbar.vue.
- * Adjust the inset/height/radius here to taste. */
-.board-scrollbar {
-    position: fixed;
-    /* Match the .container horizontal padding so the bar lines up with the
-     * first and last areas. */
-    left: 2rem;
-    right: 2rem;
-    bottom: 0.75rem;
-    height: 10px;
-    z-index: 30;
-    border-radius: 9999px;
-    background: color-mix(in oklab, var(--color-gray) 16%, transparent);
-    cursor: pointer;
-    touch-action: none;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease;
-}
-.board-scrollbar--visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-.board-scrollbar__thumb {
-    position: absolute;
-    top: 1px;
-    left: 0;
-    height: 8px;
-    min-width: 2.5rem;
-    border-radius: 9999px;
-    background: color-mix(in oklab, var(--color-gray) 55%, transparent);
-    cursor: grab;
-    transition: background 0.15s ease;
-    will-change: transform;
-}
-.board-scrollbar:hover .board-scrollbar__thumb,
-.board-scrollbar__thumb:active {
-    background: var(--color-primary);
-}
-.board-scrollbar__thumb:active {
-    cursor: grabbing;
-}
-
-/* On touch devices the custom overlay scrollbars aren't useful — there's no
- * cursor to hover or drag the thumb, and the platform already provides transient
- * touch scrollbars. Hide the custom bars and restore the native ones. */
-@media (pointer: coarse) {
-    .page-scrollbar,
-    .modal-scrollbar,
-    .board-scrollbar {
-        display: none !important;
-    }
-    html,
-    body,
-    .no-native-scrollbar {
-        scrollbar-width: auto; /* Firefox */
-    }
-    html::-webkit-scrollbar,
-    body::-webkit-scrollbar,
-    .no-native-scrollbar::-webkit-scrollbar {
-        display: revert; /* WebKit */
-    }
+    overflow-x: clip;
 }
 
 /* Pulsing highlight ring used by the onboarding tour. */

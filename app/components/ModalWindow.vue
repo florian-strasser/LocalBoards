@@ -8,11 +8,9 @@
             :style="{ opacity: backdropOpacity }"
             @click="closeModal"
         />
-        <!-- The whole card scrolls (not an inner region). The native scrollbar
-             is hidden in favour of the custom ModalScrollbar on the right. -->
+        <!-- The whole card scrolls (not an inner region). -->
         <div
-            ref="modalScroll"
-            class="relative w-full max-h-full py-8 overflow-y-auto overflow-x-hidden no-native-scrollbar"
+            class="relative w-full max-h-full py-8 overflow-y-auto overflow-x-hidden"
             @click.self="closeModal"
         >
             <motion.div
@@ -37,7 +35,6 @@
                 </div>
             </motion.div>
         </div>
-        <ModalScrollbar :target="modalScroll" :active="!!open" />
     </div>
 </template>
 <script setup lang="ts">
@@ -50,8 +47,6 @@ const props = defineProps({
 
 const open = defineModel();
 
-// Scroll container for the whole card, driven by the custom ModalScrollbar.
-const modalScroll = ref(null);
 
 // Enter: card rises from below (y 32 → 0) and fades in; the backdrop fades in.
 // Exit: card continues upward (0 → -32) and fades out; the backdrop fades out.
@@ -122,7 +117,7 @@ watch(
     modal.isOpen,
     (locked) => {
         if (import.meta.client) {
-            document.body.style.overflow = locked ? "hidden" : "auto";
+            document.body.style.overflowY = locked ? "hidden" : "auto";
         }
     },
     { immediate: true },

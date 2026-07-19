@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event);
-    const { name, image, role } = body;
+    const { name, image, role, emailNotifications } = body;
 
     // Validate input
     // HIGH FIX: Use generic error message
@@ -87,6 +87,12 @@ export default defineEventHandler(async (event) => {
       }
       fields.push("`role` = ?");
       values.push(role);
+    }
+
+    // Let a user turn notification e-mails off (or back on) for themselves.
+    if (emailNotifications !== undefined) {
+      fields.push("`emailNotifications` = ?");
+      values.push(emailNotifications ? 1 : 0);
     }
     values.push(session.user.id);
 

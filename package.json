@@ -1,6 +1,6 @@
 {
   "name": "localboards",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "type": "module",
   "private": true,
   "scripts": {
@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:integration": "vitest run -c vitest.integration.config.ts",
     "test:e2e": "vitest run -c vitest.e2e.config.ts",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "demo:screenshots": "bash scripts/demo/run.sh"
   },
   "dependencies": {
     "@nuxtjs/i18n": "^10.4.0",
@@ -28,6 +29,8 @@
     "bcryptjs": "^3.0.3",
     "isomorphic-dompurify": "^3.18.0",
     "lucide-vue-next": "^1.0.0",
+    "markdown-it": "^14.3.0",
+    "markdown-it-task-lists": "^2.1.1",
     "motion-v": "^2.3.0",
     "mysql2": "^3.22.5",
     "nodemailer": "^9.0.1",
@@ -36,6 +39,8 @@
     "socket.io-client": "^4.8.3",
     "sortablejs": "^1.15.7",
     "tailwindcss": "^4.3.1",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
     "uuid": "^14.0.0"
   },
   "overrides": {

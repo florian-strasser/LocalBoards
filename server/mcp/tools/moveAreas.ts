@@ -2,98 +2,83 @@ import { z } from "zod";
 import { defineMcpTool } from "@nuxtjs/mcp-toolkit/server";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { getServerSocket } from "../../utils/socket";
+import {
+  requireUserId,
+  requireWriteAccess,
+  requireBoard,
+  requireId,
+  boardIdInput,
+  serializeArea,
+  McpError,
+} from "../../utils/mcpHelpers";
 
 const db = setupDatabase();
 
 export default defineMcpTool({
   name: "moveAreas",
-  description: "Update the order of areas in a board",
+  title: "Reorder areas",
+  description:
+    "Set the left-to-right order of a board's areas. Pass the area ids in the desired order (they'll be numbered 0,1,2,…). Every id must belong to the board. Needs edit access.",
   annotations: {
     readOnlyHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
   },
   inputSchema: {
-    boardId: z.number().describe("The id of the board"),
+    ...boardIdInput,
+    areaIds: z
+      .array(z.number().int().positive())
+      .optional()
+      .describe("The area ids in the new order."),
     areas: z
-      .array(
-        z.object({
-          id: z.number().describe("The id of the area"),
-        }),
-      )
-      .describe("Array of area objects with their IDs"),
+      .array(z.object({ id: z.number().int().positive() }))
+      .optional()
+      .describe("Deprecated alias: array of { id } in the new order."),
   },
-  handler: async ({ boardId, areas }) => {
-    const event = useEvent();
-    const userId = event.context.userId as string;
+  inputExamples: [{ boardId: 1, areaIds: [3, 1, 2] }],
+  handler: async ({ boardId, boardID, areaIds, areas }) => {
+    const userId = requireUserId();
+    requireWriteAccess();
+    const bid = requireId(boardId, boardID, "boardId");
+    await requireBoard(bid, userId, "edit");
 
-    if (!boardId || !areas || !Array.isArray(areas)) {
-      return textResult("boardId and areas array are required.");
+    const ids = areaIds ?? (areas || []).map((a: any) => a.id);
+    if (!ids.length) {
+      throw new McpError("VALIDATION", "Provide areaIds in the new order.");
     }
-
-    if (!userId) {
-      return textResult(
-        "Authentication required. Please provide a valid API key.",
+    const placeholders = ids.map(() => "?").join(",");
+    const [belong]: any = await db.execute(
+      `SELECT id FROM areas WHERE id IN (${placeholders}) AND board = ?`,
+      [...ids, bid],
+    );
+    if (belong.length !== ids.length) {
+      throw new McpError(
+        "VALIDATION",
+        "Every area id must belong to the board.",
       );
     }
 
-    try {
-      // Check if the board exists
-      const [boardRows] = await db.execute(
-        "SELECT * FROM boards WHERE id = ?",
-        [boardId],
-      );
-      const board = boardRows[0];
-
-      if (!board) {
-        return textResult("Board not found.");
-      }
-
-
-      // Require write access: owner or an `edit` invitation. Public boards are
-      // read-only (shared, tested helper — keeps this in sync with the REST API).
-      const decision = await authorizeBoard(db, board, userId, "edit");
-      if (!decision.ok) {
-        return textResult("Unauthorized access.");
-      }
-
-      try {
-        // Update the order of areas in the database
-        for (let i = 0; i < areas.length; i++) {
-          const area = areas[i];
-          const [result] = await db.execute(
-            "UPDATE areas SET sort = ? WHERE id = ? AND board = ?",
-            [i, area.id, boardId],
-          );
-
-          if (result.affectedRows === 0) {
-            return textResult(
-              `Area with ID ${area.id} not found or you do not have permission to edit it.`,
-            );
-          }
-        }
-
-        // Fetch updated areas to emit
-        const [updatedAreas] = await db.execute(
-          "SELECT * FROM areas WHERE board = ? ORDER BY sort",
-          [boardId],
-        );
-
-        // Emit socket event for area order update
-        const serverSocket = getServerSocket();
-        if (serverSocket) {
-          serverSocket.to(`board-${boardId}`).emit("updateAreas", {
-            areas: updatedAreas,
-            boardId,
-          });
-        }
-
-        return jsonResult({ message: "Area order updated successfully" });
-      } catch (error) {
-        logger.error("Error updating area order:", error);
-        return textResult("Internal server error.");
-      }
-    } catch (error) {
-      logger.error("Database error:", error);
-      return textResult("Internal server error.");
+    for (let i = 0; i < ids.length; i++) {
+      await db.execute("UPDATE areas SET sort = ? WHERE id = ? AND board = ?", [
+        i,
+        ids[i],
+        bid,
+      ]);
     }
+
+    const [rows]: any = await db.execute(
+      "SELECT * FROM areas WHERE board = ? ORDER BY sort",
+      [bid],
+    );
+
+    const serverSocket = getServerSocket();
+    if (serverSocket) {
+      serverSocket.to(`board-${bid}`).emit("updateAreas", {
+        areas: rows,
+        boardId: bid,
+      });
+    }
+
+    return jsonResult({ areas: rows.map(serializeArea) });
   },
 });

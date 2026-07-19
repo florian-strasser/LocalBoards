@@ -46,9 +46,35 @@ export default defineEventHandler(async (event) => {
         return { error: decision.error };
       }
       {
+        // Optional filters (also used by the MCP layer's searchCards):
+        //   ?done=true|false      only completed / only open cards
+        //   ?assignee=<userId>    only cards assigned to that user
+        //   ?unassigned=true      only cards nobody has been assigned
+        //   ?dueBefore=<ISO>      only cards due before that timestamp
+        const filters: string[] = ["c.area = ?"];
+        const params: any[] = [areaId];
+        if (query.done !== undefined && query.done !== "") {
+          filters.push("c.status = ?");
+          params.push(String(query.done) === "true" ? 1 : 0);
+        }
+        if (String(query.unassigned) === "true") {
+          filters.push("c.assignee IS NULL");
+        }
+        if (query.assignee) {
+          filters.push("c.assignee = ?");
+          params.push(String(query.assignee));
+        }
+        if (query.dueBefore) {
+          const before = new Date(String(query.dueBefore));
+          if (!Number.isNaN(before.getTime())) {
+            filters.push("c.dueDate IS NOT NULL AND c.dueDate < ?");
+            params.push(before);
+          }
+        }
+
         const [cards] = await db.execute(
-          "SELECT c.id, c.area, c.name, c.content, c.status, c.sort, c.dueDate, c.assignee, au.name AS assigneeName, au.image AS assigneeImage, (SELECT COUNT(*) FROM comments co WHERE co.card = c.id) as commentCount, (SELECT COUNT(*) FROM attachments a WHERE a.card = c.id) as attachmentCount FROM cards c LEFT JOIN user au ON au.id = c.assignee WHERE c.area = ? ORDER BY c.sort ASC",
-          [areaId],
+          `SELECT c.id, c.area, c.name, c.content, c.status, c.sort, c.dueDate, c.assignee, au.name AS assigneeName, au.image AS assigneeImage, au.type AS assigneeType, (SELECT COUNT(*) FROM comments co WHERE co.card = c.id) as commentCount, (SELECT COUNT(*) FROM attachments a WHERE a.card = c.id) as attachmentCount FROM cards c LEFT JOIN user au ON au.id = c.assignee WHERE ${filters.join(" AND ")} ORDER BY c.sort ASC`,
+          params,
         );
 
         // Prefetch comments and attachment metadata for every card so the

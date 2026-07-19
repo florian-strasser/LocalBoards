@@ -2,7 +2,7 @@
     <div class="comment-content-container">
         <div
             class="wysiwyg-wrapper"
-            v-html="sanitizeHtml(props.content)"
+            v-html="renderMarkdown(props.content)"
             @change="handleCheckboxChange"
             @click="handleContentClick"
         />
@@ -73,15 +73,37 @@ const handleCheckboxChange = async (event: Event) => {
         target.removeAttribute("checked");
     }
 
-    // Get the updated taskList HTML
-    const taskList = listItem.closest('[data-type="taskList"]');
-    if (!taskList) return;
-
-    // Only proceed if user has write access
+    // Only proceed if the user can edit.
     if (!props.writeAccess) return;
 
-    // Get the taskList HTML with updated attributes
-    const updatedContent = taskList.outerHTML;
+    // Rebuild from the STORED Markdown rather than serializing the rendered
+    // DOM: what is on screen has been through the sanitizer, so anything it
+    // strips (a table, say) would be silently deleted from the comment by a
+    // single checkbox click. Locate the clicked box by its index and toggle it
+    // in a fresh document — the same approach the card description uses.
+    const boxes = Array.from(
+        (event.currentTarget as HTMLElement).querySelectorAll(
+            'input[type="checkbox"]',
+        ),
+    );
+    const index = boxes.indexOf(target as HTMLInputElement);
+    if (index < 0) return;
+
+    const doc = new DOMParser().parseFromString(
+        markdownToHtml(props.content || ""),
+        "text/html",
+    );
+    const box = doc.querySelectorAll('input[type="checkbox"]')[index];
+    if (!box) return;
+    const li = box.closest("li");
+    if (isChecked) {
+        box.setAttribute("checked", "checked");
+        li?.setAttribute("data-checked", "true");
+    } else {
+        box.removeAttribute("checked");
+        li?.setAttribute("data-checked", "false");
+    }
+    const updatedContent = htmlToMarkdown(doc.body.innerHTML);
     try {
         const res = await $fetch("/api/data/comment", {
             method: "PATCH",

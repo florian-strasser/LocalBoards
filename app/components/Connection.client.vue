@@ -19,6 +19,7 @@ const emits = defineEmits([
     "card-orderd",
     "card-deleted",
     "comment-count-updated",
+    "presence-updated",
 ]);
 
 const isThisBoard = (boardId) => props.boardID * 1 === boardId * 1;
@@ -81,6 +82,17 @@ const onDeleteArea = ({ area, boardId }) => {
     if (isThisBoard(boardId)) emits("area-deleted", area);
 };
 
+// Live presence. `cardPresence` is a single card changing; `boardPresence` is
+// the snapshot the server sends when we join, so tiles show faces immediately
+// instead of only after the next change.
+const onCardPresence = ({ cardID, users }) => {
+    emits("presence-updated", [{ cardID, users }]);
+};
+
+const onBoardPresence = ({ boardId, cards }) => {
+    if (isThisBoard(boardId)) emits("presence-updated", cards || [], true);
+};
+
 const onCommentCountUpdated = ({ cardId, commentCount, boardId }) => {
     if (isThisBoard(boardId))
         emits("comment-count-updated", { cardId, commentCount });
@@ -102,6 +114,8 @@ socket.on("addArea", onAddArea);
 socket.on("updateArea", onUpdateArea);
 socket.on("deleteArea", onDeleteArea);
 socket.on("commentCountUpdated", onCommentCountUpdated);
+socket.on("cardPresence", onCardPresence);
+socket.on("boardPresence", onBoardPresence);
 
 // Join immediately if the socket is already connected.
 if (socket.connected) {
@@ -122,6 +136,8 @@ onBeforeUnmount(() => {
     socket.off("updateArea", onUpdateArea);
     socket.off("deleteArea", onDeleteArea);
     socket.off("commentCountUpdated", onCommentCountUpdated);
+    socket.off("cardPresence", onCardPresence);
+    socket.off("boardPresence", onBoardPresence);
 });
 </script>
 <template><div></div></template>

@@ -1,6 +1,6 @@
 <template>
     <div
-        class="min-h-svh flex flex-col justify-center items-center max-w-md w-full mx-auto"
+        class="min-h-svh flex flex-col justify-center items-center max-w-lg w-full mx-auto"
     >
         <div class="container">
             <form

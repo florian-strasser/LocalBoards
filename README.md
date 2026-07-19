@@ -12,6 +12,19 @@ We support real-time multiplayer updates. When you edit a card, area, or rename 
 
 LocalBoards is currently available in the following languages: English (EN), German (DE), French (FR), Spanish (ES), Italian (IT), Dutch (NL), and Polish (PL).
 
+## AI agents (MCP)
+
+LocalBoards isn't only for humans — it ships a built-in [Model Context Protocol](https://modelcontextprotocol.io) server (`/mcp`) so AI agents can read and manage boards on a user's behalf. An agent authenticates with an API key (create one under **Settings → API keys**, as **full-access** or **read-only**) and can search and filter cards, create/update/move/delete them, write comments, assign members and set due dates. Card descriptions and comments are stored as **Markdown** — the format agents work in natively — and are rendered safely.
+
+Agents and people can share a board safely:
+
+- **Give an agent its own account.** Admins can mark a user as an **AI agent**, so its actions are clearly attributed and it shows a bot badge on the board.
+- **Claiming is atomic.** An agent claims a card before working on it, so two agents — or an agent and a person — never do the same task twice.
+- **See who's around.** Live avatars on the board tiles — and in the card modal — show who currently has each card open, human or agent.
+- **Webhooks wake automations.** An MCP agent can't be pushed to, so subscribe a webhook (**Settings → Webhooks**) and have your automation start a run when a board changes. Subscriptions are per user *and* per board, so on a shared instance everyone wires up their own without touching anyone else's.
+
+See **[AGENTS.md](AGENTS.md)** for connection details, the agent work loop, the full tool list, and examples.
+
 ## Install
 
 To install LocalBoards, follow these steps:
