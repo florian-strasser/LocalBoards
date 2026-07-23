@@ -1,6 +1,6 @@
 {
   "name": "localboards",
-  "version": "0.20.1",
+  "version": "0.20.2",
   "type": "module",
   "private": true,
   "scripts": {
@@ -17,35 +17,38 @@
     "demo:screenshots": "bash scripts/demo/run.sh"
   },
   "dependencies": {
-    "@nuxtjs/i18n": "^10.4.0",
-    "@nuxtjs/mcp-toolkit": "^0.17.2",
-    "@tailwindcss/vite": "^4.3.1",
-    "@tiptap/extension-emoji": "^3.27.0",
-    "@tiptap/extension-file-handler": "^3.27.0",
-    "@tiptap/extension-image": "^3.27.0",
-    "@tiptap/pm": "^3.27.0",
-    "@tiptap/starter-kit": "^3.27.0",
-    "@tiptap/vue-3": "^3.27.0",
+    "@nuxtjs/i18n": "^10.5.0",
+    "@nuxtjs/mcp-toolkit": "^0.18.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tiptap/extension-emoji": "^3.28.0",
+    "@tiptap/extension-file-handler": "^3.28.0",
+    "@tiptap/extension-image": "^3.28.0",
+    "@tiptap/pm": "^3.28.0",
+    "@tiptap/starter-kit": "^3.28.0",
+    "@tiptap/vue-3": "^3.28.0",
     "bcryptjs": "^3.0.3",
-    "isomorphic-dompurify": "^3.18.0",
+    "isomorphic-dompurify": "^3.19.0",
     "lucide-vue-next": "^1.0.0",
     "markdown-it": "^14.3.0",
     "markdown-it-task-lists": "^2.1.1",
     "motion-v": "^2.3.0",
-    "mysql2": "^3.22.5",
-    "nodemailer": "^9.0.1",
-    "nuxt": "^4.4.8",
+    "mysql2": "^3.23.1",
+    "nodemailer": "^9.0.3",
+    "nuxt": "^4.5.0",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "sortablejs": "^1.15.7",
-    "tailwindcss": "^4.3.1",
+    "tailwindcss": "^4.3.3",
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.1"
   },
   "overrides": {
     "esbuild": "0.28.1",
-    "ws": "8.21.0"
+    "ws": "8.21.0",
+    "brace-expansion@2.0.0 - 2.1.1": "2.1.2",
+    "brace-expansion@>=3.0.0 <5.0.7": "5.0.7",
+    "@hono/node-server": "^2.0.5"
   },
   "devDependencies": {
     "@nuxt/test-utils": "^3.23.0",

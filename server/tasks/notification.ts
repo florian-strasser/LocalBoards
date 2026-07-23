@@ -87,7 +87,7 @@ const translateNotification = (message: string): string => {
     const cardPrefix = translateText("notificationCardMoved");
     const movedFrom = translateText("notificationCardMovedFrom");
     const movedTo = translateText("notificationCardMovedTo");
-    return `<p>${cardPrefix} "${cardName}"${movedFrom}"${fromArea}"${movedTo}"${toArea}"</p>`;
+    return `<p style='margin:0;'>${cardPrefix} "${cardName}"${movedFrom}"${fromArea}"${movedTo}"${toArea}"</p>`;
   }
 
   // Handle card status changed notification format: Card "name" status changed to completed/reopened
@@ -109,7 +109,7 @@ const translateNotification = (message: string): string => {
       status === "completed"
         ? translateText("notificationCardStatusCompleted")
         : translateText("notificationCardStatusReopened");
-    return `<p>${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}</p>`;
+    return `<p style='margin:0;'>${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}</p>`;
   }
 
   // Handle new card notification format: "username" created a new card "cardName" on board "boardName"
@@ -123,13 +123,13 @@ const translateNotification = (message: string): string => {
     const boardName = boardNameMatch ? boardNameMatch[1] : "";
 
     const translatedMessage = translateText("notificationNewCard");
-    return `<p>${translatedMessage.replace("{username}", username).replace("{cardName}", cardName).replace("{boardName}", boardName)}</p>`;
+    return `<p style='margin:0;'>${translatedMessage.replace("{username}", username).replace("{cardName}", cardName).replace("{boardName}", boardName)}</p>`;
   }
 
   // Handle old card notification format: New card created: cardName
   if (message.startsWith("New card created:")) {
     const cardName = message.slice("New card created:".length).trim();
-    return `<p>${translateText("notificationNewCard")}</p><p>${cardName}</p>`;
+    return `<p style='margin:0;'>${translateText("notificationNewCard")}</p><p style='margin:0.6em 0 0 0;'>${cardName}</p>`;
   }
 
   // Handle due-date reminder: Card "cardName" is due on <ISO date>
@@ -139,7 +139,7 @@ const translateNotification = (message: string): string => {
     const text = translateText("notificationCardDue")
       .replace("{cardName}", cardName)
       .replace("{date}", dueIso ? formatDueDate(dueIso) : "");
-    return `<p>${text}</p>`;
+    return `<p style='margin:0;'>${text}</p>`;
   }
 
   // Handle card assignment: "username" assigned you the card "cardName"
@@ -151,7 +151,7 @@ const translateNotification = (message: string): string => {
     const text = translateText("notificationCardAssigned")
       .replace("{username}", username)
       .replace("{cardName}", cardName);
-    return `<p>${text}</p>`;
+    return `<p style='margin:0;'>${text}</p>`;
   }
 
   // Map the static part to a translation key
@@ -185,7 +185,7 @@ const translateNotification = (message: string): string => {
 
       // Translate the static parts while preserving the format
       const translatedMessage = translateText("notificationNewComment");
-      return `<p>${translatedMessage.replace("{username}", username)} "${cardName}":</p><div class="comment">${comment.replace(/<img src="/g, '<img src="' + baseURL).replace(/<img/g, '<img style="max-width:100%; display:block;"')}</div>`;
+      return `<p style='margin:0;'>${translatedMessage.replace("{username}", username)} "${cardName}":</p><div class="comment" style='margin:0.6em 0 0 0;'>${comment.replace(/<img src="/g, '<img src="' + baseURL).replace(/<img/g, '<img style="max-width:100%; display:block;"')}</div>`;
     } else {
       // Replace the static part with the translated text
       const dynamicPart = message.slice(staticPart.length).trim();
@@ -234,7 +234,7 @@ const sendNotification = async () => {
     for (const userId of Object.keys(notificationsByUser)) {
       const userNotifications = notificationsByUser[userId];
       const notificationMessages = userNotifications.map((notification) => {
-        return `<li style='margin-bottom:0.4em; padding:0.8em 1.5em 0.33em 1.5em; background:rgba(0,0,0,0.1); border-radius:0.5em;'>${translateNotification(notification.message)}</li>`;
+        return `<li style='margin-bottom:0.4em; padding:1em 1.5em; background:rgba(0,0,0,0.1); border-radius:0.5em;'>${translateNotification(notification.message)}</li>`;
       });
 
       // Fetch the user's email address — only for accounts that still want

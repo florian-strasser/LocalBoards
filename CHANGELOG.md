@@ -1,3 +1,14 @@
+## v0.20.2
+
+### Security
+
+- Cleared the moderate `@hono/node-server` path-traversal advisory (GHSA-frvp-7c67-39w9), pulled in transitively through the MCP SDK. It was not reachable in practice — the vulnerable `serveStatic` is never imported by the SDK or the MCP toolkit, the toolkit's transport doesn't use `@hono/node-server` at all, and the flaw is Windows-only while the app runs on Linux — but the patched version (`>=2.0.5`) is now pinned via `overrides`, so the audit is clean. `npm audit fix --force` was avoided because it wanted to *downgrade* the MCP toolkit.
+- Patched a high-severity ReDoS in the transitive `brace-expansion` dependency (GHSA-3jxr-9vmj-r5cp / CVE-2026-13149): a small input could stall the Node event loop for minutes. It came in via Nuxt's and the i18n module's build tooling. Two version lines were affected; each is pinned to its fixed release through `overrides` (2.x → 2.1.2, 5.x → 5.0.7), leaving the other consumers' majors intact.
+
+### Fixes
+
+- Notification e-mails: the grey box around each notification is evenly padded again. It relied on the mail client's default paragraph margins, which left roughly 27px above the text and 5px below — and a comment, which ends in a plain block with no margin at all, sat right on the bottom edge. Spacing is now set explicitly rather than inherited.
+
 ## v0.20.1
 
 ### Changes
