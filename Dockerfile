@@ -11,11 +11,15 @@ FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-slim AS build
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json file to the working directory
-COPY ./package.json /app/
+# Copy the manifests first so this layer is cached unless dependencies change.
+COPY ./package.json ./package-lock.json /app/
 
-## Install dependencies
-RUN npm install
+# Install exactly what the lockfile pins (reproducible), not a fresh resolve.
+# The npm bundled with this Node image (10.9.2) crashes on the current
+# dependency tree with "Cannot read properties of null (reading 'edgesOut')" —
+# an arborist bug fixed in npm 11 — and it also can't read a lockfile written by
+# npm 11. Upgrade npm to match the lockfile's generator, then `npm ci`.
+RUN npm install -g npm@11 && npm ci
 
 # Copy the rest of the application files to the working directory
 COPY . ./

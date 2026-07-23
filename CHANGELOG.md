@@ -1,3 +1,9 @@
+## v0.20.3
+
+### Fixes
+
+- **The Docker image builds again.** `npm install` in the build stage crashed with `Cannot read properties of null (reading 'edgesOut')` — an npm 10.9.2 arborist bug (that's the npm bundled with the `node:22.17.0-slim` base image) resolving the current dependency tree from scratch. The build now installs from the committed lockfile with `npm ci` after upgrading to npm 11, which is both reproducible and clears the bug. This also required un-ignoring `package-lock.json` (it was in `.dockerignore`) so the lockfile reaches the build context. Verified with a full `docker buildx` build. Not exclusive to this project's deps — any tree that trips the npm 10.9.2 bug hit the same wall.
+
 ## v0.20.2
 
 ### Security
