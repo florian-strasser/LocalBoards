@@ -1,3 +1,9 @@
+## v0.20.4
+
+### Security
+
+- Cleared five vulnerabilities in the documentation site's dependencies (`docs/`), including a critical one in `tar`, plus `svgo`, `js-yaml`, `shell-quote` and `brace-expansion`. These were dev-only — the docs site is a separate project and isn't part of the deployed app (it's excluded from the Docker image) — but the fix keeps the dependency tree clean. All were resolved with semver-compatible updates; the docs still build.
+
 ## v0.20.3
 
 ### Fixes
