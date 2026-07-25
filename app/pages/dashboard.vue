@@ -8,7 +8,7 @@
                 onboardingTarget="new-board"
                 @sectionHeaderButtonClicked="openCreateBoard"
             >
-                {{ $t("yourBoards") }}
+                {{ $t("boards") }}
                 <template #actions>
                     <ActionMenu :tooltip="$t('moreOptions')">
                         <button
@@ -22,12 +22,7 @@
                     </ActionMenu>
                 </template>
             </SectionHeader>
-            <YourBoards
-                v-if="session"
-                :userID="session.data.user.id"
-                @newBoardButtonClicked="openCreateBoard"
-            />
-            <SharedBoards v-if="session" :userID="session.data.user.id" />
+            <BoardDashboard v-if="session" @new-board="openCreateBoard" />
         </ContentWrapper>
         <ModalWindow v-model="createBoard">
             <div>

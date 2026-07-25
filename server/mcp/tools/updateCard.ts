@@ -163,14 +163,15 @@ export default defineMcpTool({
       for (const notifyUserId of usersToNotify) {
         if (notifyUserId !== userId) {
           await db.execute(
-            "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO notifications (userId, type, boardId, cardId, message, actorId) VALUES (?, ?, ?, ?, ?, ?)",
             [
               notifyUserId,
               "card_status_changed",
               board.id,
               updatedCard.id,
               `Card "${updatedCard.name}" was ${statusText}`,
-            ],
+                            userId,
+              ],
           );
         }
       }

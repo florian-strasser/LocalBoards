@@ -183,13 +183,14 @@ export default defineEventHandler(async (event) => {
           if (notifyUserId !== userId) {
             // Don't notify the authenticated user who created the comment
             await db.execute(
-              "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+              "INSERT INTO notifications (userId, type, boardId, cardId, message, actorId) VALUES (?, ?, ?, ?, ?, ?)",
               [
                 notifyUserId,
                 "comment",
                 boardId,
                 card,
                 `New comment by "${rows[0].userName}" on card "${cRows[0]?.name || "a card"}": ${rows[0].content}`,
+                              userId,
               ],
             );
           }

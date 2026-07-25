@@ -48,6 +48,7 @@ export default defineMcpTool({
     );
     await db.execute("DELETE FROM invitations WHERE board = ?", [bid]);
     await db.execute("DELETE FROM `webhooks` WHERE board = ?", [bid]);
+    await db.execute("DELETE FROM `board_placements` WHERE board = ?", [bid]);
     await db.execute("DELETE FROM notifications WHERE boardId = ?", [bid]);
     await db.execute(
       "DELETE FROM cards WHERE area IN (SELECT id FROM areas WHERE board = ?)",

@@ -182,17 +182,20 @@ export default defineEventHandler(async (event) => {
           if (notifyUserId !== userId) {
             // Don't notify the authenticated user who created the card
             await db.execute(
-              "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+              "INSERT INTO notifications (userId, type, boardId, cardId, message, actorId) VALUES (?, ?, ?, ?, ?, ?)",
               [
                 notifyUserId,
                 "card_created",
                 boardId,
                 card.id,
                 `"${username}" created a new card "${card.name}" on board "${boardName}"`,
+                              userId,
               ],
             );
           }
         }
+
+        await recordCardActivity(card.id, "created", userId);
 
         // Emit socket event for card creation (only for API calls, not frontend)
         if (auth.viaApiKey) {
@@ -321,6 +324,9 @@ export default defineEventHandler(async (event) => {
 
         // A changed due date means the reminders should fire again.
         if (dueChanged) {
+          await recordCardActivity(cardID, "due", userId, {
+            dueDate: dueDate || null,
+          });
           await db.execute(
             "UPDATE card_reminders SET notified = 0 WHERE card = ?",
             [cardID],
@@ -339,15 +345,19 @@ export default defineEventHandler(async (event) => {
             [userId],
           );
           const assignerName = assignerRows[0]?.name || "Someone";
+          await recordCardActivity(cardID, "assigned", userId, {
+            assigneeId: newAssignee,
+          });
           await db.execute(
-            "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO notifications (userId, type, boardId, cardId, message, actorId) VALUES (?, ?, ?, ?, ?, ?)",
             [
               newAssignee,
               "card_assigned",
               board.id,
               cardID,
               `"${assignerName}" assigned you the card "${name}"`,
-            ],
+                            userId,
+              ],
           );
         }
 
@@ -404,6 +414,9 @@ export default defineEventHandler(async (event) => {
             ...invitedUsers.map((inv) => inv.user),
           ].filter(Boolean);
 
+          await recordCardActivity(cardID, "status", userId, {
+            done: !!newStatus,
+          });
           const statusText = newStatus ? "completed" : "reopened";
           const notificationMessage = `Card "${card.name}" status changed to ${statusText}`;
 
@@ -411,14 +424,15 @@ export default defineEventHandler(async (event) => {
             if (notifyUserId !== userId) {
               // Don't notify the user who changed the status
               await db.execute(
-                "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO notifications (userId, type, boardId, cardId, message, actorId) VALUES (?, ?, ?, ?, ?, ?)",
                 [
                   notifyUserId,
                   "card_status_changed",
                   boardId,
                   card.id,
                   notificationMessage,
-                ],
+                                userId,
+              ],
               );
             }
           }

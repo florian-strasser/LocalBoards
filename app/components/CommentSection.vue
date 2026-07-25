@@ -1,5 +1,5 @@
 <template>
-    <div v-if="props.writeAccess || comments.length > 0">
+    <div v-if="props.writeAccess || timeline.length > 0">
         <h3 class="text-xl font-bold text-dark dark:text-white">
             {{ $t("commentsAndActivity") }}
         </h3>
@@ -14,8 +14,61 @@
             @comment-deleted="handleCommentDeleted"
             @comment-updated="handleCommentUpdated"
         />
-        <div v-if="comments.length > 0" class="mt-4 space-y-4">
-            <div v-for="comment in comments" :key="comment.id">
+        <div v-if="timeline.length > 0" class="mt-4 space-y-4">
+            <div v-for="item in timeline" :key="item.key">
+                <!-- A card change: one compact line with who and when. -->
+                <div
+                    v-if="item.kind === 'activity'"
+                    class="flex items-start gap-3 px-1 py-1 text-sm text-gray"
+                >
+                    <span
+                        class="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-sm text-white"
+                    >
+                        <img
+                            v-if="item.activity.actorImage"
+                            :src="item.activity.actorImage"
+                            :alt="item.activity.actorName || ''"
+                            class="h-full w-full object-cover"
+                        />
+                        <Bot
+                            v-else-if="item.activity.actorType === 'artificial'"
+                            class="size-4"
+                        />
+                        <template v-else>{{
+                            (item.activity.actorName || "?")
+                                .charAt(0)
+                                .toUpperCase()
+                        }}</template>
+                    </span>
+                    <!-- min-h matches the avatar and the text is centred inside
+                         it: a single line therefore sits on the avatar's centre,
+                         while two or more lines outgrow the min-height and start
+                         at the top, level with the avatar. The inner span keeps
+                         the text inline so it still wraps as one flow. -->
+                    <span
+                        class="flex min-h-9 min-w-0 grow items-center leading-[18px]"
+                    >
+                        <span class="min-w-0">
+                            <span
+                                class="font-medium text-dark dark:text-white"
+                                >{{
+                                    item.activity.actorName || $t("systemActor")
+                                }}</span
+                            >
+                            {{ activityText(item.activity) }}
+                            <span class="whitespace-nowrap text-xs opacity-75">{{
+                                formatActivityDate(item.activity.createdAt)
+                            }}</span>
+                        </span>
+                    </span>
+                </div>
+                <!-- A comment: unchanged markup, aliased from the timeline. -->
+                <template
+                    v-for="comment in item.kind === 'comment'
+                        ? [item.comment]
+                        : []"
+                    :key="comment.id"
+                >
                 <template v-if="commentToDelete !== comment.id">
                     <template v-if="commentToEdit !== comment.id">
                         <div
@@ -49,14 +102,23 @@
                                 }}</template>
                             </span>
                             <div class="min-w-0 grow">
-                                <p class="truncate text-sm">
+                                <!-- Wraps rather than truncates: on a narrow
+                                     screen the name plus a full timestamp is
+                                     wider than the row, and clipping it hid the
+                                     date entirely. The name can still ellipsise
+                                     on its own if it is very long; the date
+                                     stays whole and moves to the next line. -->
+                                <p
+                                    class="flex flex-wrap items-baseline gap-x-2 text-sm"
+                                >
                                     <span
-                                        class="font-medium text-dark dark:text-white"
+                                        class="max-w-full truncate font-medium text-dark dark:text-white"
                                         >{{ comment.userName }}</span
                                     >
-                                    <span class="ml-2 text-xs text-gray">{{
-                                        formatDate(comment.date)
-                                    }}</span>
+                                    <span
+                                        class="whitespace-nowrap text-xs text-gray"
+                                        >{{ formatDate(comment.date) }}</span
+                                    >
                                 </p>
                             </div>
                             <div
@@ -128,6 +190,7 @@
                         </div>
                     </div>
                 </template>
+                </template>
             </div>
         </div>
         <div v-else class="mt-4">{{ $t("noCommentsYet") }}</div>
@@ -135,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-import { Pen, Trash2, X } from "lucide-vue-next";
+import { Pen, Trash2, X, Bot } from "lucide-vue-next";
 import { socket } from "~/lib/socket";
 import type { PropType } from "vue";
 
@@ -160,6 +223,89 @@ const emits = defineEmits([
     "comment-updated",
     "comment-count-updated",
 ]);
+
+// --- Card activity --------------------------------------------------------
+// The card's durable history (status changes, moves, assignments, due dates),
+// merged with the comments into one chronological timeline. Stored structured
+// on the server and rendered here, so it reads in the viewer's language.
+const activity = ref<any[]>([]);
+
+const loadActivity = async () => {
+    if (!props.cardID) return;
+    try {
+        const res: any = await $fetch(
+            `/api/data/card-activity?cardId=${props.cardID}`,
+        );
+        activity.value = res?.activity ?? [];
+    } catch (e) {
+        console.error("Failed to load card activity:", e);
+    }
+};
+onMounted(loadActivity);
+
+// Newest first, matching how comments are already listed.
+const timeline = computed(() => {
+    const items = [
+        ...comments.value.map((c: any) => ({
+            kind: "comment" as const,
+            key: `c${c.id}`,
+            date: new Date(c.date ?? c.createdAt ?? 0).getTime(),
+            seq: Number(c.id) || 0,
+            comment: c,
+        })),
+        ...activity.value.map((a: any) => ({
+            kind: "activity" as const,
+            key: `a${a.id}`,
+            date: new Date(a.createdAt ?? 0).getTime(),
+            seq: Number(a.id) || 0,
+            activity: a,
+        })),
+    ];
+    // Newest first, matching how comments have always been listed. Timestamps
+    // only have second precision, so a burst of changes in the same second
+    // needs the id as a tiebreaker — otherwise the sort is a no-op and the
+    // batch shows oldest-first, out of step with everything around it.
+    return items.sort((x, y) => y.date - x.date || y.seq - x.seq);
+});
+
+const activityText = (a: any): string => {
+    const d = a.data || {};
+    switch (a.type) {
+        case "created":
+            return $t("activityCreated");
+        case "status":
+            return d.done ? $t("activityCompleted") : $t("activityReopened");
+        case "moved":
+            return $t("activityMoved", { from: d.from ?? "?", to: d.to ?? "?" });
+        case "assigned":
+            return d.assigneeName
+                ? $t("activityAssigned", { name: d.assigneeName })
+                : $t("activityUnassigned");
+        case "due":
+            return d.dueDate
+                ? $t("activityDueSet", {
+                      date: new Date(d.dueDate).toLocaleString(undefined, {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                      }),
+                  })
+                : $t("activityDueCleared");
+        default:
+            return a.type;
+    }
+};
+
+const formatActivityDate = (value: string) =>
+    new Date(value).toLocaleString(undefined, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
 
 // Local state for comments to handle additions and deletions
 const comments = ref<Comment[]>([...props.initialComments]);

@@ -67,14 +67,15 @@ export default defineMcpTool({
     ].filter(Boolean)) {
       if (notifyUserId !== userId) {
         await db.execute(
-          "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+          "INSERT INTO notifications (userId, type, boardId, cardId, message, actorId) VALUES (?, ?, ?, ?, ?, ?)",
           [
             notifyUserId,
             "comment",
             board.id,
             id,
-            `New comment by "${comment.userName}" on card "${card.name}"`,
-          ],
+            `New comment by "${comment.userName}" on card "${card.name || "a card"}"`,
+                          userId,
+              ],
         );
       }
     }

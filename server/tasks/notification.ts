@@ -38,7 +38,7 @@ const dateLocales: Record<string, string> = {
   pl: "pl-PL",
 };
 
-const formatDueDate = (iso: string): string => {
+const formatDate = (iso: string): string => {
   try {
     return new Date(iso).toLocaleString(dateLocales[language] || "en-US", {
       day: "2-digit",
@@ -63,138 +63,199 @@ const translateText = (text: string): string => {
   return translatedText;
 };
 
+// Same interpolation the UI uses: `{name}` placeholders in the locale strings.
+const t = (key: string, params: Record<string, string> = {}): string => {
+  let out = translateText(key);
+  for (const [k, v] of Object.entries(params)) out = out.split(`{${k}}`).join(v);
+  return out;
+};
+
 const buildTitle = (title) => {
   return title + " | " + appName;
 };
 
-const translateNotification = (message: string): string => {
-  // Handle card moved notification format: Card "name" moved from "area1" to "area2"
+// Names and card titles are user input and land in HTML, so escape them.
+const esc = (value: string): string =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+const FONT =
+  "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const PRIMARY = "#0066cc";
+const AVATAR = 36; // px — the text line-height (18px) is exactly half of it, so
+// one line centres against the avatar and two lines fill it top to bottom.
+
+// Turn a stored notification message into the same shape the card's activity
+// timeline shows: an actor-led sentence ("… moved "Card" from "A" to "B""), plus
+// an optional body that gets its own bubble (currently only comments have one).
+const describeNotification = (
+  message: string,
+): { text: string; body: string } => {
+  const plain = (text: string) => ({ text, body: "" });
+
+  // Card "name" moved from "area1" to "area2"
   if (
     message.startsWith('Card "') &&
     message.includes('" moved from "') &&
     message.includes('" to "')
   ) {
-    // Extract the card name and areas
-    const cardNameMatch = message.match(/Card "([^"]+)"/);
-    const fromAreaMatch = message.match(/from "([^"]+)"/);
-    const toAreaMatch = message.match(/to "([^"]+)"/);
-
-    const cardName = cardNameMatch ? cardNameMatch[1] : "";
-    const fromArea = fromAreaMatch ? fromAreaMatch[1] : "";
-    const toArea = toAreaMatch ? toAreaMatch[1] : "";
-
-    // Translate all static parts while preserving the format
-    const cardPrefix = translateText("notificationCardMoved");
-    const movedFrom = translateText("notificationCardMovedFrom");
-    const movedTo = translateText("notificationCardMovedTo");
-    return `<p style='margin:0;'>${cardPrefix} "${cardName}"${movedFrom}"${fromArea}"${movedTo}"${toArea}"</p>`;
+    return plain(
+      t("notifMovedCard", {
+        cardName: (message.match(/Card "([^"]*)"/) || [])[1] || "",
+        from: (message.match(/from "([^"]*)"/) || [])[1] || "",
+        to: (message.match(/to "([^"]*)"/) || [])[1] || "",
+      }),
+    );
   }
 
-  // Handle card status changed notification format: Card "name" status changed to completed/reopened
-  if (
-    message.startsWith('Card "') &&
-    message.includes('" status changed to ')
-  ) {
-    // Extract the card name and status
-    const cardNameMatch = message.match(/Card "([^"]+)"/);
-    const statusMatch = message.match(/status changed to (completed|reopened)/);
-
-    const cardName = cardNameMatch ? cardNameMatch[1] : "";
-    const status = statusMatch ? statusMatch[1] : "";
-
-    // Translate all static parts while preserving the format
-    const cardPrefix = translateText("notificationCardStatusChanged");
-    const statusChangedTo = translateText("notificationCardStatusChangedTo");
-    const translatedStatus =
-      status === "completed"
-        ? translateText("notificationCardStatusCompleted")
-        : translateText("notificationCardStatusReopened");
-    return `<p style='margin:0;'>${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}</p>`;
+  // Card "name" status changed to completed/reopened
+  if (message.startsWith('Card "') && message.includes('" status changed to ')) {
+    const cardName = (message.match(/Card "([^"]*)"/) || [])[1] || "";
+    const completed = message.includes("status changed to completed");
+    return plain(
+      t(completed ? "notifCompletedCard" : "notifReopenedCard", { cardName }),
+    );
   }
 
-  // Handle new card notification format: "username" created a new card "cardName" on board "boardName"
+  // "username" created a new card "cardName" on board "boardName"
   if (message.includes(" created a new card ")) {
-    const usernameMatch = message.match(/^"([^"]+)" created a new card/);
-    const cardNameMatch = message.match(/created a new card "([^"]+)"/);
-    const boardNameMatch = message.match(/on board "([^"]+)"$/);
-
-    const username = usernameMatch ? usernameMatch[1] : "";
-    const cardName = cardNameMatch ? cardNameMatch[1] : "";
-    const boardName = boardNameMatch ? boardNameMatch[1] : "";
-
-    const translatedMessage = translateText("notificationNewCard");
-    return `<p style='margin:0;'>${translatedMessage.replace("{username}", username).replace("{cardName}", cardName).replace("{boardName}", boardName)}</p>`;
+    return plain(
+      t("notifCreatedCard", {
+        cardName: (message.match(/created a new card "([^"]*)"/) || [])[1] || "",
+      }),
+    );
   }
 
-  // Handle old card notification format: New card created: cardName
+  // Legacy format: New card created: cardName
   if (message.startsWith("New card created:")) {
-    const cardName = message.slice("New card created:".length).trim();
-    return `<p style='margin:0;'>${translateText("notificationNewCard")}</p><p style='margin:0.6em 0 0 0;'>${cardName}</p>`;
+    return plain(
+      t("notifCreatedCard", {
+        cardName: message.slice("New card created:".length).trim(),
+      }),
+    );
   }
 
-  // Handle due-date reminder: Card "cardName" is due on <ISO date>
+  // Card "cardName" is due on <ISO date> — no human actor, so this reads as a
+  // reminder from the app itself.
   if (message.startsWith('Card "') && message.includes('" is due on ')) {
-    const cardName = (message.match(/Card "([^"]+)"/) || [])[1] || "";
     const dueIso = (message.match(/ is due on (.+)$/) || [])[1] || "";
-    const text = translateText("notificationCardDue")
-      .replace("{cardName}", cardName)
-      .replace("{date}", dueIso ? formatDueDate(dueIso) : "");
-    return `<p style='margin:0;'>${text}</p>`;
+    return plain(
+      t("notifCardDue", {
+        cardName: (message.match(/Card "([^"]*)"/) || [])[1] || "",
+        date: dueIso ? formatDate(dueIso) : "",
+      }),
+    );
   }
 
-  // Handle card assignment: "username" assigned you the card "cardName"
+  // "username" assigned you the card "cardName"
   if (message.includes(" assigned you the card ")) {
-    const username =
-      (message.match(/^"([^"]+)" assigned you the card/) || [])[1] || "";
-    const cardName =
-      (message.match(/assigned you the card "([^"]+)"/) || [])[1] || "";
-    const text = translateText("notificationCardAssigned")
-      .replace("{username}", username)
-      .replace("{cardName}", cardName);
-    return `<p style='margin:0;'>${text}</p>`;
+    return plain(
+      t("notifAssignedCard", {
+        cardName:
+          (message.match(/assigned you the card "([^"]*)"/) || [])[1] || "",
+      }),
+    );
   }
 
-  // Map the static part to a translation key
-  const translationKeyMap = {
-    "You have been invited to the board": "notificationInvitedToBoard",
-    'New comment by "': "notificationNewComment",
-  };
+  // You have been invited to the board <name>
+  if (message.startsWith("You have been invited to the board")) {
+    return plain(
+      t("notifInvitedBoard", {
+        boardName: message
+          .slice("You have been invited to the board".length)
+          .replace(/^[:\s]+/, "")
+          .trim(),
+      }),
+    );
+  }
 
-  // Extract the static part of the message for other notification types
-  const staticPart = Object.keys(translationKeyMap).find((key) =>
-    message.startsWith(key),
+  // New comment by "username" on card "cardname": <comment html>
+  if (message.startsWith('New comment by "')) {
+    // `*` not `+`: a card with an empty name stored `on card ""`, which a `+`
+    // pattern skips entirely.
+    const cardName = (message.match(/on card "([^"]*)"/) || [])[1] || "";
+    const marker = `"${cardName}":`;
+    const i = message.indexOf(marker);
+    const body = i < 0 ? "" : message.substring(i + marker.length).trim();
+    return {
+      text: t("notifCommentedOn", {
+        cardName: cardName || translateText("untitledCard"),
+      }),
+      // Relative image sources only resolve against the app, and unconstrained
+      // images blow up the mail layout.
+      body: body
+        .replace(/<img src="\//g, `<img src="${baseURL}/`)
+        .replace(/<img/g, '<img style="max-width:100%; display:block;"'),
+    };
+  }
+
+  return plain(message);
+};
+
+// Who triggered it. Prefer the joined actor row (it has an avatar); fall back to
+// the name embedded in the message for notifications stored before `actorId`
+// existed, and to the app itself for system events like due reminders.
+const actorName = (n: any): string => {
+  if (n.actorName) return n.actorName;
+  const m = String(n.message || "").match(
+    /New comment by "([^"]+)"|^"([^"]+)" (?:created a new card|assigned you)/,
   );
+  return m ? m[1] || m[2] : translateText("systemActor");
+};
 
-  // Get the translation key
-  const translationKey = translationKeyMap[staticPart];
-
-  if (translationKey) {
-    // Handle new comment notification format: New comment by "username" on card "cardname"
-    if (translationKey === "notificationNewComment") {
-      // Extract the username and card name
-      const usernameMatch = message.match(/New comment by "([^"]+)"/);
-      const cardNameMatch = message.match(/on card "([^"]+)"/);
-
-      const username = usernameMatch ? usernameMatch[1] : "";
-      const cardName = cardNameMatch ? cardNameMatch[1] : "";
-
-      // Extract everything after the card name as the comment
-      const commentStartIndex =
-        message.indexOf(`"${cardName}":`) + `"${cardName}":`.length;
-      const comment = message.substring(commentStartIndex).trim();
-
-      // Translate the static parts while preserving the format
-      const translatedMessage = translateText("notificationNewComment");
-      return `<p style='margin:0;'>${translatedMessage.replace("{username}", username)} "${cardName}":</p><div class="comment" style='margin:0.6em 0 0 0;'>${comment.replace(/<img src="/g, '<img src="' + baseURL).replace(/<img/g, '<img style="max-width:100%; display:block;"')}</div>`;
-    } else {
-      // Replace the static part with the translated text
-      const dynamicPart = message.slice(staticPart.length).trim();
-      return `${translateText(translationKey)}: ${dynamicPart}`;
-    }
-  } else {
-    // Fallback to the original message if no translation is found
-    return message;
+// Avatars are stored as a path, an absolute URL, or a data: URI. Mail clients
+// broadly refuse data: images, so those become inline cid: attachments instead;
+// anything without a usable image falls back to an initial-letter circle.
+const avatarSource = (image: string, attachments: any[]): string | null => {
+  if (!image) return null;
+  if (image.startsWith("http://") || image.startsWith("https://")) return image;
+  if (image.startsWith("/")) return `${baseURL}${image}`;
+  const data = image.match(/^data:(image\/[a-z.+-]+);base64,(.+)$/i);
+  if (data) {
+    const existing = attachments.find((a) => a.__source === image);
+    if (existing) return `cid:${existing.cid}`;
+    const cid = `avatar${attachments.length}@localboards`;
+    attachments.push({
+      cid,
+      filename: `avatar${attachments.length}.${(data[1].split("/")[1] || "png").replace(/[^a-z0-9]/gi, "")}`,
+      content: Buffer.from(data[2], "base64"),
+      contentType: data[1],
+      contentDisposition: "inline",
+      __source: image,
+    });
+    return `cid:${cid}`;
   }
+  return null;
+};
+
+const avatarCell = (n: any, attachments: any[]): string => {
+  const src = avatarSource(n.actorImage, attachments);
+  if (src) {
+    return `<img src="${esc(src)}" width="${AVATAR}" height="${AVATAR}" alt="" style="width:${AVATAR}px;height:${AVATAR}px;border-radius:${AVATAR / 2}px;display:block;object-fit:cover;" />`;
+  }
+  const initial = esc((actorName(n) || "?").charAt(0).toUpperCase());
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td width="${AVATAR}" height="${AVATAR}" align="center" valign="middle" style="width:${AVATAR}px;height:${AVATAR}px;background-color:${PRIMARY};border-radius:${AVATAR / 2}px;color:#ffffff;font-family:${FONT};font-size:14px;font-weight:600;line-height:${AVATAR}px;">${initial}</td></tr></table>`;
+};
+
+// One timeline row: avatar, then "<name> did something <when>" on a single
+// wrapping line, with the comment (if any) in a bubble underneath. Colours are
+// left to the client wherever possible (rgba over inherited text) so the mail
+// looks right in both light and dark mode.
+const notificationRow = (n: any, attachments: any[]): string => {
+  const { text, body } = describeNotification(n.message);
+  const bubble = body
+    ? `<tr><td></td><td style="padding:8px 0 0 0;"><div style="border:1px solid rgba(128,128,128,0.35);border-radius:12px;padding:10px 14px;font-family:${FONT};font-size:14px;line-height:20px;">${body}</div></td></tr>`
+    : "";
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;width:100%;margin:0 0 16px 0;">
+  <tr>
+    <td width="${AVATAR}" valign="middle" style="width:${AVATAR}px;padding:0 12px 0 0;">${avatarCell(n, attachments)}</td>
+    <td valign="middle" style="font-family:${FONT};font-size:14px;line-height:18px;"><span style="font-weight:600;">${esc(actorName(n))}</span> ${esc(text)} <span style="font-size:12px;opacity:0.6;white-space:nowrap;">${esc(formatDate(n.createdAt))}</span></td>
+  </tr>
+  ${bubble}
+</table>`;
 };
 
 const sendNotification = async () => {
@@ -203,8 +264,13 @@ const sendNotification = async () => {
     // Fetch notifications that still need an email: not yet emailed and not yet
     // seen by the user. (`isRead` now means "the user has viewed it", so anything
     // already opened is skipped; `notified` tracks what's already been emailed.)
+    // The actor is joined in so the mail can show who did it, like the card does.
     const [rows] = await db.execute(
-      "SELECT * FROM notifications WHERE isRead = FALSE AND notified = FALSE",
+      `SELECT n.*, u.name AS actorName, u.image AS actorImage, u.type AS actorType
+         FROM notifications n
+         LEFT JOIN \`user\` u ON u.id = n.actorId
+        WHERE n.isRead = FALSE AND n.notified = FALSE
+        ORDER BY n.createdAt ASC, n.id ASC`,
     );
 
     const notifications = rows as Array<{
@@ -216,6 +282,9 @@ const sendNotification = async () => {
       message: string;
       isRead: boolean;
       createdAt: string;
+      actorName: string | null;
+      actorImage: string | null;
+      actorType: string | null;
     }>;
 
     // Group notifications by user
@@ -233,9 +302,11 @@ const sendNotification = async () => {
     // Send an email for each user with unread notifications
     for (const userId of Object.keys(notificationsByUser)) {
       const userNotifications = notificationsByUser[userId];
-      const notificationMessages = userNotifications.map((notification) => {
-        return `<li style='margin-bottom:0.4em; padding:1em 1.5em; background:rgba(0,0,0,0.1); border-radius:0.5em;'>${translateNotification(notification.message)}</li>`;
-      });
+      // Collected while rendering: inline avatars referenced by cid:.
+      const attachments: any[] = [];
+      const rowsHtml = userNotifications
+        .map((notification) => notificationRow(notification, attachments))
+        .join("");
 
       // Fetch the user's email address — only for accounts that still want
       // notification mails (opt-out lives on the profile; artificial/AI
@@ -247,23 +318,17 @@ const sendNotification = async () => {
       const userEmail = userRows[0]?.email;
 
       if (userEmail) {
+        const dashboardUrl = `${baseURL}/dashboard/`;
         await sendEmail({
           to: userEmail,
           subject: buildTitle(translateText("youHaveUnreadNotifications")),
-          text:
-            "<p>" +
-            translateText("youHaveTheFollowingUnreadNotifications") +
-            ":</p><ul style='list-style:none; padding-left:0;'>" +
-            notificationMessages.join("") +
-            "</ul><p>" +
-            translateText("clickHereToViewYourNotifications") +
-            ":</p><p><a href='" +
-            baseURL +
-            "/dashboard/" +
-            "'>" +
-            baseURL +
-            "/dashboard/" +
-            "</a></p>",
+          text: `<div style="font-family:${FONT};font-size:14px;line-height:20px;max-width:600px;">
+  <p style="margin:0 0 20px 0;">${esc(translateText("youHaveTheFollowingUnreadNotifications"))}:</p>
+  ${rowsHtml}
+  <p style="margin:24px 0 0 0;"><a href="${esc(dashboardUrl)}" style="display:inline-block;background-color:${PRIMARY};color:#ffffff;text-decoration:none;font-weight:600;padding:10px 18px;border-radius:8px;">${esc(translateText("clickHereToViewYourNotifications"))}</a></p>
+</div>`,
+          // `__source` is only used for de-duplicating avatars while building.
+          attachments: attachments.map(({ __source, ...a }) => a),
         });
 
         // Mark the emailed notifications as notified (not read) so they aren't

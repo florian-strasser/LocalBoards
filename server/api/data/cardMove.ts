@@ -134,6 +134,11 @@ export default defineEventHandler(async (event) => {
           )) as any[];
           const toAreaName = (toAreaRows as any[])[0]?.name;
 
+          await recordCardActivity(cardId, "moved", userId, {
+            from: fromAreaName,
+            to: toAreaName,
+          });
+
           // Fetch all users who have access to the board (owner and invited users)
           const [boardRows] = (await db.execute(
             "SELECT user, id AS boardId FROM boards WHERE id = (SELECT board FROM areas WHERE id = ?)",
@@ -157,14 +162,15 @@ export default defineEventHandler(async (event) => {
             if (notifyUserId !== userId) {
               // Don't notify the user who moved the card
               await db.execute(
-                "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO notifications (userId, type, boardId, cardId, message, actorId) VALUES (?, ?, ?, ?, ?, ?)",
                 [
                   notifyUserId,
                   "card_moved",
                   boardId,
                   cardId,
                   `Card "${cardName}" moved from "${fromAreaName}" to "${toAreaName}"`,
-                ],
+                                userId,
+              ],
               );
             }
           }

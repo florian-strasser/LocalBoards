@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="relative">
+        <div ref="bellWrapper" class="relative">
             <div
                 :class="{ 'opacity-0': unreadCount === 0 }"
                 class="absolute top-0 right-0 size-2 transform translate-x-1/2 -translate-y-1/2 rounded-full bg-secondary pointer-events-none z-20"
@@ -17,9 +17,17 @@
                 <Bell class="size-5" />
             </button>
         </div>
+        <!-- Rendered into <body> and positioned in JS against the document's
+             client width. `100vw` includes the classic scrollbar, so an
+             absolutely-positioned panel anchored to the header pill hung off the
+             left edge on narrow screens; measuring instead keeps it on screen
+             whatever the scrollbar and container padding do. -->
+        <Teleport to="body">
         <div
             v-if="showNotifications"
-            class="absolute right-0 mt-8 w-78 bg-white dark:bg-slate rounded-lg overflow-clip shadow-lg z-30"
+            ref="panel"
+            :style="panelStyle"
+            class="fixed bg-white dark:bg-slate rounded-lg overflow-clip shadow-lg z-50"
         >
             <div class="p-4 border-b dark:border-gray/30">
                 <h3 class="text-lg font-semibold">
@@ -35,23 +43,80 @@
                             ? `/board/${notification.boardId}?card=${notification.cardId}`
                             : `/board/${notification.boardId}`
                     "
-                    class="p-4 block w-full border-b dark:border-gray/30 hover:bg-black/10 dark:hover:bg-white/10"
+                    class="block w-full border-b p-4 dark:border-gray/30 hover:bg-black/5 dark:hover:bg-white/10"
+                    @click="showNotifications = false"
                 >
+                    <div class="flex items-start gap-3 text-sm text-gray">
+                        <!-- Actor avatar, same treatment as the comment section. -->
+                        <span
+                            class="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-sm text-white"
+                        >
+                            <img
+                                v-if="notification.actorImage"
+                                :src="notification.actorImage"
+                                :alt="actorLabel(notification)"
+                                class="h-full w-full object-cover"
+                            />
+                            <Bot
+                                v-else-if="
+                                    notification.actorType === 'artificial'
+                                "
+                                class="size-4"
+                            />
+                            <template v-else>{{
+                                actorLabel(notification).charAt(0).toUpperCase()
+                            }}</template>
+                        </span>
+                        <!-- Same alignment rule as the card timeline: min-h
+                             matches the avatar and the text is centred in it, so
+                             one line sits on the avatar's centre while two or
+                             more start at the top, level with the avatar. -->
+                        <span
+                            class="flex min-h-9 min-w-0 grow items-center leading-[18px]"
+                        >
+                            <span class="min-w-0">
+                                <span
+                                    class="font-medium text-dark dark:text-white"
+                                    >{{ actorLabel(notification) }}</span
+                                >
+                                {{ translateNotification(notification.message) }}
+                                <span
+                                    class="whitespace-nowrap text-xs opacity-75"
+                                    >{{ formatDate(notification.createdAt) }}</span
+                                >
+                            </span>
+                        </span>
+                        <!-- Unread marker. -->
+                        <span
+                            v-if="!notification.isRead"
+                            class="mt-3.5 size-2 shrink-0 rounded-full bg-secondary"
+                            :aria-label="$t('unread')"
+                        />
+                    </div>
+                    <!-- A comment renders in its own bubble, like on a card,
+                         indented past the avatar (size-9 + gap-3). -->
                     <div
-                        class="text-sm"
-                        v-html="sanitizeHtml(translateNotification(notification.message))"
+                        v-if="notificationBody(notification.message)"
+                        class="wysiwyg-wrapper mt-2 ml-12 rounded-lg bg-dark/5 px-3 py-2 text-sm text-dark dark:bg-white/10 dark:text-white"
+                        v-html="
+                            sanitizeHtml(notificationBody(notification.message))
+                        "
                     />
-                    <p class="text-xs text-gray-500 mt-1">
-                        {{ formatDate(notification.createdAt) }}
-                    </p>
                 </NuxtLink>
+                <p
+                    v-if="notifications.length === 0"
+                    class="p-6 text-center text-sm text-gray"
+                >
+                    {{ $t("noNotifications") }}
+                </p>
             </div>
         </div>
+        </Teleport>
     </div>
 </template>
 
 <script setup lang="ts">
-import { Bell } from "lucide-vue-next";
+import { Bell, Bot } from "lucide-vue-next";
 
 const props = defineProps({
     userID: String,
@@ -60,6 +125,65 @@ const props = defineProps({
 const showNotifications = ref(false);
 const notifications = ref([]);
 const unreadCount = ref(0);
+
+const bellWrapper = ref(null);
+const panel = ref(null);
+const panelStyle = ref({});
+
+const PANEL_WIDTH = 384; // w-96
+const MARGIN = 16; // keep this much clear of both viewport edges
+
+// Right-align the panel under the bell, then clamp it into the viewport.
+// `documentElement.clientWidth` excludes the scrollbar (unlike `100vw`), so the
+// panel stays on screen with a classic space-taking scrollbar too.
+const positionPanel = () => {
+    const anchor = bellWrapper.value;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const available = document.documentElement.clientWidth;
+    const width = Math.min(PANEL_WIDTH, available - MARGIN * 2);
+    const left = Math.min(
+        Math.max(rect.right - width, MARGIN),
+        available - width - MARGIN,
+    );
+    panelStyle.value = {
+        top: `${rect.bottom + 12}px`,
+        left: `${left}px`,
+        width: `${width}px`,
+    };
+};
+
+// Close when clicking anywhere outside the bell and the panel — the panel now
+// floats over the page, so it can't be left hanging there.
+const handleOutsideClick = (event: MouseEvent) => {
+    const target = event.target as Node;
+    if (bellWrapper.value?.contains(target) || panel.value?.contains(target))
+        return;
+    showNotifications.value = false;
+};
+
+watch(showNotifications, async (open) => {
+    if (open) {
+        await nextTick();
+        positionPanel();
+        window.addEventListener("scroll", positionPanel, {
+            passive: true,
+            capture: true,
+        });
+        window.addEventListener("resize", positionPanel, { passive: true });
+        document.addEventListener("click", handleOutsideClick);
+    } else {
+        window.removeEventListener("scroll", positionPanel, true);
+        window.removeEventListener("resize", positionPanel);
+        document.removeEventListener("click", handleOutsideClick);
+    }
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener("scroll", positionPanel, true);
+    window.removeEventListener("resize", positionPanel);
+    document.removeEventListener("click", handleOutsideClick);
+});
 
 const toggleNotifications = async () => {
     if (!showNotifications.value) {
@@ -86,6 +210,27 @@ const fetchNotifications = async () => {
     }
 };
 
+// The comment body of a comment notification, so the template can render it in
+// its own bubble the way the card's comment section does. Empty for other types.
+const notificationBody = (message: string): string => {
+    if (!message?.startsWith('New comment by "')) return "";
+    const m = message.match(/on card "([^"]*)"/);
+    const marker = `"${m ? m[1] : ""}":`;
+    const i = message.indexOf(marker);
+    return i < 0 ? "" : message.substring(i + marker.length).trim();
+};
+
+// Who triggered it. Prefer the joined actor (has an avatar); fall back to the
+// name embedded in the message for rows created before actorId existed, and to
+// a generic label for system notifications like due reminders.
+const actorLabel = (n: any): string => {
+    if (n.actorName) return n.actorName;
+    const m = String(n.message || "").match(
+        /New comment by "([^"]+)"|^"([^"]+)" created a new card/,
+    );
+    return m ? m[1] || m[2] : $t("systemActor");
+};
+
 const formatDate = (dateString) => {
     const date = new Date(dateString);
     // Explicit 2-digit day/month/hour/minute/second so localized formats keep
@@ -101,137 +246,92 @@ const formatDate = (dateString) => {
 };
 
 const translateNotification = (message: string): string => {
-    // Handle card moved notification format: Card "name" moved from "area1" to "area2"
+    // Every branch returns an actor-led sentence naming the card, because the
+    // actor is already the heading of the row — the same phrasing the card's
+    // own activity timeline uses.
+
+    // Card "name" moved from "area1" to "area2"
     if (
         message.startsWith('Card "') &&
         message.includes('" moved from "') &&
         message.includes('" to "')
     ) {
-        // Extract the card name and areas
-        const cardNameMatch = message.match(/Card "([^"]+)"/);
-        const fromAreaMatch = message.match(/from "([^"]+)"/);
-        const toAreaMatch = message.match(/to "([^"]+)"/);
-
-        const cardName = cardNameMatch ? cardNameMatch[1] : "";
-        const fromArea = fromAreaMatch ? fromAreaMatch[1] : "";
-        const toArea = toAreaMatch ? toAreaMatch[1] : "";
-
-        // Translate all static parts while preserving the format
-        const cardPrefix = $t("notificationCardMoved");
-        const movedFrom = $t("notificationCardMovedFrom");
-        const movedTo = $t("notificationCardMovedTo");
-
-        return `${cardPrefix} "${cardName}"${movedFrom}"${fromArea}"${movedTo}"${toArea}"`;
+        return $t("notifMovedCard", {
+            cardName: (message.match(/Card "([^"]*)"/) || [])[1] || "",
+            from: (message.match(/from "([^"]*)"/) || [])[1] || "",
+            to: (message.match(/to "([^"]*)"/) || [])[1] || "",
+        });
     }
 
-    // Handle card status changed notification format: Card "name" status changed to completed/reopened
+    // Card "name" status changed to completed/reopened
     if (
         message.startsWith('Card "') &&
         message.includes('" status changed to ')
     ) {
-        // Extract the card name and status
-        const cardNameMatch = message.match(/Card "([^"]+)"/);
-        const statusMatch = message.match(
-            /status changed to (completed|reopened)/,
-        );
-
-        const cardName = cardNameMatch ? cardNameMatch[1] : "";
-        const status = statusMatch ? statusMatch[1] : "";
-
-        // Translate all static parts while preserving the format
-        const cardPrefix = $t("notificationCardStatusChanged");
-        const statusChangedTo = $t("notificationCardStatusChangedTo");
-        const translatedStatus =
-            status === "completed"
-                ? $t("notificationCardStatusCompleted")
-                : $t("notificationCardStatusReopened");
-
-        return `${cardPrefix} "${cardName}"${statusChangedTo}${translatedStatus}`;
-    }
-    // Handle new comment notification format: New comment by "username" on card "cardname"
-    if (message.startsWith('New comment by "')) {
-        // Extract the username and card name
-        const usernameMatch = message.match(/New comment by "([^"]+)"/);
-        const cardNameMatch = message.match(/on card "([^"]+)"/);
-
-        const username = usernameMatch ? usernameMatch[1] : "";
-        const cardName = cardNameMatch ? cardNameMatch[1] : "";
-
-        // Extract everything after the card name as the comment
-        const commentStartIndex =
-            message.indexOf(`"${cardName}":`) + `"${cardName}":`.length;
-        const comment = message.substring(commentStartIndex).trim();
-
-        // Translate the static parts while preserving the format
-        const translatedMessage = $t("notificationNewComment", {
-            username: username,
-        });
-
-        return `${translatedMessage} "${cardName}":<div class='mt-2 rounded-md bg-dark/10 dark:bg-white/10 wysiwyg-wrapper px-4 py-3'>${comment}</div>`;
-    }
-
-    // Handle new card notification format: "username" created a new card "cardName" on board "boardName"
-    if (message.includes(" created a new card ")) {
-        const usernameMatch = message.match(/^"([^"]+)" created a new card/);
-        const cardNameMatch = message.match(/created a new card "([^"]+)"/);
-        const boardNameMatch = message.match(/on board "([^"]+)"$/);
-
-        const username = usernameMatch ? usernameMatch[1] : "";
-        const cardName = cardNameMatch ? cardNameMatch[1] : "";
-        const boardName = boardNameMatch ? boardNameMatch[1] : "";
-
-        return $t("notificationNewCard", { username, cardName, boardName });
-    }
-
-    // Handle old card notification format: New card created: cardName
-    if (message.startsWith("New card created:")) {
-        const cardName = message.slice("New card created:".length).trim();
-        return $t("notificationNewCardOld", { cardName });
-    }
-
-    // Handle due-date reminder: Card "cardName" is due on <ISO date>
-    if (message.startsWith('Card "') && message.includes('" is due on ')) {
-        const cardNameMatch = message.match(/Card "([^"]+)"/);
-        const dateMatch = message.match(/ is due on (.+)$/);
-        const cardName = cardNameMatch ? cardNameMatch[1] : "";
-        const dueIso = dateMatch ? dateMatch[1] : "";
-        return $t("notificationCardDue", {
+        const cardName = (message.match(/Card "([^"]*)"/) || [])[1] || "";
+        const completed = message.includes("status changed to completed");
+        return $t(completed ? "notifCompletedCard" : "notifReopenedCard", {
             cardName,
+        });
+    }
+
+    // New comment by "username" on card "cardname": the body is rendered
+    // separately, in its own bubble (see notificationBody).
+    if (message.startsWith('New comment by "')) {
+        // `*` not `+`: a card whose name was empty stored `on card ""`, which a
+        // `+` pattern skips entirely — that's what rendered as `auf Karte ""`.
+        const cardName = (message.match(/on card "([^"]*)"/) || [])[1] || "";
+        return $t("notifCommentedOn", {
+            cardName: cardName || $t("untitledCard"),
+        });
+    }
+
+    // "username" created a new card "cardName" on board "boardName"
+    if (message.includes(" created a new card ")) {
+        return $t("notifCreatedCard", {
+            cardName:
+                (message.match(/created a new card "([^"]*)"/) || [])[1] || "",
+        });
+    }
+
+    // Legacy format: New card created: cardName
+    if (message.startsWith("New card created:")) {
+        return $t("notifCreatedCard", {
+            cardName: message.slice("New card created:".length).trim(),
+        });
+    }
+
+    // Card "cardName" is due on <ISO date> — no human actor, so it reads as a
+    // reminder from the app itself.
+    if (message.startsWith('Card "') && message.includes('" is due on ')) {
+        const dueIso = (message.match(/ is due on (.+)$/) || [])[1] || "";
+        return $t("notifCardDue", {
+            cardName: (message.match(/Card "([^"]*)"/) || [])[1] || "",
             date: dueIso ? formatDate(dueIso) : "",
         });
     }
 
-    // Handle card assignment: "username" assigned you the card "cardName"
+    // "username" assigned you the card "cardName"
     if (message.includes(" assigned you the card ")) {
-        const usernameMatch = message.match(/^"([^"]+)" assigned you the card/);
-        const cardNameMatch = message.match(/assigned you the card "([^"]+)"/);
-        const username = usernameMatch ? usernameMatch[1] : "";
-        const cardName = cardNameMatch ? cardNameMatch[1] : "";
-        return $t("notificationCardAssigned", { username, cardName });
+        return $t("notifAssignedCard", {
+            cardName:
+                (message.match(/assigned you the card "([^"]*)"/) || [])[1] ||
+                "",
+        });
     }
 
-    // Map the static part to a translation key
-    const translationKeyMap = {
-        "You have been invited to the board": "notificationInvitedToBoard",
-        "New comment on card": "notificationNewComment",
-    };
-
-    // Extract the static part of the message for other notification types
-    const staticPart = Object.keys(translationKeyMap).find((key) =>
-        message.startsWith(key),
-    );
-
-    // Get the translation key
-    const translationKey = translationKeyMap[staticPart];
-
-    if (translationKey) {
-        // Replace the static part with the translated text
-        const dynamicPart = message.slice(staticPart.length).trim();
-        return `${$t(translationKey)} ${dynamicPart}`;
-    } else {
-        // Fallback to the original message if no translation is found
-        return message;
+    // You have been invited to the board <name>
+    if (message.startsWith("You have been invited to the board")) {
+        return $t("notifInvitedBoard", {
+            boardName: message
+                .slice("You have been invited to the board".length)
+                .replace(/^[:\s]+/, "")
+                .trim(),
+        });
     }
+
+    // Fallback to the original message if no translation is found
+    return message;
 };
 
 await fetchNotifications();

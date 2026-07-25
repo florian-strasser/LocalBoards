@@ -19,12 +19,16 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendEmail = async ({ to, subject, text }) => {
+// `attachments` is optional and passed straight to nodemailer. The notification
+// mail uses it for inline (cid:) avatars, because avatars uploaded through the
+// profile are stored as data: URIs and most mail clients refuse to render those.
+export const sendEmail = async ({ to, subject, text, attachments = [] }) => {
   const mailOptions = {
     from: emailUser,
     to,
     subject,
     html: text,
+    ...(attachments.length > 0 ? { attachments } : {}),
   };
 
   try {

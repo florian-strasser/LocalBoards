@@ -419,9 +419,144 @@ const migrations: Migration[] = [
     },
   },
 
+  {
+    // Per-user dashboard arrangement: each user sorts and groups their boards
+    // independently, including boards shared with them. The arrangement lives on
+    // (user, board) — never on the board itself — so two people who both see the
+    // same shared board can file it differently.
+    //
+    //   board_groups     — a user's own named groups (id, name, order, collapsed).
+    //   board_placements — where a user has put a board: which group (NULL =
+    //                      ungrouped) and its position. Unique per (user, board);
+    //                      a board with no row yet is ungrouped in default order.
+    id: "0011_board_groups_and_placements",
+    up: async (db) => {
+      await db.execute(`CREATE TABLE IF NOT EXISTS \`board_groups\` (
+        \`id\` int NOT NULL AUTO_INCREMENT,
+        \`user\` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+        \`name\` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+        \`sort\` int NOT NULL DEFAULT '0',
+        \`collapsed\` tinyint(1) NOT NULL DEFAULT '0',
+        PRIMARY KEY (\`id\`),
+        KEY \`board_groups_user\` (\`user\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+      await db.execute(`CREATE TABLE IF NOT EXISTS \`board_placements\` (
+        \`id\` int NOT NULL AUTO_INCREMENT,
+        \`user\` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+        \`board\` int NOT NULL,
+        \`group\` int DEFAULT NULL,
+        \`sort\` int NOT NULL DEFAULT '0',
+        PRIMARY KEY (\`id\`),
+        UNIQUE KEY \`board_placements_user_board\` (\`user\`,\`board\`),
+        KEY \`board_placements_user\` (\`user\`),
+        KEY \`board_placements_group\` (\`group\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+    },
+  },
+
+  {
+    // Secondary indexes on the columns actually filtered and joined on. The
+    // baseline tables shipped with only their primary keys, so every join down
+    // the board → areas → cards → comments/attachments chain, every session and
+    // API-key lookup, and every membership check was a full table scan. These
+    // indexes turn those into key lookups. Guarded so the migration is safe to
+    // re-run and safe on databases that already grew one of these by hand.
+    //
+    // Deliberately NOT added: cards(area) — the 0009 unique index
+    // (area, idempotencyKey) already serves `WHERE area = ?` via its leftmost
+    // prefix — and anything already covered by an existing key.
+    id: "0012_performance_indexes",
+    up: async (db) => {
+      const ensureIndex = async (
+        table: string,
+        name: string,
+        columns: string,
+      ) => {
+        if (!(await indexExists(db, table, name))) {
+          await db.execute(
+            `CREATE INDEX \`${name}\` ON \`${table}\` (${columns})`,
+          );
+        }
+      };
+
+      // Auth hot paths: hit on essentially every request.
+      await ensureIndex("session", "session_token", "`token`");
+      await ensureIndex("session", "session_user", "`userId`");
+      await ensureIndex("apikey", "apikey_key", "`key`");
+      await ensureIndex("apikey", "apikey_reference", "`referenceId`");
+      await ensureIndex("account", "account_user", "`userId`");
+      await ensureIndex("verification", "verification_identifier", "`identifier`");
+      await ensureIndex("user", "user_email", "`email`");
+
+      // The board → areas → cards → comments/attachments join chain.
+      await ensureIndex("boards", "boards_user", "`user`");
+      await ensureIndex("areas", "areas_board", "`board`");
+      await ensureIndex("cards", "cards_assignee", "`assignee`");
+      await ensureIndex("comments", "comments_card", "`card`");
+      await ensureIndex("attachments", "attachments_card", "`card`");
+
+      // Membership: invitations are queried by both board and user constantly.
+      await ensureIndex("invitations", "invitations_board", "`board`");
+      await ensureIndex("invitations", "invitations_user", "`user`");
+
+      // Notifications: the dashboard unread-count query filters userId + isRead
+      // + boardId; cleanup deletes filter by board or card.
+      await ensureIndex(
+        "notifications",
+        "notifications_user_read_board",
+        "`userId`, `isRead`, `boardId`",
+      );
+      await ensureIndex("notifications", "notifications_board", "`boardId`");
+      await ensureIndex("notifications", "notifications_card", "`cardId`");
+    },
+  },
+
+  {
+    // Who triggered a notification. Until now a notification only knew its
+    // recipient, so the UI had to parse the actor's name back out of the
+    // message text and could never show their avatar. `actorId` is nullable:
+    // system-generated notifications (due reminders) have no actor, and rows
+    // created before this migration keep NULL.
+    id: "0013_notification_actor",
+    up: async (db) => {
+      if (!(await columnExists(db, "notifications", "actorId"))) {
+        await db.execute(
+          "ALTER TABLE `notifications` ADD COLUMN `actorId` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL",
+        );
+      }
+      if (!(await indexExists(db, "notifications", "notifications_actor"))) {
+        await db.execute(
+          "CREATE INDEX `notifications_actor` ON `notifications` (`actorId`)",
+        );
+      }
+    },
+  },
+
+  {
+    // A card's own history. Notifications are transient and per-recipient; this
+    // is the durable record that stays on the card, so opening it later shows
+    // what happened and when, interleaved with the comments.
+    // `data` holds the type-specific detail as JSON (old/new area, status, the
+    // assignee's name, a due date), so new event types don't need new columns.
+    id: "0014_card_activity",
+    up: async (db) => {
+      await db.execute(`CREATE TABLE IF NOT EXISTS \`card_activity\` (
+        \`id\` int NOT NULL AUTO_INCREMENT,
+        \`card\` int NOT NULL,
+        \`actorId\` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+        \`type\` varchar(32) COLLATE utf8mb4_general_ci NOT NULL,
+        \`data\` longtext COLLATE utf8mb4_general_ci,
+        \`createdAt\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        KEY \`card_activity_card\` (\`card\`, \`createdAt\`),
+        KEY \`card_activity_actor\` (\`actorId\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
-  //   id: "0011_add_x",
+  //   id: "0015_add_x",
   //   up: async (db) => {
   //     await db.execute("ALTER TABLE `cards` ADD COLUMN `x` int NULL");
   //   },

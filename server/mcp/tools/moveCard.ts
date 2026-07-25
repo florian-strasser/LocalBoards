@@ -128,14 +128,15 @@ export default defineMcpTool({
       ].filter(Boolean)) {
         if (notifyUserId !== userId) {
           await db.execute(
-            "INSERT INTO notifications (userId, type, boardId, cardId, message) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO notifications (userId, type, boardId, cardId, message, actorId) VALUES (?, ?, ?, ?, ?, ?)",
             [
               notifyUserId,
               "card_moved",
               toBoard.id,
               cardId,
               `Card "${card.name}" moved from "${srcArea?.name}" to "${toArea.name}"`,
-            ],
+                            userId,
+              ],
           );
         }
       }

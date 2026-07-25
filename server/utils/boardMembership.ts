@@ -30,5 +30,12 @@ export async function removeBoardMember(
     [boardId, memberId],
   );
 
+  // Their dashboard placement for this board is gone too, so it doesn't linger
+  // in a group after they lose access.
+  await db.execute(
+    "DELETE FROM `board_placements` WHERE board = ? AND `user` = ?",
+    [boardId, memberId],
+  );
+
   return true;
 }

@@ -20,8 +20,16 @@ export default defineEventHandler(async (event) => {
 
     if (method === "GET") {
       // Fetch notifications for the authenticated user
-      const [rows] = await db.execute(
-        "SELECT * FROM notifications WHERE userId = ? ORDER BY createdAt DESC",
+      // Join the actor's profile so the list can show who did it, with their
+      // avatar. actorId is NULL for system notifications (due reminders) and
+      // for rows created before that column existed — the UI falls back to the
+      // name embedded in the message.
+      const [rows]: any = await db.execute(
+        `SELECT n.*, u.name AS actorName, u.image AS actorImage, u.type AS actorType
+           FROM notifications n
+           LEFT JOIN \`user\` u ON u.id = n.actorId
+          WHERE n.userId = ?
+          ORDER BY n.createdAt DESC`,
         [userId],
       );
       return { notifications: rows };

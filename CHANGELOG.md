@@ -1,3 +1,22 @@
+## v0.21.0
+
+### New Features
+
+- **Arrange your dashboard: sort boards and group them.** The dashboard is now one space you organise yourself. Drag boards into any order, create named groups (e.g. "Work", "Clients", "Personal") and drag boards into them, reorder and collapse groups, and rename or delete a group at any time (deleting a group keeps its boards — they drop back to ungrouped). The old fixed "Your boards / Shared boards" split is gone: owned and shared boards live together and a small **Shared** badge marks the ones you don't own, so a single group can mix both.
+
+  The arrangement is **entirely your own**. It's stored per user against each board, never on the board itself, so two people who both have access to the same shared board can sort and group it completely differently — one person's layout never affects anyone else's. New and newly-shared boards appear ungrouped at the top until you file them. Leaving a board, or a board being deleted, quietly removes it from your arrangement.
+- **Cards now keep their own history.** Until now a change to a card only existed as a notification or an e-mail — transient, per-recipient, and gone once read. Card changes are now recorded permanently on the card and shown in the "Comments and activity" section, interleaved with the comments in one chronological timeline: who created it, marked it done or reopened it, moved it between areas (naming both), assigned it to someone, and set or cleared a due date. Each entry carries the actor's avatar and a timestamp, so opening a card months later tells you how it got to where it is. The history is stored structured rather than as prose, so it's rendered in the reader's own language regardless of who performed the action.
+- **The notification list was rebuilt to read like the comment section.** Each entry now leads with the actor's **avatar and name**, followed by what they did and when, and a comment appears in its own bubble underneath instead of being crammed into one line of text. Unread entries carry a dot, and an empty list says so rather than showing nothing. Notifications now record *who* triggered them (a new `actorId`), which is what makes the avatar possible — previously the only trace of the actor was their name embedded in the message text. System notifications (due reminders) show as LocalBoards, and notifications created before this release still show the actor's name parsed from the message.
+
+### Fixes
+
+- Fixed comment notifications that showed an empty card name (`on card ""`). A card with a blank name — reachable via the Trello import, which inserted names unchecked — produced a message the display regex couldn't parse, so the name silently vanished. The parser now handles it and falls back to "Untitled card", which also repairs notifications already stored, and the MCP comment path no longer writes an empty name in the first place.
+- Tooltips no longer make the board's horizontal scrollbar flicker away on Safari. The tooltip was rendered inside the hovered element, so on a board wide enough to scroll, hovering a button (e.g. an area's delete icon) triggered a WebKit repaint that dropped the scroll area's scrollbar until the next scroll. Tooltips now render into `<body>` with fixed positioning, so they're outside the scroll container entirely — which also stops them being clipped inside modals and the board's scroll area.
+
+### Performance
+
+- **Added the database indexes the query patterns actually need.** The baseline tables shipped with only their primary keys, so every join down the board → areas → cards → comments/attachments chain, every session and API-key lookup, and every membership check was a full table scan. Migration `0012` adds secondary indexes on the columns filtered and joined on — `session(token)`, `apikey(key)`, `invitations(board)` / `invitations(user)`, `areas(board)`, `comments(card)`, `attachments(card)`, `boards(user)`, a composite `notifications(userId, isRead, boardId)`, and a few more. Verified with `EXPLAIN`: the hot queries now do index lookups instead of scans. It's a no-op where an index already exists and is safe to re-run.
+
 ## v0.20.4
 
 ### Security
