@@ -1,6 +1,6 @@
 {
   "name": "localboards",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "type": "module",
   "private": true,
   "scripts": {
@@ -46,9 +46,9 @@
   "overrides": {
     "esbuild": "0.28.1",
     "ws": "8.21.0",
-    "brace-expansion@2.0.0 - 2.1.1": "2.1.2",
-    "brace-expansion@>=3.0.0 <5.0.7": "5.0.7",
-    "@hono/node-server": "^2.0.5"
+    "@hono/node-server": "^2.0.5",
+    "brace-expansion": "5.0.8",
+    "minimatch@<10": "^10.2.5"
   },
   "devDependencies": {
     "@nuxt/test-utils": "^3.23.0",

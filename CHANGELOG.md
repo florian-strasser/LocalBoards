@@ -1,3 +1,11 @@
+## v0.21.1
+
+### Security
+
+- **Cleared the new high-severity `brace-expansion` advisory (GHSA-mh99-v99m-4gvg / DoS via unbounded expansion length).** `expand()` caps the *number* of results it produces but not their total *length*, so chained brace groups can exhaust memory and crash the process. The fix is `5.0.8`, and it exists **only** on the 5.x line — the 2.x line's newest release (`2.1.2`) is still affected with no backport. Simply forcing `5.0.8` everywhere breaks the old consumers: 5.x's CommonJS entry exports `{ expand }` instead of a callable module, so `minimatch@5`/`@9` fail with `expand is not a function` (verified, not assumed). The 2.x requirement was pinned by those old `minimatch` copies inside Nitro's `archiver` chain, so they're lifted to `minimatch@^10.2.5`, which takes the fixed `brace-expansion` line — leaving exactly one copy of each in the tree. Upgrading `archiver` itself to 8.0.0 was tried first and rejected: it's ESM-only without a default export, which breaks Nitro's `import archiver from "archiver"`. Verified by round-tripping a real zip through both affected code paths (`.directory()` → `readdir-glob`, `.glob()` → `glob`).
+
+- **Cleared four vulnerabilities in the documentation site's dependencies (`docs/`)**: `postcss` (path traversal via source-map auto-loading, GHSA — fixed in 8.5.18), `valibot` (`flatten()` throwing on inherited object property names, fixed in 1.4.2), the same `brace-expansion` DoS, and `sharp` (inherited libvips CVEs below 0.35.0). The docs site is a separate project that isn't part of the deployed app, but the tree is clean again and the docs still build. Both lockfiles now report zero known vulnerabilities.
+
 ## v0.21.0
 
 ### New Features
