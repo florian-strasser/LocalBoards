@@ -46,7 +46,7 @@ export default defineNuxtConfig({
   },
   mcp: {
     name: process.env.NUXT_APP_NAME || "LocalBoards",
-    version: "0.21.1",
+    version: "0.21.2",
     enabled: process.env.NUXT_MCP || true,
   },
   runtimeConfig: {

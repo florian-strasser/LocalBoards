@@ -1,3 +1,14 @@
+## v0.21.2
+
+### Fixes
+
+- **The dashboard's drag handle no longer covers the unread-notification dot.** Both sat in the top-left corner of a board tile, so on a board with unread activity the handle appeared on hover directly on top of the pulsing dot. The tile's status row is now right-aligned, leaving the top-left corner to the handle alone — and the Kanban/to-do icon that used to sit there is gone: three markers in one corner read as clutter, and a board's layout is obvious the moment you open it. What's left is what carries information: the unread dot and the "Shared" badge.
+
+### Internal
+
+- **The README screenshot now comes from the automated demo capture.** It was a hand-made composite from an older release — green theme, German UI, a card modal that no longer looks like that — and nothing kept it in sync with the app. `npm run demo:screenshots` now also writes `docs/public/images/readme-screenshot.webp` from the run's card-modal capture (the view that fills the frame and shows description, checklist, attachments and the comment/activity timeline), so every capture run refreshes it. Override the source view with `README_SHOT_VIEW` or the destination with `README_SHOT`.
+- **Removed two unused font files.** `public/fonts/host-grotesk-{300,regular}.woff2` had been in the repository since the initial commit, were referenced by no stylesheet or component, and were still copied into the build output and the Docker image. Host Grotesk is licensed SIL OFL 1.1, which requires the licence to accompany the font files wherever they're distributed — deleting them removes both the dead weight and the obligation. Everything renders from the system font stack as it already did.
+
 ## v0.21.1
 
 ### Security

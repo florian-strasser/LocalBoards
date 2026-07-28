@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/florian-strasser/LocalBoards/blob/master/LICENSE)
 [![Version](https://img.shields.io/github/package-json/v/florian-strasser/LocalBoards?label=version&color=orange)](https://github.com/florian-strasser/LocalBoards/releases)
 
-![LocalBoards Screen](https://raw.githubusercontent.com/florian-strasser/LocalBoards/refs/heads/master/docs/public/images/localboards-screen.webp)
+![LocalBoards Screen](https://raw.githubusercontent.com/florian-strasser/LocalBoards/refs/heads/master/docs/public/images/readme-screenshot.webp)
 
 LocalBoards is an open-source (MIT License), self-hosted Kanban board system. It allows users to create boards, invite collaborators, and manage Kanban cards. It also includes admin features for user management. All data is stored in your own database, with no reliance on external services.
 

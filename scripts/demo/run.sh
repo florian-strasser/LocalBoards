@@ -12,6 +12,9 @@
 #   DEMO_PORT                     server port (default 3100)
 #   DEMO_LANGS                    space-separated locales (default "en de")
 #   DEMO_OUT                      output dir (default demo-screenshots)
+#   README_SHOT                   README screenshot written on each run
+#                                 (default docs/public/images/readme-screenshot.webp)
+#   README_SHOT_VIEW              which capture to use for it (default 26-modal-card)
 #   SKIP_BUILD=1                  reuse the existing .output build
 #   KEEP_DB=1                     don't drop the demo database at the end
 set -euo pipefail
@@ -30,6 +33,12 @@ DEMO_PORT="${DEMO_PORT:-3100}"
 DEMO_LANGS="${DEMO_LANGS:-en de}"
 DEMO_OUT="${DEMO_OUT:-demo-screenshots}"
 DEMO_TOKEN="${DEMO_TOKEN:-demo-token-alex}"
+# The screenshot the README links to; refreshed from every run (needs cwebp).
+README_SHOT="${README_SHOT:-docs/public/images/readme-screenshot.webp}"
+# Which captured view to use for it. The open card fills the frame and shows
+# description, checklist, attachments and the comment/activity timeline; the
+# plain board leaves the lower half of the image empty.
+README_SHOT_VIEW="${README_SHOT_VIEW:-26-modal-card}"
 export DEMO_DB_HOST DEMO_DB_USER DEMO_DB_PASS DEMO_DB_NAME DEMO_TOKEN
 export DEMO_BASE_URL="http://127.0.0.1:${DEMO_PORT}"
 export DEMO_LANGS
@@ -79,6 +88,7 @@ echo "==> resetting demo database '$DEMO_DB_NAME'"
 mysql_do -e "DROP DATABASE IF EXISTS \`${DEMO_DB_NAME}\`; CREATE DATABASE \`${DEMO_DB_NAME}\` CHARACTER SET utf8mb4;"
 
 first=1
+hero_done=0
 for lang in $DEMO_LANGS; do
   echo "==> starting server (NUXT_LANGUAGE=$lang) on :$DEMO_PORT"
   start_server "$lang"
@@ -90,6 +100,19 @@ for lang in $DEMO_LANGS; do
   echo "==> capturing screenshots -> $DEMO_OUT/$lang"
   mkdir -p "$DEMO_OUT/$lang"
   node scripts/demo/screenshots.mjs "$DEMO_OUT/$lang"
+
+  # The README's screenshot is one of these captures, so it can never go stale:
+  # every run refreshes it from the first language's. Kept separate from
+  # localboards-screen.webp, which is the docs site's laptop composite.
+  if [ "$hero_done" != "1" ] && [ -f "$DEMO_OUT/$lang/$README_SHOT_VIEW.png" ]; then
+    if command -v cwebp >/dev/null 2>&1; then
+      echo "==> refreshing README screenshot -> $README_SHOT"
+      cwebp -quiet -q 82 -resize 1440 0 "$DEMO_OUT/$lang/$README_SHOT_VIEW.png" -o "$README_SHOT"
+      hero_done=1
+    else
+      echo "==> skipping README screenshot refresh: cwebp not installed (brew install webp)"
+    fi
+  fi
   stop_server
 done
 
