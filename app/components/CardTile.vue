@@ -91,6 +91,10 @@
 </template>
 <script setup lang="ts">
 import { Check, MessageSquareText, Paperclip, Clock } from "lucide-vue-next";
+
+// Dates render in the instance's timezone and language, identically on the
+// server and in the browser — see the composable.
+const { formatServerDate } = useServerDate();
 const cardModal = defineModel();
 const props = defineProps({
     card: Object,
@@ -107,15 +111,14 @@ const isOverdue = computed(
         new Date(props.card.dueDate).getTime() < Date.now(),
 );
 
-const dueDateLabel = computed(() => {
-    if (!props.card.dueDate) return "";
-    return new Date(props.card.dueDate).toLocaleString(undefined, {
+const dueDateLabel = computed(() =>
+    formatServerDate(props.card.dueDate, {
         day: "numeric",
         month: "short",
         hour: "2-digit",
         minute: "2-digit",
-    });
-});
+    }),
+);
 const openModal = (modalId) => {
     cardModal.value = modalId;
     setBodyScrollLock(true);

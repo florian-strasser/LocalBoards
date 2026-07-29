@@ -202,6 +202,10 @@ import { Pen, Trash2, X, Bot } from "lucide-vue-next";
 import { socket } from "~/lib/socket";
 import type { PropType } from "vue";
 
+// Dates render in the instance's timezone and language, identically on the
+// server and in the browser — see the composable.
+const { formatServerDate } = useServerDate();
+
 const props = defineProps({
     cardID: Number,
     boardID: Number,
@@ -222,6 +226,7 @@ const emits = defineEmits([
     "comment-deleted",
     "comment-updated",
     "comment-count-updated",
+    "comments-refreshed",
 ]);
 
 // --- Card activity --------------------------------------------------------
@@ -241,7 +246,44 @@ const loadActivity = async () => {
         console.error("Failed to load card activity:", e);
     }
 };
-onMounted(loadActivity);
+// --- Keeping the list authoritative ---------------------------------------
+// The board prefetches every card's comments when it loads, and someone else's
+// new comment reaches this browser only as a *count* over the socket — the
+// content never travels with it. So by the time the card is opened, the
+// prefetched list can be behind the number the tile's badge already promises,
+// and only a full page reload used to reconcile them.
+//
+// Re-fetching when the card opens closes that gap: the prefetch still renders
+// instantly and this catches up a moment later. Once the card is open,
+// CommentConnection keeps it live from the card's own socket room.
+const refreshComments = async () => {
+    if (!props.cardID) return;
+    try {
+        const res: any = await $fetch(
+            `/api/data/comment?cardID=${props.cardID}`,
+        );
+        const fresh: Comment[] = res?.comments ?? [];
+        const unchanged =
+            fresh.length === comments.value.length &&
+            fresh.every(
+                (c: any, i: number) =>
+                    c.id === (comments.value[i] as any)?.id &&
+                    c.content === (comments.value[i] as any)?.content,
+            );
+        if (unchanged) return;
+        comments.value = fresh;
+        // Hand it up so the modal and the board replace their prefetched copy:
+        // otherwise the badge and the next open would disagree again.
+        emits("comments-refreshed", fresh);
+    } catch (e) {
+        console.error("Failed to refresh comments:", e);
+    }
+};
+
+onMounted(() => {
+    refreshComments();
+    loadActivity();
+});
 
 // Newest first, matching how comments are already listed.
 const timeline = computed(() => {
@@ -284,7 +326,7 @@ const activityText = (a: any): string => {
         case "due":
             return d.dueDate
                 ? $t("activityDueSet", {
-                      date: new Date(d.dueDate).toLocaleString(undefined, {
+                      date: formatServerDate(d.dueDate, {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
@@ -299,7 +341,7 @@ const activityText = (a: any): string => {
 };
 
 const formatActivityDate = (value: string) =>
-    new Date(value).toLocaleString(undefined, {
+    formatServerDate(value, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -437,9 +479,8 @@ const handleCommentDeleted = (deletedCommentId) => {
 // Format the date for display. Explicit 2-digit day/month/hour/minute/second so
 // localized formats keep leading zeros (e.g. de-DE "08.07.2026, 23:11:02"
 // instead of "8.7.2026, 23:11:02").
-const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString(undefined, {
+const formatDate = (dateString: string) =>
+    formatServerDate(dateString, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -447,7 +488,6 @@ const formatDate = (dateString: string) => {
         minute: "2-digit",
         second: "2-digit",
     });
-};
 
 // Delete a comment by its creator
 const deleteComment = async (commentId: number) => {

@@ -1,3 +1,12 @@
+## v0.21.3
+
+### Fixes
+
+- **Dates now render in the instance's timezone and language, which also fixes a hydration mismatch.** Every displayed date was formatted with `toLocaleString(undefined, …)`, which resolves to the *renderer's* locale and timezone — the Node process on the server (en-US/UTC inside the Docker image) and the browser on the client. The same instant therefore produced different text on each side, and Vue reported "Hydration completed but contains mismatches". It was most visible when opening a board straight to a card (`?card=`), which server-renders the card with all its comment and activity timestamps, but any board with a due date on a tile hit it too.
+
+  Dates are now pinned to the server's timezone (`TZ`) and the configured `NUXT_LANGUAGE`, carried to the browser the same way the UI language already is. Both sides produce identical text, so dates render during SSR like everything else — no placeholder, nothing appearing after hydration — and everyone working on a board reads the same wall clock instead of each browser showing its own. Verified with a server in UTC and browsers in Berlin, New York and Tokyo: all four see `03.08.2026, 10:24`, with no mismatch across 16 page loads; switching the server to `TZ=Europe/Berlin` moves every viewer to `12:24`, and `NUXT_LANGUAGE=en` reformats it to `08/03/2026, 12:24 PM`.
+- **A card opened after someone else commented showed the old comments.** The board prefetches every card's comments when it loads, so the modal can open without a round trip — but another user's comment reaches your browser only as a *count* over the socket, never the content. The tile's badge went from 1 to 2 while the prefetched list stayed at 1, and opening the card rendered that stale list; only a full page reload reconciled them. The comment section now re-fetches the card's comments when it opens: the prefetch still renders instantly and the authoritative list replaces it a moment later, and it's handed back up so the board's cached card and the tile's badge follow. Only an actual difference triggers an update, so reopening an unchanged card is still a no-op. While a card is open, live updates were already covered by its own socket room.
+
 ## v0.21.2
 
 ### Fixes

@@ -384,6 +384,7 @@
                     @comment-created="handleCommentCreated"
                     @comment-deleted="handleCommentDeleted"
                     @comment-updated="handleCommentContentUpdated"
+                    @comments-refreshed="handleCommentsRefreshed"
                 />
                 <ImageWindow
                     v-model="imageModalOpen"
@@ -411,6 +412,10 @@ import {
     UserPlus,
     Upload,
 } from "lucide-vue-next";
+
+// Dates render in the instance's timezone and language, identically on the
+// server and in the browser — see the composable.
+const { formatServerDate } = useServerDate();
 const props = defineProps({
     card: Object,
     cardID: Number,
@@ -519,7 +524,7 @@ const dueDateInput = computed({
 });
 
 const formatDateTime = (iso) =>
-    new Date(iso).toLocaleString(undefined, {
+    formatServerDate(iso, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -622,6 +627,19 @@ const handleCommentCreated = (newComment) => {
         boardId: props.boardID,
         cardId: props.cardID,
         commentCount: comments.value.length,
+    });
+};
+
+// The comment section re-fetched the list on open and found it had moved on
+// (someone else commented after the board prefetched this card). Adopt it and
+// pass it up, so the board's cached card and the tile's badge agree with what
+// is on screen — and so reopening the card doesn't fall back to the old copy.
+const handleCommentsRefreshed = (fresh) => {
+    comments.value = fresh;
+    emits("comment-count-updated", {
+        cardId: props.cardID,
+        commentCount: fresh.length,
+        comments: fresh,
     });
 };
 

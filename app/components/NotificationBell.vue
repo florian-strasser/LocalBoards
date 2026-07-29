@@ -118,6 +118,10 @@
 <script setup lang="ts">
 import { Bell, Bot } from "lucide-vue-next";
 
+// Dates render in the instance's timezone and language, identically on the
+// server and in the browser — see the composable.
+const { formatServerDate } = useServerDate();
+
 const props = defineProps({
     userID: String,
 });
@@ -231,11 +235,10 @@ const actorLabel = (n: any): string => {
     return m ? m[1] || m[2] : $t("systemActor");
 };
 
-const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    // Explicit 2-digit day/month/hour/minute/second so localized formats keep
-    // leading zeros (e.g. de-DE "03.07.2026, 02:09:00" instead of "3.7.2026").
-    return date.toLocaleString(undefined, {
+// Explicit 2-digit day/month/hour/minute/second so localized formats keep
+// leading zeros (e.g. de-DE "03.07.2026, 02:09:00" instead of "3.7.2026").
+const formatDate = (dateString) =>
+    formatServerDate(dateString, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -243,7 +246,6 @@ const formatDate = (dateString) => {
         minute: "2-digit",
         second: "2-digit",
     });
-};
 
 const translateNotification = (message: string): string => {
     // Every branch returns an actor-led sentence naming the card, because the
