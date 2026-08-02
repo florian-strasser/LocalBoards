@@ -1,6 +1,14 @@
 // server/tasks/notification.ts
 import { setupDatabase } from "~/lib/databaseSetup";
 import { sendEmail } from "~/lib/sendEmail";
+import {
+  EMAIL_FONT,
+  EMAIL_PRIMARY,
+  emailButton,
+  emailLayout,
+  emailParagraph,
+  escapeEmailHtml,
+} from "../utils/emailLayout";
 import enLocale from "../../i18n/locales/en.json";
 import deLocale from "../../i18n/locales/de.json";
 import frLocale from "../../i18n/locales/fr.json";
@@ -74,17 +82,11 @@ const buildTitle = (title) => {
   return title + " | " + appName;
 };
 
-// Names and card titles are user input and land in HTML, so escape them.
-const esc = (value: string): string =>
-  String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-
-const FONT =
-  "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const PRIMARY = "#0066cc";
+// The shell, button and escaping are shared with every other e-mail —
+// see utils/emailLayout.ts.
+const esc = escapeEmailHtml;
+const FONT = EMAIL_FONT;
+const PRIMARY = EMAIL_PRIMARY;
 const AVATAR = 36; // px — the text line-height (18px) is exactly half of it, so
 // one line centres against the avatar and two lines fill it top to bottom.
 
@@ -322,11 +324,16 @@ const sendNotification = async () => {
         await sendEmail({
           to: userEmail,
           subject: buildTitle(translateText("youHaveUnreadNotifications")),
-          text: `<div style="font-family:${FONT};font-size:14px;line-height:20px;max-width:600px;">
-  <p style="margin:0 0 20px 0;">${esc(translateText("youHaveTheFollowingUnreadNotifications"))}:</p>
-  ${rowsHtml}
-  <p style="margin:24px 0 0 0;"><a href="${esc(dashboardUrl)}" style="display:inline-block;background-color:${PRIMARY};color:#ffffff;text-decoration:none;font-weight:600;padding:10px 18px;border-radius:8px;">${esc(translateText("clickHereToViewYourNotifications"))}</a></p>
-</div>`,
+          text: emailLayout(
+            emailParagraph(
+              `${esc(translateText("youHaveTheFollowingUnreadNotifications"))}:`,
+            ) +
+              rowsHtml +
+              emailButton(
+                dashboardUrl,
+                translateText("clickHereToViewYourNotifications"),
+              ),
+          ),
           // `__source` is only used for de-duplicating avatars while building.
           attachments: attachments.map(({ __source, ...a }) => a),
         });

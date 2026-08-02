@@ -15,9 +15,10 @@ describe("getWelcomeSignupEmail", () => {
     expect(subject).toBe("Welcome | LocalBoards");
     expect(html).toContain("Alice");
     expect(html).toContain("LocalBoards");
-    expect(html).toContain(
-      '<a href="https://boards.example.com">https://boards.example.com</a>',
-    );
+    // The login link is the mail's action: a button, with the raw URL kept
+    // underneath for clients that strip it.
+    expect(html).toContain('href="https://boards.example.com"');
+    expect(html).toContain("Sign in");
     // A self-signup email must not contain a password line.
     expect(html).not.toContain("Password:");
   });

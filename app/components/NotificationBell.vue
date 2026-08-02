@@ -127,8 +127,9 @@ const props = defineProps({
 });
 
 const showNotifications = ref(false);
-const notifications = ref([]);
-const unreadCount = ref(0);
+// Shared with whoever marks notifications read (opening a card or a board), so
+// the unread dot goes out immediately instead of at the next page load.
+const { notifications, unreadCount, refresh } = useNotifications();
 
 const bellWrapper = ref(null);
 const panel = ref(null);
@@ -191,27 +192,9 @@ onBeforeUnmount(() => {
 
 const toggleNotifications = async () => {
     if (!showNotifications.value) {
-        await fetchNotifications();
+        await refresh(props.userID);
     }
     showNotifications.value = !showNotifications.value;
-};
-
-const fetchNotifications = async () => {
-    try {
-        const { data, error } = await useFetch(
-            `/api/data/notifications?userId=${props.userID}`,
-        );
-        if (error.value) {
-            console.error("Error fetching notifications:", error.value);
-        } else if (data.value?.notifications) {
-            notifications.value = data.value.notifications;
-            unreadCount.value = notifications.value.filter(
-                (n) => !n.isRead,
-            ).length;
-        }
-    } catch (err) {
-        console.error("Error:", err);
-    }
 };
 
 // The comment body of a comment notification, so the template can render it in
@@ -336,5 +319,5 @@ const translateNotification = (message: string): string => {
     return message;
 };
 
-await fetchNotifications();
+await refresh(props.userID);
 </script>

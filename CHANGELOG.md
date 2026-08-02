@@ -1,3 +1,13 @@
+## v0.21.4
+
+### Improvements
+
+- **Every e-mail now looks like the notification e-mail.** The welcome mails (self sign-up and admin-created), the password-reset link, the board invitation and the account-deletion notice were all bare `<p>` tags with a raw URL pasted in — while the notification digest had a proper layout. They now share one shell (`server/utils/emailLayout.ts`): the same font stack, spacing and 600px measure, with the action as a real button and the raw link kept underneath in small print for clients that strip it or for copying by hand. The button label is translated per action ("Sign in", "Open board", "Set a new password") in all seven languages. Like the notification mail, they set no page background or text colour, so they read correctly in both light and dark mail clients. The notification digest now draws its shell and button from the same place instead of its own copy. Verified by sending all six through a local SMTP server and rendering what actually arrived.
+
+### Fixes
+
+- **The header's notification bell now stops glowing as soon as everything is read.** Opening a card marks its notifications read on the server, and opening a board does the same for its board-level ones — but the bell kept a private copy of the list and never heard about it, so its unread dot stayed lit until the page was reloaded. The bell's notifications now live in shared state that the board page refreshes right after the server confirms the change. The dot follows the real count rather than switching off on the first read: with three unread items it stays lit through the first two cards and only goes out once the last one is read.
+
 ## v0.21.3
 
 ### Fixes

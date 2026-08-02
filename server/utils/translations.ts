@@ -1,9 +1,21 @@
+import {
+  emailButton,
+  emailFallbackLink,
+  emailLayout,
+  emailLink,
+  emailParagraph,
+  escapeEmailHtml,
+} from "./emailLayout";
+
 // Simple server-side translation utility for emails
 // This avoids the i18n middleware requirement while still supporting translations
 
 export function translate(key: string, language: string = "en"): string {
   const translations = {
     en: {
+      welcome_cta: "Sign in",
+      board_invite_cta: "Open board",
+      reset_password_cta: "Set a new password",
       reset_your_password_subject: "Reset your password",
       reset_your_password_message:
         "Click on this link to assign a new password:",
@@ -25,6 +37,9 @@ export function translate(key: string, language: string = "en"): string {
         "Hi {name},\n\nyour account on {appName} has been deleted by an administrator.\n\nReason:\n{reason}\n\nIf you think this was a mistake, please contact the administrator.",
     },
     de: {
+      welcome_cta: "Anmelden",
+      board_invite_cta: "Board öffnen",
+      reset_password_cta: "Neues Passwort vergeben",
       reset_your_password_subject: "Passwort zurücksetzen",
       reset_your_password_message:
         "Klicke auf diesen Link, um ein neues Passwort zu vergeben:",
@@ -46,6 +61,9 @@ export function translate(key: string, language: string = "en"): string {
         "Hallo {name},\n\ndein Konto bei {appName} wurde von einem Administrator gelöscht.\n\nGrund:\n{reason}\n\nWenn du denkst, dass dies ein Fehler war, wende dich bitte an den Administrator.",
     },
     es: {
+      welcome_cta: "Iniciar sesión",
+      board_invite_cta: "Abrir tablero",
+      reset_password_cta: "Establecer nueva contraseña",
       reset_your_password_subject: "Restablecer contraseña",
       reset_your_password_message:
         "Haz clic en este enlace para asignar una nueva contraseña:",
@@ -67,6 +85,9 @@ export function translate(key: string, language: string = "en"): string {
         "Hola {name},\n\ntu cuenta en {appName} ha sido eliminada por un administrador.\n\nMotivo:\n{reason}\n\nSi crees que se trata de un error, ponte en contacto con el administrador.",
     },
     fr: {
+      welcome_cta: "Se connecter",
+      board_invite_cta: "Ouvrir le tableau",
+      reset_password_cta: "Définir un nouveau mot de passe",
       reset_your_password_subject: "Réinitialiser votre mot de passe",
       reset_your_password_message:
         "Cliquez sur ce lien pour attribuer un nouveau mot de passe :",
@@ -88,6 +109,9 @@ export function translate(key: string, language: string = "en"): string {
         "Bonjour {name},\n\nvotre compte sur {appName} a été supprimé par un administrateur.\n\nMotif :\n{reason}\n\nSi vous pensez qu'il s'agit d'une erreur, veuillez contacter l'administrateur.",
     },
     it: {
+      welcome_cta: "Accedi",
+      board_invite_cta: "Apri la bacheca",
+      reset_password_cta: "Imposta una nuova password",
       reset_your_password_subject: "Reimposta la password",
       reset_your_password_message:
         "Fai clic su questo link per assegnare una nuova password:",
@@ -109,6 +133,9 @@ export function translate(key: string, language: string = "en"): string {
         "Ciao {name},\n\nil tuo account su {appName} è stato eliminato da un amministratore.\n\nMotivo:\n{reason}\n\nSe pensi che sia un errore, contatta l'amministratore.",
     },
     nl: {
+      welcome_cta: "Inloggen",
+      board_invite_cta: "Bord openen",
+      reset_password_cta: "Nieuw wachtwoord instellen",
       reset_your_password_subject: "Wachtwoord resetten",
       reset_your_password_message:
         "Klik op deze link om een nieuw wachtwoord in te stellen:",
@@ -130,6 +157,9 @@ export function translate(key: string, language: string = "en"): string {
         "Hallo {name},\n\nje account op {appName} is verwijderd door een beheerder.\n\nReden:\n{reason}\n\nAls je denkt dat dit een vergissing is, neem dan contact op met de beheerder.",
     },
     pl: {
+      welcome_cta: "Zaloguj się",
+      board_invite_cta: "Otwórz tablicę",
+      reset_password_cta: "Ustaw nowe hasło",
       reset_your_password_subject: "Zresetuj hasło",
       reset_your_password_message:
         "Kliknij ten link, aby przypisać nowe hasło:",
@@ -170,35 +200,53 @@ export function getEmailMessage(
   resetLink: string,
   language: string = "en",
 ): string {
-  return `<p>${translate(key, language)}</p><p><a href='${resetLink}'>${resetLink}</a></p>`;
-}
-
-// Escape values interpolated into email HTML (name/adminName are user-supplied).
-function escapeHtml(value: string): string {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  return emailLayout(
+    emailParagraph(escapeEmailHtml(translate(key, language))) +
+      emailButton(resetLink, translate("reset_password_cta", language)) +
+      emailFallbackLink(resetLink),
+  );
 }
 
 // Fill a plain-text template (with {placeholders} and blank-line-separated
-// paragraphs) and turn it into email HTML. All values are HTML-escaped; any
-// placeholder whose key ends in "URL" becomes a clickable link.
+// paragraphs) and turn it into email HTML in the shared style — the same shell
+// the notification mail uses (see utils/emailLayout.ts).
+//
+// All values are HTML-escaped. A placeholder whose key ends in "URL" is the
+// mail's action: on its own line it becomes a button, with the raw link kept
+// underneath for clients that strip it; inline it stays a plain link.
 function buildEmailHtml(
   template: string,
   vars: Record<string, string>,
+  ctaLabel?: string,
 ): string {
-  let out = template;
-  for (const [key, value] of Object.entries(vars)) {
-    const escaped = escapeHtml(value ?? "");
-    const replacement = /URL$/.test(key)
-      ? `<a href="${escaped}">${escaped}</a>`
-      : escaped;
-    out = out.split(`{${key}}`).join(replacement);
-  }
-  return `<p>${out.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>")}</p>`;
+  const paragraphs = template.split("\n\n").map((paragraph) => {
+    // The action link always ends a paragraph, either alone or under a line of
+    // lead-in text ("Sign in here:\n{loginURL}"). Split it off so the text
+    // stays a paragraph and the link becomes the button.
+    const lines = paragraph.split("\n");
+    const urlKey = lines[lines.length - 1]
+      ?.trim()
+      .match(/^\{(\w*URL)\}$/)?.[1];
+    let action = "";
+    if (urlKey && vars[urlKey]) {
+      const url = vars[urlKey];
+      action = ctaLabel
+        ? emailButton(url, ctaLabel) + emailFallbackLink(url)
+        : emailParagraph(emailLink(url));
+      lines.pop();
+      paragraph = lines.join("\n");
+      if (!paragraph.trim()) return action;
+    }
+    let html = escapeEmailHtml(paragraph);
+    for (const [key, value] of Object.entries(vars)) {
+      const replacement = /URL$/.test(key)
+        ? emailLink(value ?? "")
+        : escapeEmailHtml(value ?? "");
+      html = html.split(escapeEmailHtml(`{${key}}`)).join(replacement);
+    }
+    return emailParagraph(html) + action;
+  });
+  return emailLayout(paragraphs.join(""));
 }
 
 // Welcome email for a public self-signup (no credentials — the user chose them).
@@ -215,11 +263,11 @@ export function getWelcomeSignupEmail({
 }): { subject: string; html: string } {
   return {
     subject: getEmailSubject("welcome_subject", appName, language),
-    html: buildEmailHtml(translate("welcome_signup_message", language), {
-      appName,
-      name,
-      loginURL,
-    }),
+    html: buildEmailHtml(
+      translate("welcome_signup_message", language),
+      { appName, name, loginURL },
+      translate("welcome_cta", language),
+    ),
   };
 }
 
@@ -244,14 +292,11 @@ export function getWelcomeAdminEmail({
 }): { subject: string; html: string } {
   return {
     subject: getEmailSubject("welcome_subject", appName, language),
-    html: buildEmailHtml(translate("welcome_admin_message", language), {
-      appName,
-      name,
-      adminName,
-      email,
-      password,
-      loginURL,
-    }),
+    html: buildEmailHtml(
+      translate("welcome_admin_message", language),
+      { appName, name, adminName, email, password, loginURL },
+      translate("welcome_cta", language),
+    ),
   };
 }
 
@@ -282,14 +327,18 @@ export function getBoardInviteEmail({
   );
   return {
     subject: getEmailSubject("board_invite_subject", appName, language),
-    html: buildEmailHtml(translate("board_invite_message", language), {
-      appName,
-      name,
-      inviterName,
-      boardName,
-      permission: permissionLabel,
-      boardURL,
-    }),
+    html: buildEmailHtml(
+      translate("board_invite_message", language),
+      {
+        appName,
+        name,
+        inviterName,
+        boardName,
+        permission: permissionLabel,
+        boardURL,
+      },
+      translate("board_invite_cta", language),
+    ),
   };
 }
 

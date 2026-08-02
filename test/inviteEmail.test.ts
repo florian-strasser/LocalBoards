@@ -16,9 +16,10 @@ describe("getBoardInviteEmail", () => {
     expect(html).toContain("Bob");
     expect(html).toContain("Roadmap");
     expect(html).toContain("read &amp; write");
-    expect(html).toContain(
-      '<a href="https://boards.example.com/board/7">https://boards.example.com/board/7</a>',
-    );
+    // The board link is the mail's action: a button, with the raw URL kept
+    // underneath for clients that strip it.
+    expect(html).toContain('href="https://boards.example.com/board/7"');
+    expect(html).toContain("Open board");
   });
 
   it("describes read-only access for a read permission", () => {

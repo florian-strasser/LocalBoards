@@ -427,6 +427,10 @@ watch(
     },
 );
 
+// The header bell's unread state; refreshed whenever this page marks
+// notifications read.
+const { refresh: refreshNotifications } = useNotifications();
+
 const cardModal = ref(false);
 
 // Card ids on this board that still have unread notifications for the user;
@@ -457,18 +461,24 @@ const refreshUnreadCards = async () => {
 
 // Opening a card marks its notifications read; opening the board marks the
 // board-level (non-card) ones read. See server/api/data/notifications.ts.
+// The header bell reads the same shared state, so refresh it once the server
+// has been updated — otherwise its unread dot keeps glowing until a reload.
 const markCardNotificationsRead = (cardId) =>
     $fetch(`/api/data/notifications?cardId=${cardId}`, {
         method: "PATCH",
-    }).catch((err) =>
-        console.error("Error marking card notifications read:", err),
-    );
+    })
+        .then(() => refreshNotifications(userID))
+        .catch((err) =>
+            console.error("Error marking card notifications read:", err),
+        );
 const markBoardNotificationsRead = () =>
     $fetch(`/api/data/notifications?boardId=${boardID.value}`, {
         method: "PATCH",
-    }).catch((err) =>
-        console.error("Error marking board notifications read:", err),
-    );
+    })
+        .then(() => refreshNotifications(userID))
+        .catch((err) =>
+            console.error("Error marking board notifications read:", err),
+        );
 
 // Drives the modal's open/close animation. `cardModal` (the card id) is kept a
 // little longer so the card content stays mounted through the close animation
