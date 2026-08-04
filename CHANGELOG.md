@@ -1,3 +1,19 @@
+## v0.21.5
+
+### Security
+
+- **Cleared eleven advisories in transitive dependencies.** Dependabot flagged seven and `npm audit` surfaced four more once those were resolved; all are pinned to fixed releases through `overrides`, and both lockfiles now report zero known vulnerabilities.
+  - `undici` — five advisories (one high): cross-user information disclosure and a parse-time crash via degenerate private cache directives, response desynchronisation via the retry interceptor, CRLF injection through a blob-like body `type`, cache-key confusion from whitespace around `=` in `Cache-Control`, and cookie-attribute injection. Two copies exist in the tree, Nuxt's 8.x and the MCP toolkit's 7.x, and **both lines were affected** — pinned to 8.10.0 and 7.29.0 respectively rather than collapsing them onto one major.
+  - `ip-address` — two SSRF/trust-boundary bypasses (IPv4-mapped/NAT64 misclassification, and a CIDR suffix suppressing special-use classification), via the MCP toolkit → 10.4.0. Worth noting these do **not** weaken LocalBoards' own webhook SSRF guard, which classifies addresses itself in `server/utils/webhookTarget.ts` and never used this package.
+  - `brace-expansion` — a second DoS advisory (GHSA-rgw5-rvv9-x895) that bypasses the mitigation shipped in v0.21.1 → 5.0.9, in the app and the docs site.
+  - `fast-uri` (host confusion via a backslash authority introducer), `hono` (ReDoS in the CORS middleware) and `postcss` (arbitrary `.map` read when `from` is unset, an incomplete fix of the earlier advisory) → 3.1.5, 4.13.0 and 8.5.25.
+
+  Verified beyond the audit report: the app builds, all tests pass, and a running instance still serves the dashboard, boards, the deep-linked card, the health endpoint and an MCP `initialize` handshake — the last one matters because `hono` and `ip-address` are the MCP transport's own dependencies.
+
+### Fixes
+
+- **Ticking a card off now shows up in its timeline straight away.** Marking a card done (or reopening it, setting a due date, assigning it) records an activity entry on the server, but the open card's "Comments and activity" list only read that list when the card was opened — so the new line appeared only after closing and reopening the card. The timeline now re-reads the activity whenever the card is saved, and also when the change arrives from someone else over the socket, so a card left open picks up a colleague's changes too.
+
 ## v0.21.4
 
 ### Improvements

@@ -215,6 +215,11 @@ const props = defineProps({
         type: Array as PropType<Comment[]>,
         default: () => [],
     },
+    // Bumped by the card modal after every saved change. The server records the
+    // activity entry as part of that save, so the timeline has to re-read it —
+    // otherwise ticking a card off only showed up after closing and reopening
+    // the card.
+    activityVersion: { type: Number, default: 0 },
 });
 
 const getBoardId = () => {
@@ -283,7 +288,25 @@ const refreshComments = async () => {
 onMounted(() => {
     refreshComments();
     loadActivity();
+    // Someone else changing this card (status, due date, assignee) writes an
+    // activity entry too; the board relays those over the socket.
+    socket.on("updateCard", onCardUpdated);
 });
+
+onBeforeUnmount(() => {
+    socket.off("updateCard", onCardUpdated);
+});
+
+const onCardUpdated = ({ card }: any) => {
+    if (Number(card?.id) === Number(props.cardID)) loadActivity();
+};
+
+// This browser's own changes never come back over the socket (the server
+// excludes the sender), so the modal signals them directly.
+watch(
+    () => props.activityVersion,
+    () => loadActivity(),
+);
 
 // Newest first, matching how comments are already listed.
 const timeline = computed(() => {

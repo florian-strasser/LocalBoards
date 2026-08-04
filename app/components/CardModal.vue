@@ -381,6 +381,7 @@
                     :writeAccess="props.writeAccess"
                     :currentUserId="props.userID"
                     :initialComments="comments"
+                    :activityVersion="activityVersion"
                     @comment-created="handleCommentCreated"
                     @comment-deleted="handleCommentDeleted"
                     @comment-updated="handleCommentContentUpdated"
@@ -457,6 +458,9 @@ const editingDescription = ref(!!props.openInEditMode);
 const attachments = ref([...(props.card.attachments || [])]);
 const newAttachments = ref([]);
 const comments = ref(props.card.comments || []);
+// Bumped after each saved change so the comment/activity timeline re-reads the
+// entry the server just recorded.
+const activityVersion = ref(0);
 
 // --- Due date, assignee & reminders -------------------------------------
 const dueDate = ref(props.card.dueDate || ""); // ISO string, or "" when unset
@@ -948,6 +952,7 @@ const saveCard = async () => {
             attachments: attachments.value,
             card: response.card,
         });
+        activityVersion.value += 1;
     } catch (err) {
         console.error("Failed to save card:", err);
     }
