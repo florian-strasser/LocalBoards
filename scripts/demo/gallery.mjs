@@ -18,6 +18,7 @@ const views = [
   ["20-modal-create-board", "Create board", "modal"], ["21-menu-actions", "Actions menu (⋮)", "modal"], ["22-modal-trello-import", "Import from Trello", "modal"],
   ["23-modal-board-options", "Board options", "modal"], ["24-modal-invite", "Invite user", "modal"], ["25-modal-delete-board", "Delete board", "modal"],
   ["26-modal-card", "Card", "modal"], ["27-modal-image-lightbox", "Image lightbox", "modal"], ["28-modal-delete-area", "Delete area", "modal"], ["29-modal-delete-user", "Delete user", "modal"],
+  ["30-search", "Search", "modal"],
 ];
 
 const cols = `repeat(${langs.length}, 1fr)`;

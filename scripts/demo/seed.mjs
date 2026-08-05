@@ -127,7 +127,7 @@ await db.query(
   "INSERT INTO `comments` (card,user,authorName,content,date) VALUES ?",
   [[
     [2,"u-ben",null,"Looks promising! Could we try a slightly darker blue?",days(-2)],
-    [2,"u-alex",null,"Sure — I'll prepare a couple of options for the review.",days(-1)],
+    [2,"u-alex",null,"Sure — I'll prepare a couple of logo options for the review.",days(-1)],
     [2,null,"Jordan Rivera","Imported from our old Trello board — keep the rounded corners 👍",days(-3)],
   ]],
 );

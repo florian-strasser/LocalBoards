@@ -10,13 +10,23 @@ const handleLogout = async () => {
 <template>
     <ImpersonationBanner />
     <header v-if="session" class="w-full pt-6">
-        <div class="container mx-auto flex justify-between items-center">
+        <div
+            class="container mx-auto flex flex-wrap items-center justify-between gap-y-3"
+        >
             <NuxtLinkLocale
                 to="/dashboard/"
                 class="text-primary hover:text-primary-hover cursor-pointer block"
             >
                 <Logo />
             </NuxtLinkLocale>
+            <!-- Search sits between the logo and the nav: a field you can type
+                 in straight away, not another icon competing with the actions
+                 in the pill. It takes the leftover width up to a readable
+                 maximum; on a phone there isn't enough room beside the nav, so
+                 it wraps to its own full-width line underneath. -->
+            <GlobalSearch
+                class="order-last w-full sm:order-none sm:mx-8 sm:w-auto sm:min-w-0 sm:max-w-md sm:flex-1"
+            />
             <ul
                 class="relative flex gap-x-4 menu app-nav px-6 py-4 rounded-full bg-white dark:bg-slate"
             >

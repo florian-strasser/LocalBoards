@@ -444,3 +444,40 @@ select.form-control,
     border-right: 0.5rem transparent solid;
     border-bottom: 0.5rem var(--color-primary) solid;
 }
+
+/* The header search field's placeholder is a full sentence ("Suche nach Boards,
+   Karten, Kommentaren und Anhängen"), which is wider than the field on anything
+   narrower than a desktop. Rather than chop it off mid-word, fade the last part
+   out.
+
+   The `search-field` class is only set when the placeholder actually overflows
+   (measured in GlobalSearch.vue): a gradient wide enough to look smooth also
+   eats the tail of a placeholder that fits, which made the full sentence fade
+   on desktop for no reason.
+
+   The gradient has to finish where the text is *clipped*, not at the element's
+   edge: the input clips its content at the padding edge, so a fade running to
+   100% would still cut the last glyph while it was a third opaque — which is
+   what a hard edge looks like. Ending the fade at `100% - 1rem` (the right
+   padding) means the text has reached zero opacity by the time it is clipped.
+
+   The mask is on the input, which is why the field's background lives on the
+   wrapping label: masking an element fades its background too, and the right
+   end of the pill would dissolve with the text. The input is transparent, so
+   only the text layer fades. It applies only while the placeholder is showing:
+   once something is typed, `:placeholder-shown` stops matching and the mask is
+   gone, so a typed query and the caret are never dimmed. Where the placeholder
+   fits (desktop), the text ends before the fade zone and nothing looks
+   different. */
+.search-field:placeholder-shown {
+    -webkit-mask-image: linear-gradient(
+        to right,
+        #000 calc(100% - 5rem),
+        transparent calc(100% - 1rem)
+    );
+    mask-image: linear-gradient(
+        to right,
+        #000 calc(100% - 5rem),
+        transparent calc(100% - 1rem)
+    );
+}

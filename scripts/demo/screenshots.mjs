@@ -94,6 +94,12 @@ await shot(auth, "28-modal-delete-area", "/board/1", async (p) => {
   await p.locator('[data-onboarding="areas"] > div').first().locator("button").first().click();
   await p.waitForTimeout(600);
 });
+await shot(auth, "30-search", "/dashboard", async (p) => {
+  await p.click("header input[type=search]");
+  // A term that hits several kinds of result, so the shot shows the grouping.
+  await p.type("header input[type=search]", "logo", { delay: 60 });
+  await p.waitForTimeout(1200);
+});
 await shot(auth, "29-modal-delete-user", "/users", async (p) => {
   await p.locator("li", { hasText: "Ben Schmidt" }).locator("button").last().click();
   await p.waitForTimeout(600);
