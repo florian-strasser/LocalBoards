@@ -1,6 +1,6 @@
 {
   "name": "localboards",
-  "version": "0.22.0",
+  "version": "0.22.1",
   "type": "module",
   "private": true,
   "scripts": {
@@ -34,7 +34,7 @@
     "motion-v": "^2.3.0",
     "mysql2": "^3.23.1",
     "nodemailer": "^9.0.3",
-    "nuxt": "^4.5.0",
+    "nuxt": "^4.5.2",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "sortablejs": "^1.15.7",

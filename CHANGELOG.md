@@ -1,3 +1,13 @@
+## v0.22.1
+
+### Security
+
+- **Updated Nuxt to 4.5.2, clearing eleven advisories.** They landed together against 4.5.0 and cover the framework's server-side rendering and routing: a **critical** unauthenticated DevTools RPC allowing arbitrary command execution on a developer's machine, server-side remote code execution through runtime template injection in server island props, a runtime payload cache that could disclose one user's SSR data to another user (or to unauthenticated clients), route rules silently dropped for mixed-case paths — which bypassed `appMiddleware` auth gates, an incomplete fix for CVE-2026-53721 — an unauthenticated out-of-memory crash via unbounded `v-for` expansion in island rendering, and unauthorised component instantiation via server island props.
+
+  The same advisories applied to the documentation site, which was still on 4.4.8; it is now on 4.5.2 as well. Its lockfile had to be re-resolved from scratch, because the pinned `rolldown` blocked the upgrade as a peer conflict — the security `overrides` from earlier releases (`brace-expansion`, `postcss`, `sharp`, `minimatch`) were checked afterwards and all still hold. Both lockfiles report zero known vulnerabilities.
+
+  Verified past the audit report: the app builds, all 126 tests pass, and a running instance serves the dashboard, a board, a deep-linked card, the health endpoint and the search API — with the card modal, the search panel and navigation exercised in a browser with no console errors, since these advisories are in exactly those rendering paths.
+
 ## v0.22.0
 
 ### New Features
