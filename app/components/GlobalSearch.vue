@@ -252,7 +252,7 @@
                             <NuxtLink
                                 v-for="comment in results.comments"
                                 :key="`co${comment.id}`"
-                                :to="`/board/${comment.boardId}?card=${comment.cardId}`"
+                                :to="`/board/${comment.boardId}?card=${comment.cardId}&comment=${comment.id}`"
                                 @click="close"
                                 class="group block"
                             >

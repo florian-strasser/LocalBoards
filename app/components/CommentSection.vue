@@ -72,7 +72,13 @@
                 <template v-if="commentToDelete !== comment.id">
                     <template v-if="commentToEdit !== comment.id">
                         <div
-                            class="rounded-xl border border-dark/10 bg-dark/5 p-4 dark:border-white/10 dark:bg-white/5 sm:p-5"
+                            :id="`comment-${comment.id}`"
+                            class="rounded-xl border bg-dark/5 p-4 transition-colors dark:bg-white/5 sm:p-5"
+                            :class="
+                                highlighted === comment.id
+                                    ? 'border-primary'
+                                    : 'border-dark/10 dark:border-white/10'
+                            "
                         >
                             <CommentContent
                                 :content="comment.content"
@@ -220,6 +226,10 @@ const props = defineProps({
     // otherwise ticking a card off only showed up after closing and reopening
     // the card.
     activityVersion: { type: Number, default: 0 },
+    // Set when the card was opened from a search hit on one of its comments:
+    // that comment is scrolled into view and briefly marked, so you land on the
+    // line you searched for instead of somewhere in a long thread.
+    highlightCommentId: { type: Number, default: null },
 });
 
 const getBoardId = () => {
@@ -285,8 +295,30 @@ const refreshComments = async () => {
     }
 };
 
+// Scroll the linked comment into view once it is on screen, and mark it for a
+// few seconds so the eye finds it. Waits for the authoritative list, because
+// the comment may not be in the board's prefetched copy at all.
+const highlighted = ref<number | null>(null);
+let highlightTimer: ReturnType<typeof setTimeout> | undefined;
+
+const revealHighlighted = async () => {
+    const id = props.highlightCommentId;
+    if (!id) return;
+    await nextTick();
+    const el = document.getElementById(`comment-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    highlighted.value = id;
+    clearTimeout(highlightTimer);
+    highlightTimer = setTimeout(() => {
+        if (highlighted.value === id) highlighted.value = null;
+    }, 4000);
+};
+
+watch(() => props.highlightCommentId, revealHighlighted);
+
 onMounted(() => {
-    refreshComments();
+    refreshComments().then(revealHighlighted);
     loadActivity();
     // Someone else changing this card (status, due date, assignee) writes an
     // activity entry too; the board relays those over the socket.

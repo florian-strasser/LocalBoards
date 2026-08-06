@@ -382,6 +382,7 @@
                     :currentUserId="props.userID"
                     :initialComments="comments"
                     :activityVersion="activityVersion"
+                    :highlightCommentId="props.highlightCommentId"
                     @comment-created="handleCommentCreated"
                     @comment-deleted="handleCommentDeleted"
                     @comment-updated="handleCommentContentUpdated"
@@ -428,6 +429,9 @@ const props = defineProps({
     // True only when opening a freshly created card for the first time, so the
     // editor is shown immediately instead of the read-only view.
     openInEditMode: Boolean,
+    // A comment to scroll to and mark when the card is opened from a search
+    // hit on that comment.
+    highlightCommentId: { type: Number, default: null },
 });
 
 const nuxtApp = useNuxtApp();

@@ -1,3 +1,9 @@
+## v0.22.2
+
+### Fixes
+
+- **A comment found by search now takes you to the comment, not just its card.** The result linked to `?card=…`, so on a card with a long thread you landed at the top and had to hunt for the line you had just searched for. Comment results now link to `?card=…&comment=…`: the card opens, the comment scrolls into the middle of the view and its border is marked in the primary colour for a few seconds, then settles back. It works on a cold deep link as well as from the open app, waits for the authoritative comment list (the comment may not be in the board's prefetched copy at all), and the parameter is dropped from the URL when the card is closed, so a reload doesn't jump again. An unknown or stale comment id simply opens the card as normal.
+
 ## v0.22.1
 
 ### Security

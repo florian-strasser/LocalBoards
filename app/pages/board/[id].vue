@@ -341,6 +341,7 @@
                 :userID="userID"
                 :currentUser="session.data.user"
                 :openInEditMode="editCardId === cardModal"
+                :highlightCommentId="highlightComment"
                 v-model="cardModalOpen"
                 @card-updated="handleCardUpdated"
                 @card-deleted="handleCardDeleted"
@@ -535,12 +536,25 @@ if (route.query.card) {
     cardModal.value = route.query.card * 1;
 }
 
+// A search hit on a comment links to the comment itself, not just its card:
+// `?card=12&comment=34` opens the card and scrolls that comment into view.
+const highlightComment = ref(
+    route.query.comment ? route.query.comment * 1 : null,
+);
+watch(
+    () => route.query.comment,
+    (id) => {
+        highlightComment.value = id ? id * 1 : null;
+    },
+);
+
 // Watch for modal changes and update URL
 watch(cardModal, (newVal, oldVal) => {
     if (newVal) {
         router.push({ query: { ...route.query, card: newVal } });
     } else {
-        const { card, ...rest } = route.query;
+        const { card, comment, ...rest } = route.query;
+        highlightComment.value = null;
         router.push({ query: rest });
         // Once the freshly created card has been opened and closed, subsequent
         // opens should show the normal read-only view.
