@@ -1,3 +1,28 @@
+## v0.22.3
+
+### Security
+
+- **Cleared five advisories across both lockfiles.** Dependabot flagged three, `npm audit` surfaced two more; both projects now report zero known vulnerabilities.
+  - `dompurify` — an XSS where a hook that removes an element during `IN_PLACE` sanitisation leaves the removed element's descendants attached and executable, so a nested `<img onload=…>` fires after `sanitize()` has returned (GHSA, moderate). It reaches us through `isomorphic-dompurify`, which is what sanitises card descriptions, comments and notification messages before they are rendered with `v-html`. Our own use is not the vulnerable shape — `sanitizeHtml` calls `sanitize()` with an allowlist, not `IN_PLACE`, and registers no hooks — but the package is on the one path that stands between a collaborator's stored Markdown and another user's browser, so it is pinned to the fixed 3.4.13 rather than argued around.
+  - `js-yaml` → 4.3.1 and `nanoid` → 3.3.18, both high-severity denial of service (quadratic CPU consumption resolving `!!omap`; a custom generator looping forever when size is zero). Both are build-tool transitives — `js-yaml` via the JSON-schema ref parser, `nanoid` via PostCSS — and neither had an alert open yet; they were taken along because they had fixes waiting.
+  - `image-size` — two high-severity infinite loops in the ICNS and JXL/HEIF parsers, reported twice against the documentation site. **There is no patched release**: every published version is affected, upstream has shipped nothing, and the package sits three levels down under `@nuxtjs/seo` → `nuxt-seo-utils`. It turned out that module was never registered in the docs `nuxt.config.ts` in the first place — Nuxt does not load modules just because they are in `package.json` — so nothing it provides was ever running: the live site has no sitemap and emits no `og:` tags, and its `robots.txt` is the static file in `public/`. The dependency has been removed, which takes the advisory with it and drops 50 packages from the docs tree. The inert `site:` block in the config is left in place for whenever the module is actually wired up; a sitemap can be had from `@nuxtjs/sitemap` alone, which does not pull `image-size` in.
+
+  Verified past the audit report: the app builds, all 126 tests pass, and the documentation site builds without the removed module.
+
+### New Features
+
+- **The documentation site now has a sitemap.** `@nuxtjs/sitemap` replaces the `@nuxtjs/seo` bundle that was removed above — it is the one piece of that bundle the site actually wanted, and it brings no `image-size`, so the advisory does not come back. It is registered in `modules` this time, which is what the old dependency never was.
+
+  Page scanning finds the static routes, but the documentation and API pages are all served by a single dynamic route each (`app/pages/docs/[slug].vue`), so their URLs only exist as Markdown files. A small Nitro route reads them back out of the content database and hands them to the module as a source; the legal pages are left to page scanning, because their content paths (`/legal/privacy-policy`) are not the routes they are served at. The result is 26 URLs — the landing page, both section indexes, eleven documentation pages, ten API pages and the two legal pages — and every one of them was requested against the built server and returns 200 with its content rendered.
+
+  Two things were wrong in the site config and are fixed: the canonical URL said `www.localboards.de`, which 301-redirects to the apex host, so every entry would have pointed at a redirect; and the sitemap now honours the trailing slash the live site canonicalises to, so the listed URLs are the ones actually served rather than another redirect hop. `public/robots.txt` points crawlers at the sitemap.
+
+### Fixes
+
+- **The documentation site's `NUXT_APP_NAME` did nothing.** Its `nuxt.config.ts` declared `app.head` twice; in an object literal the second key wins outright, so the first block — the one that read the app name from the environment — was silently discarded, along with the environment-driven `<html lang>` that the second block happened to repeat. The two are now one block, and the app name additionally feeds the `%s | …` title suffix instead of being hard-coded there. Setting `NUXT_APP_NAME` at build time now really does rename the site, in the page titles and the suffix behind them.
+
+  The merge itself is deliberately behaviour-neutral: with no environment variables set, the rendered `<head>` and `<html>` tags of the landing page, a section index, a documentation page and a legal page are byte-identical to what the old config produced. The duplicated `charset`/`viewport` entries were dropped from the `meta` array because the dedicated `charset`/`viewport` keys in the same block already emit them — verified in the output, which contains exactly one of each, before and after.
+
 ## v0.22.2
 
 ### Fixes
