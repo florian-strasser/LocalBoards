@@ -1,4 +1,4 @@
-// The shared look for every e-mail LocalBoards sends.
+// The shared look for every e-mail LokalBoards sends.
 //
 // Mail clients ignore <style> blocks and external CSS, so everything here is
 // inline and table-based where a client needs it (Outlook won't honour padding

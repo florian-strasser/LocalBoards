@@ -36,12 +36,12 @@ async function deliver(hook: any, body: string): Promise<void> {
   try {
     const headers: Record<string, string> = {
       "content-type": "application/json",
-      "user-agent": "LocalBoards webhook",
-      "x-localboards-event": JSON.parse(body).event,
+      "user-agent": "LokalBoards webhook",
+      "x-lokalboards-event": JSON.parse(body).event,
     };
     // Optional shared secret so the receiver can verify the payload is ours.
     if (hook.secret) {
-      headers["x-localboards-signature"] =
+      headers["x-lokalboards-signature"] =
         "sha256=" +
         createHmac("sha256", hook.secret).update(body).digest("hex");
     }

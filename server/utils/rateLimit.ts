@@ -4,7 +4,7 @@ import { getRequestIP } from "h3";
 //
 // Scope note: state lives in the Node process, so limits are per-instance and
 // reset on restart. That's the right fit for the documented single-container
-// LocalBoards deployment. If the app is ever scaled to multiple replicas behind
+// LokalBoards deployment. If the app is ever scaled to multiple replicas behind
 // a load balancer, this would need a shared store (DB/Redis) — the `check`
 // interface is kept small so the store can be swapped without touching callers.
 
@@ -80,7 +80,7 @@ export function createRateLimiter(options: {
   return { consume, peek };
 }
 
-// Best-effort client IP, honouring X-Forwarded-For when present (LocalBoards is
+// Best-effort client IP, honouring X-Forwarded-For when present (LokalBoards is
 // typically run behind a reverse proxy). Falls back to a constant so the limiter
 // still functions if no IP can be determined.
 export function clientIp(event: any): string {

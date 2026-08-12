@@ -41,7 +41,7 @@ The build runs on a spare port (`3100` by default) — it never touches `:3000`.
 | `DEMO_LANGS` | `en de` | Space-separated locales to capture |
 | `DEMO_PORT` | `3100` | Server port |
 | `DEMO_OUT` | `demo-screenshots` | Output directory |
-| `DEMO_DB_HOST` / `DEMO_DB_USER` / `DEMO_DB_PASS` / `DEMO_DB_NAME` | `127.0.0.1` / `root` / `root1234` / `localboards_demo` | MySQL connection |
+| `DEMO_DB_HOST` / `DEMO_DB_USER` / `DEMO_DB_PASS` / `DEMO_DB_NAME` | `127.0.0.1` / `root` / `root1234` / `lokalboards_demo` | MySQL connection |
 | `SKIP_BUILD` | `0` | Reuse the existing `.output` build |
 | `KEEP_DB` | `0` | Keep the demo database instead of dropping it |
 

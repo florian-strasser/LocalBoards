@@ -12,7 +12,7 @@ const cfg = {
   host: process.env.DEMO_DB_HOST ?? "127.0.0.1",
   user: process.env.DEMO_DB_USER ?? "root",
   password: process.env.DEMO_DB_PASS ?? "root1234",
-  database: process.env.DEMO_DB_NAME ?? "localboards_demo",
+  database: process.env.DEMO_DB_NAME ?? "lokalboards_demo",
 };
 
 if (!/demo|test/i.test(cfg.database) && process.env.DEMO_DB_FORCE !== "1") {

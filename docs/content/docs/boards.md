@@ -1,6 +1,6 @@
 # Boards
 
-Boards are the core of LocalBoards. They represent a workspace where you can organize your tasks, projects, or ideas using the Kanban methodology. Each board consists of areas (columns) and cards (tasks).
+Boards are the core of LokalBoards. They represent a workspace where you can organize your tasks, projects, or ideas using the Kanban methodology. Each board consists of areas (columns) and cards (tasks).
 
 ## Creating a Board
 
@@ -26,6 +26,15 @@ To create a new board:
 
 ## Board Settings
 
+### Appearance
+
+A board's tile on the dashboard can carry either a picture or a colour, whichever makes it easier to spot:
+
+- **Thumbnail**: pick one of the supplied images, or drop in your own.
+- **Colour**: pick one of the twelve presets, or mix your own with the pipette. The first swatch is the default and leaves the tile in the app's own colour.
+
+The picture covers the whole tile, so a tile shows one or the other: choosing a colour clears the image, and choosing an image clears the colour. Whatever you pick, the board's name, the member avatars and the badges stay readable — the tile works out whether it needs light or dark text for the colour you chose, so even a pale yellow reads properly.
+
 ### Privacy Settings
 - **Public**: Anyone with the link can view the board.
 - **Private**: Only invited users can view and edit the board.
@@ -41,7 +50,7 @@ To invite members to your board:
 
 ## Real-Time Collaboration
 
-LocalBoards supports real-time updates. When multiple users are viewing or editing the same board, changes such as moving cards, renaming areas, or updating card details are instantly reflected for all users.
+LokalBoards supports real-time updates. When multiple users are viewing or editing the same board, changes such as moving cards, renaming areas, or updating card details are instantly reflected for all users.
 
 ## Tips for Organizing Boards
 

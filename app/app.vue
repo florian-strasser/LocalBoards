@@ -15,7 +15,7 @@ const config = nuxtApp.$config.public;
 // so the title is correct both during SSR and on client-side navigation.
 const appName = useState(
     "appName",
-    () => useRuntimeConfig().appName || "LocalBoards",
+    () => useRuntimeConfig().appName || "LokalBoards",
 );
 
 // Same runtime story as the app name: the language comes from NUXT_LANGUAGE and

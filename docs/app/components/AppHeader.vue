@@ -3,7 +3,7 @@
     <div class="container mx-auto flex justify-between items-center">
       <NuxtLink
         to="/"
-        aria-label="LocalBoards"
+        aria-label="LokalBoards"
         class="text-primary hover:text-secondary cursor-pointer block"
       >
         <Logo />
@@ -21,7 +21,7 @@
           </li>
           <li>
             <a
-              href="https://github.com/florian-strasser/LocalBoards/releases"
+              href="https://github.com/florian-strasser/LokalBoards/releases"
               target="_blank"
               class="block py-2 px-4 rounded-full bg-secondary text-white"
               >Download</a

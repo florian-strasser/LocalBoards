@@ -1,6 +1,6 @@
 # Contributing
 
-LocalBoards is open source (MIT) and contributions are very welcome — bug reports, fixes, features, and documentation. This page explains how to set up a development environment and what's expected of a pull request. The same information lives in [`CONTRIBUTING.md`](https://github.com/florian-strasser/LocalBoards/blob/master/CONTRIBUTING.md) in the repository.
+LokalBoards is open source (MIT) and contributions are very welcome — bug reports, fixes, features, and documentation. This page explains how to set up a development environment and what's expected of a pull request. The same information lives in [`CONTRIBUTING.md`](https://github.com/florian-strasser/LokalBoards/blob/master/CONTRIBUTING.md) in the repository.
 
 ## Prerequisites
 
@@ -10,8 +10,8 @@ LocalBoards is open source (MIT) and contributions are very welcome — bug repo
 ## Getting started
 
 ```bash
-git clone https://github.com/florian-strasser/LocalBoards
-cd LocalBoards
+git clone https://github.com/florian-strasser/LokalBoards
+cd LokalBoards
 npm install
 ```
 
@@ -37,7 +37,7 @@ npm test
 TEST_MYSQL_HOST=127.0.0.1 \
 TEST_MYSQL_USER=root \
 TEST_MYSQL_PASSWORD=yourpassword \
-TEST_MYSQL_DATABASE=localboards_test \
+TEST_MYSQL_DATABASE=lokalboards_test \
 npm run test:integration
 ```
 
@@ -65,4 +65,4 @@ Continuous integration runs the unit suite, a production build, the integration 
 
 ## Reporting security issues
 
-Please do **not** open a public issue for security vulnerabilities. Follow the process described in the project's [security policy](https://github.com/florian-strasser/LocalBoards/blob/master/SECURITY.md).
+Please do **not** open a public issue for security vulnerabilities. Follow the process described in the project's [security policy](https://github.com/florian-strasser/LokalBoards/blob/master/SECURITY.md).

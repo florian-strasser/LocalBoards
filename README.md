@@ -1,20 +1,20 @@
-# LocalBoards
+# LokalBoards
 [![Nuxt](https://img.shields.io/badge/Nuxt-4.4.6-00DC82?style=flat&logo=nuxt)](https://nuxt.com)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.3-25C2A0?style=flat&logo=socketdotio)](https://socket.io)
-[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/florian-strasser/LocalBoards/blob/master/LICENSE)
-[![Version](https://img.shields.io/github/package-json/v/florian-strasser/LocalBoards?label=version&color=orange)](https://github.com/florian-strasser/LocalBoards/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/florian-strasser/LokalBoards/blob/master/LICENSE)
+[![Version](https://img.shields.io/github/package-json/v/florian-strasser/LokalBoards?label=version&color=orange)](https://github.com/florian-strasser/LokalBoards/releases)
 
-![LocalBoards Screen](https://raw.githubusercontent.com/florian-strasser/LocalBoards/refs/heads/master/docs/public/images/readme-screenshot.webp)
+![LokalBoards Screen](https://raw.githubusercontent.com/florian-strasser/LokalBoards/refs/heads/master/docs/public/images/readme-screenshot.webp)
 
-LocalBoards is an open-source (MIT License), self-hosted Kanban board system. It allows users to create boards, invite collaborators, and manage Kanban cards. It also includes admin features for user management. All data is stored in your own database, with no reliance on external services.
+LokalBoards is an open-source (MIT License), self-hosted Kanban board system. It allows users to create boards, invite collaborators, and manage Kanban cards. It also includes admin features for user management. All data is stored in your own database, with no reliance on external services.
 
 We support real-time multiplayer updates. When you edit a card, area, or rename it, the changes are instantly reflected for all users viewing the board. Comments on cards are also updated in real-time across all browsers. This is powered by an internal Socket.IO integration.
 
-LocalBoards is currently available in the following languages: English (EN), German (DE), French (FR), Spanish (ES), Italian (IT), Dutch (NL), and Polish (PL).
+LokalBoards is currently available in the following languages: English (EN), German (DE), French (FR), Spanish (ES), Italian (IT), Dutch (NL), and Polish (PL).
 
 ## AI agents (MCP)
 
-LocalBoards isn't only for humans — it ships a built-in [Model Context Protocol](https://modelcontextprotocol.io) server (`/mcp`) so AI agents can read and manage boards on a user's behalf. An agent authenticates with an API key (create one under **Settings → API keys**, as **full-access** or **read-only**) and can search and filter cards, create/update/move/delete them, write comments, assign members and set due dates. Card descriptions and comments are stored as **Markdown** — the format agents work in natively — and are rendered safely.
+LokalBoards isn't only for humans — it ships a built-in [Model Context Protocol](https://modelcontextprotocol.io) server (`/mcp`) so AI agents can read and manage boards on a user's behalf. An agent authenticates with an API key (create one under **Settings → API keys**, as **full-access** or **read-only**) and can search and filter cards, create/update/move/delete them, write comments, assign members and set due dates. Card descriptions and comments are stored as **Markdown** — the format agents work in natively — and are rendered safely.
 
 Agents and people can share a board safely:
 
@@ -27,13 +27,13 @@ See **[AGENTS.md](AGENTS.md)** for connection details, the agent work loop, the 
 
 ## Install
 
-To install LocalBoards, follow these steps:
+To install LokalBoards, follow these steps:
 
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/florian-strasser/LocalBoards
-cd LocalBoards
+git clone https://github.com/florian-strasser/LokalBoards
+cd LokalBoards
 ```
 
 ### Install Dependencies
@@ -47,7 +47,7 @@ Create a `.env` file (and optionally a `.env.local` file for local development) 
 
 ```dotenv
 # App Name
-NUXT_APP_NAME=LocalBoards
+NUXT_APP_NAME=LokalBoards
 NUXT_BOARDS_URL=http://localhost:3000
 NUXT_LANGUAGE=en
 NUXT_PUBLIC_PRIVACY_URL=https://www.yourdomain.com/privacy-policy/
@@ -88,9 +88,9 @@ node ./server/index.mjs
 
 Prebuilt images are published on Docker Hub:
 
-**https://hub.docker.com/r/localboards/localboards**
+**https://hub.docker.com/r/florianstrasser/lokalboards**
 
-The image contains only the LocalBoards app. You still need a reachable **MySQL**
+The image contains only the LokalBoards app. You still need a reachable **MySQL**
 database — the required tables are created automatically on first start, so an
 empty database is enough. Configure the app through the same environment
 variables described in [Configure Environment Variables](#configure-environment-variables).
@@ -98,7 +98,7 @@ variables described in [Configure Environment Variables](#configure-environment-
 ### Pull the image
 
 ```bash
-docker pull localboards/localboards:latest
+docker pull florianstrasser/lokalboards:latest
 ```
 
 ### Run the container
@@ -109,11 +109,11 @@ container. The app listens on port `3000`, and uploaded files are stored in
 
 ```bash
 docker run -d \
-  --name localboards \
+  --name lokalboards \
   --env-file .env \
   -p 3000:3000 \
-  -v localboards_uploads:/app/public/uploads \
-  localboards/localboards:latest
+  -v lokalboards_uploads:/app/public/uploads \
+  florianstrasser/lokalboards:latest
 ```
 
 Then open `http://localhost:3000` (or whatever you set as `NUXT_BOARDS_URL`).
@@ -133,19 +133,19 @@ For a self-contained setup including MySQL, use a `compose.yaml` like this:
 ```yaml
 services:
   app:
-    image: localboards/localboards:latest
+    image: florianstrasser/lokalboards:latest
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      NUXT_APP_NAME: LocalBoards
+      NUXT_APP_NAME: LokalBoards
       NUXT_BOARDS_URL: http://localhost:3000
       NUXT_LANGUAGE: en
       NUXT_PUBLIC_PRIVACY_URL: https://www.yourdomain.com/privacy-policy/
       NUXT_MYSQL_HOST: db
-      NUXT_MYSQL_USER: localboards
+      NUXT_MYSQL_USER: lokalboards
       NUXT_MYSQL_PASSWORD: change-me
-      NUXT_MYSQL_DATABASE: localboards
+      NUXT_MYSQL_DATABASE: lokalboards
       NUXT_EMAIL_HOST: mail.yourserver.de
       NUXT_EMAIL_PORT: "465"
       NUXT_EMAIL_SECURE: "true"
@@ -160,8 +160,8 @@ services:
     image: mysql:8
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: localboards
-      MYSQL_USER: localboards
+      MYSQL_DATABASE: lokalboards
+      MYSQL_USER: lokalboards
       MYSQL_PASSWORD: change-me
       MYSQL_ROOT_PASSWORD: change-me-too
     volumes:
@@ -180,7 +180,7 @@ docker compose up -d
 
 ### How configuration is applied
 
-LocalBoards reads its configuration from **environment variables at runtime** —
+LokalBoards reads its configuration from **environment variables at runtime** —
 there is no need to rebuild the image to change settings. Provide them in any of
 these ways:
 
@@ -200,7 +200,7 @@ these ways:
 
 ## Backup and Restore
 
-LocalBoards keeps all its state in two places, so a complete backup is just
+LokalBoards keeps all its state in two places, so a complete backup is just
 these two:
 
 1. **The MySQL database** — boards, cards, comments, users, sessions, API keys,
@@ -214,25 +214,25 @@ Database (adjust host/user/database to your config):
 
 ```bash
 mysqldump -h "$NUXT_MYSQL_HOST" -u "$NUXT_MYSQL_USER" -p "$NUXT_MYSQL_DATABASE" \
-  > localboards-backup.sql
+  > lokalboards-backup.sql
 ```
 
 For the Docker Compose setup, dump from the `db` service:
 
 ```bash
 docker compose exec db \
-  mysqldump -u localboards -p localboards > localboards-backup.sql
+  mysqldump -u lokalboards -p lokalboards > lokalboards-backup.sql
 ```
 
 Uploads — copy the mounted directory or the named volume:
 
 ```bash
 # Bind mount / host path:
-cp -r /path/to/uploads localboards-uploads-backup
+cp -r /path/to/uploads lokalboards-uploads-backup
 
-# Docker named volume (e.g. `localboards_uploads`):
-docker run --rm -v localboards_uploads:/data -v "$PWD":/backup busybox \
-  tar czf /backup/localboards-uploads-backup.tar.gz -C /data .
+# Docker named volume (e.g. `lokalboards_uploads`):
+docker run --rm -v lokalboards_uploads:/data -v "$PWD":/backup busybox \
+  tar czf /backup/lokalboards-uploads-backup.tar.gz -C /data .
 ```
 
 ### Restore
@@ -240,11 +240,11 @@ docker run --rm -v localboards_uploads:/data -v "$PWD":/backup busybox \
 ```bash
 # Database:
 mysql -h "$NUXT_MYSQL_HOST" -u "$NUXT_MYSQL_USER" -p "$NUXT_MYSQL_DATABASE" \
-  < localboards-backup.sql
+  < lokalboards-backup.sql
 
 # Uploads (named volume):
-docker run --rm -v localboards_uploads:/data -v "$PWD":/backup busybox \
-  sh -c "cd /data && tar xzf /backup/localboards-uploads-backup.tar.gz"
+docker run --rm -v lokalboards_uploads:/data -v "$PWD":/backup busybox \
+  sh -c "cd /data && tar xzf /backup/lokalboards-uploads-backup.tar.gz"
 ```
 
 Restoring into an empty database is fine — on startup the app creates any
@@ -254,7 +254,7 @@ write mid-flight.
 
 ## Contribute
 
-LocalBoards is maintained as a solo project without any monetary incentives. Contributions are highly encouraged! If you encounter any issues or have suggestions for improvements, feel free to open a pull request. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up a dev environment, run the tests, and what's expected of a pull request.
+LokalBoards is maintained as a solo project without any monetary incentives. Contributions are highly encouraged! If you encounter any issues or have suggestions for improvements, feel free to open a pull request. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up a dev environment, run the tests, and what's expected of a pull request.
 
 ### Running Locally for Development
 
@@ -295,7 +295,7 @@ Build for the server architecture (`amd64` for most hosts) and push straight to
 Docker Hub:
 
 ```bash
-docker buildx build --platform linux/amd64 -t localboards/localboards:latest --push .
+docker buildx build --platform linux/amd64 -t florianstrasser/lokalboards:latest --push .
 ```
 
 > The `Dockerfile` pins its build stage to your machine's native architecture
@@ -309,7 +309,7 @@ To produce an image that also runs natively on Apple Silicon, build for both
 architectures:
 
 ```bash
-docker buildx build --platform linux/amd64,linux/arm64 -t localboards/localboards:latest --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t florianstrasser/lokalboards:latest --push .
 ```
 
 > Use `--push` (not `--load`): multi-platform images can't be loaded into the
@@ -318,5 +318,5 @@ docker buildx build --platform linux/amd64,linux/arm64 -t localboards/localboard
 Verify that the published image contains the expected architecture(s):
 
 ```bash
-docker buildx imagetools inspect localboards/localboards:latest
+docker buildx imagetools inspect florianstrasser/lokalboards:latest
 ```

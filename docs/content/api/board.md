@@ -25,6 +25,7 @@ X-API-Key: your_api_key_here
     "name": "Board Name",
     "style": "kanban",
     "image": "board_image_url",
+    "color": "#2563eb",
     "status": "public"
   },
   "writeAccess": true
@@ -48,6 +49,7 @@ Creates a new board or updates an existing board.
 - `name` (required): The name of the board.
 - `style` (required): The style of the board. Can be set to "kanban" or "todo".
 - `image` (optional): The image URL for the board.
+- `color` (optional): The tile colour as a hex value, e.g. `#2563eb`. Anything that is not a hex colour — including an empty string — is stored as `null`, which means the tile uses the instance's primary colour. A cover image covers the tile, so a board shows either an image or a colour.
 - `status` (required): The status of the board (e.g., "public" or "private").
 
 ### Example Request (Create)
@@ -88,6 +90,7 @@ X-API-Key: your_api_key_here
     "name": "Board Name",
     "style": "kanban",
     "image": "board_image_url",
+    "color": "#2563eb",
     "status": "public"
   }
 }

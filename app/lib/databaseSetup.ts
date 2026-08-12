@@ -147,6 +147,7 @@ const migrations: Migration[] = [
         \`style\` enum('kanban','todo','notices') COLLATE utf8mb4_general_ci DEFAULT 'kanban',
         \`status\` enum('private','public') COLLATE utf8mb4_general_ci DEFAULT 'private',
         \`image\` longtext COLLATE utf8mb4_general_ci,
+        \`color\` varchar(7) COLLATE utf8mb4_general_ci DEFAULT NULL,
         PRIMARY KEY (\`id\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
 
@@ -331,7 +332,7 @@ const migrations: Migration[] = [
   {
     // Preserve the original author's name on comments that aren't tied to a
     // local user account — currently comments imported from Trello, where the
-    // Trello author has no LocalBoards account. Comment queries COALESCE this
+    // Trello author has no LokalBoards account. Comment queries COALESCE this
     // after user.name, so normal comments (authorName NULL) are unaffected.
     id: "0006_comment_author_name",
     up: async (db) => {
@@ -551,6 +552,20 @@ const migrations: Migration[] = [
         KEY \`card_activity_card\` (\`card\`, \`createdAt\`),
         KEY \`card_activity_actor\` (\`actorId\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+    },
+  },
+
+  {
+    // A board tile's colour, as `#rrggbb`. NULL means the tile keeps the
+    // instance's primary colour, which is what every existing board gets — the
+    // column is purely additive and nothing has to be backfilled.
+    id: "0015_board_color",
+    up: async (db) => {
+      if (!(await columnExists(db, "boards", "color"))) {
+        await db.execute(
+          "ALTER TABLE `boards` ADD COLUMN `color` varchar(7) COLLATE utf8mb4_general_ci DEFAULT NULL",
+        );
+      }
     },
   },
 

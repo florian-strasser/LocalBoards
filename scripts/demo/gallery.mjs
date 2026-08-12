@@ -31,7 +31,7 @@ const row = ([f, t, k]) => `
   </section>`;
 
 const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LocalBoards — demo screenshots</title>
+<title>LokalBoards — demo screenshots</title>
 <style>
   :root{color-scheme:light dark}
   body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f5f5f7;color:#1c1c1e}
@@ -50,7 +50,7 @@ const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta n
   img{width:100%;height:auto;border:1px solid #0001;border-radius:10px;display:block;background:#fff}
   @media (prefers-color-scheme:dark){body{background:#1c1c1e;color:#eee}header{background:#2c2c2e;border-color:#fff1}img{border-color:#fff2}}
 </style></head><body>
-<header><h1>LocalBoards — demo screenshots</h1><p>Fresh seeded demo (${langs.map((l) => langLabel[l] ?? l).join(" &amp; ")}) · ${views.length} views each · click any image to open full size</p></header>
+<header><h1>LokalBoards — demo screenshots</h1><p>Fresh seeded demo (${langs.map((l) => langLabel[l] ?? l).join(" &amp; ")}) · ${views.length} views each · click any image to open full size</p></header>
 <main>${views.map(row).join("")}</main></body></html>`;
 
 writeFileSync(`${outDir}/index.html`, html);

@@ -7,14 +7,14 @@ import {
 describe("getWelcomeSignupEmail", () => {
   it("fills the name/appName and links the login URL, no credentials", () => {
     const { subject, html } = getWelcomeSignupEmail({
-      appName: "LocalBoards",
+      appName: "LokalBoards",
       name: "Alice",
       loginURL: "https://boards.example.com",
       language: "en",
     });
-    expect(subject).toBe("Welcome | LocalBoards");
+    expect(subject).toBe("Welcome | LokalBoards");
     expect(html).toContain("Alice");
-    expect(html).toContain("LocalBoards");
+    expect(html).toContain("LokalBoards");
     // The login link is the mail's action: a button, with the raw URL kept
     // underneath for clients that strip it.
     expect(html).toContain('href="https://boards.example.com"');
@@ -37,7 +37,7 @@ describe("getWelcomeSignupEmail", () => {
 describe("getWelcomeAdminEmail", () => {
   it("names the creating admin and includes the credentials", () => {
     const { html } = getWelcomeAdminEmail({
-      appName: "LocalBoards",
+      appName: "LokalBoards",
       name: "Bob",
       adminName: "Carol",
       email: "bob@example.com",
@@ -53,7 +53,7 @@ describe("getWelcomeAdminEmail", () => {
 
   it("translates (de) and escapes HTML in user-supplied values", () => {
     const { subject, html } = getWelcomeAdminEmail({
-      appName: "LocalBoards",
+      appName: "LokalBoards",
       name: "<b>Mallory</b>",
       adminName: "Carol",
       email: "m@example.com",
@@ -61,7 +61,7 @@ describe("getWelcomeAdminEmail", () => {
       loginURL: "https://x",
       language: "de",
     });
-    expect(subject).toBe("Willkommen | LocalBoards");
+    expect(subject).toBe("Willkommen | LokalBoards");
     // The injected markup must be escaped, not rendered.
     expect(html).not.toContain("<b>Mallory</b>");
     expect(html).toContain("&lt;b&gt;Mallory&lt;/b&gt;");

@@ -1,6 +1,6 @@
 # Areas
 
-Areas in LocalBoards represent the columns within a board. They are used to organize and categorize tasks or cards based on their status or stage in a workflow. For example, you might have areas like "To Do," "In Progress," and "Done" to track the progress of tasks.
+Areas in LokalBoards represent the columns within a board. They are used to organize and categorize tasks or cards based on their status or stage in a workflow. For example, you might have areas like "To Do," "In Progress," and "Done" to track the progress of tasks.
 
 ## Creating an Area
 
@@ -41,7 +41,7 @@ Once you have created areas, you can organize your cards (tasks) within them:
 
 ## Examples of Areas
 
-Here are some examples of how you might use areas in LocalBoards:
+Here are some examples of how you might use areas in LokalBoards:
 
 - **To Do**: Tasks that are planned but not yet started.
 - **In Progress**: Tasks that are currently being worked on.

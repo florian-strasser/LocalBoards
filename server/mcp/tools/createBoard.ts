@@ -6,6 +6,7 @@ import {
   requireWriteAccess,
   serializeBoard,
 } from "../../utils/mcpHelpers";
+import { normalizeBoardColor } from "../../../app/utils/boardColor";
 
 const db = setupDatabase();
 
@@ -26,17 +27,30 @@ export default defineMcpTool({
       .optional()
       .describe("'private' (default) or 'public'."),
     image: z.string().optional().describe("Optional cover image URL."),
+    color: z
+      .string()
+      .optional()
+      .describe(
+        "Optional tile colour as a hex value, e.g. '#2563eb'. Ignored when a cover image is given, since the image covers the tile.",
+      ),
   },
   inputExamples: [
     { name: "Product Roadmap" },
     { name: "Personal Tasks", style: "todo" },
   ],
-  handler: async ({ name, style, status, image }) => {
+  handler: async ({ name, style, status, image, color }) => {
     const userId = requireUserId();
     requireWriteAccess();
     const [result]: any = await db.execute(
-      "INSERT INTO boards (user, name, style, image, status) VALUES (?, ?, ?, ?, ?)",
-      [userId, name, style || "kanban", image || null, status || "private"],
+      "INSERT INTO boards (user, name, style, image, color, status) VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        userId,
+        name,
+        style || "kanban",
+        image || null,
+        image ? null : normalizeBoardColor(color),
+        status || "private",
+      ],
     );
     const [rows]: any = await db.execute("SELECT * FROM boards WHERE id = ?", [
       result.insertId,

@@ -1,10 +1,10 @@
-# Contributing to LocalBoards
+# Contributing to LokalBoards
 
-Thanks for your interest in improving LocalBoards! Contributions — bug reports,
+Thanks for your interest in improving LokalBoards! Contributions — bug reports,
 fixes, features, and docs — are very welcome. This guide covers how to get a dev
 environment running and what's expected of a pull request.
 
-LocalBoards is a Nuxt 4 + Socket.IO, self-hosted Kanban app backed by MySQL.
+LokalBoards is a Nuxt 4 + Socket.IO, self-hosted Kanban app backed by MySQL.
 
 ## Prerequisites
 
@@ -15,8 +15,8 @@ LocalBoards is a Nuxt 4 + Socket.IO, self-hosted Kanban app backed by MySQL.
 ## Getting started
 
 ```bash
-git clone https://github.com/florian-strasser/LocalBoards
-cd LocalBoards
+git clone https://github.com/florian-strasser/LokalBoards
+cd LokalBoards
 npm install
 ```
 
@@ -49,7 +49,7 @@ There are two test suites:
   TEST_MYSQL_HOST=127.0.0.1 \
   TEST_MYSQL_USER=root \
   TEST_MYSQL_PASSWORD=yourpassword \
-  TEST_MYSQL_DATABASE=localboards_test \
+  TEST_MYSQL_DATABASE=lokalboards_test \
   npm run test:integration
   ```
 

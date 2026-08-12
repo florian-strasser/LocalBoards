@@ -68,7 +68,7 @@
                         v-model="url"
                         type="url"
                         required
-                        placeholder="https://example.com/hooks/localboards"
+                        placeholder="https://example.com/hooks/lokalboards"
                         class="form-control"
                         autocomplete="off"
                     />

@@ -219,7 +219,7 @@ const avatarSource = (image: string, attachments: any[]): string | null => {
   if (data) {
     const existing = attachments.find((a) => a.__source === image);
     if (existing) return `cid:${existing.cid}`;
-    const cid = `avatar${attachments.length}@localboards`;
+    const cid = `avatar${attachments.length}@lokalboards`;
     attachments.push({
       cid,
       filename: `avatar${attachments.length}.${(data[1].split("/")[1] || "png").replace(/[^a-z0-9]/gi, "")}`,

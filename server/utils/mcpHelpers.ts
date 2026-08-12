@@ -177,6 +177,11 @@ export function serializeBoard(board: any) {
     name: board.name,
     style: board.style || "kanban",
     status: board.status || "private",
+    // The tile's appearance. Both are settable through createBoard and
+    // updateBoard, so both are readable here — otherwise a client could only
+    // ever write them and never see what a board currently looks like.
+    image: board.image || null,
+    color: board.color || null,
     ownerId: board.user,
   };
 }

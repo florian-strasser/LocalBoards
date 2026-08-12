@@ -1,6 +1,9 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { getServerSocket } from "../../utils/socket";
+// The same parser the tile and the picker use, so a colour cannot be stored in
+// a form the UI would then refuse to render.
+import { normalizeBoardColor } from "../../../app/utils/boardColor";
 
 export default defineEventHandler(async (event) => {
   // Check the HTTP method
@@ -32,8 +35,15 @@ export default defineEventHandler(async (event) => {
         name,
         style,
         image,
+        color,
         status,
       } = await readBody(event);
+
+      // Anything that isn't a hex colour — including the empty string the UI
+      // sends for "no colour" — becomes NULL, i.e. the default tile. The value
+      // ends up in a CSS custom property, so this is the boundary that keeps
+      // the stylesheet safe rather than a formatting nicety.
+      const boardColor = normalizeBoardColor(color);
 
       // Resolve the authenticated user.
       const auth = await resolveUserId(event);
@@ -85,8 +95,8 @@ export default defineEventHandler(async (event) => {
         {
           // Update existing board
           const [result] = await db.execute(
-            "UPDATE boards SET name = ?, style = ?, image = ?, status = ? WHERE id = ? AND user = ?",
-            [name, style, image, status, id, userId],
+            "UPDATE boards SET name = ?, style = ?, image = ?, color = ?, status = ? WHERE id = ? AND user = ?",
+            [name, style, image, boardColor, status, id, userId],
           );
 
           if (result.affectedRows === 0) {
@@ -117,8 +127,8 @@ export default defineEventHandler(async (event) => {
       } else {
         // Create new board
         const [result] = await db.execute(
-          "INSERT INTO boards (user, name, style, image, status) VALUES (?, ?, ?, ?, ?)",
-          [userId, name, style, image, status],
+          "INSERT INTO boards (user, name, style, image, color, status) VALUES (?, ?, ?, ?, ?, ?)",
+          [userId, name, style, image, boardColor, status],
         );
 
         const [rows] = await db.execute("SELECT * FROM boards WHERE id = ?", [

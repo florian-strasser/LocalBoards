@@ -1,6 +1,6 @@
 {
-  "name": "localboards",
-  "version": "0.22.3",
+  "name": "lokalboards",
+  "version": "0.23.0",
   "type": "module",
   "private": true,
   "scripts": {

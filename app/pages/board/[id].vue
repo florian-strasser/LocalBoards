@@ -245,6 +245,12 @@
                             v-model="newBoardImage"
                         />
                     </div>
+                    <div>
+                        <InputColor
+                            :label="$t('boardColor')"
+                            v-model="newBoardColor"
+                        />
+                    </div>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label
@@ -369,11 +375,24 @@ const boardUser = ref(false);
 const boardStyle = ref("kanban");
 const boardStatus = ref("private");
 const boardImage = ref(null);
+const boardColor = ref(null);
 
 const newBoardName = ref(boardName.value);
 const newBoardStyle = ref(boardStyle.value);
 const newBoardStatus = ref(boardStatus.value);
 const newBoardImage = ref(boardImage.value);
+const newBoardColor = ref(boardColor.value);
+
+// A cover image covers the whole tile, so a colour behind one would never be
+// seen. Rather than let the two silently fight, picking either clears the
+// other: a board wears a picture or a colour, and the dialog always shows which
+// one it is.
+watch(newBoardImage, (image) => {
+    if (image) newBoardColor.value = null;
+});
+watch(newBoardColor, (color) => {
+    if (color) newBoardImage.value = null;
+});
 
 const accessError = ref("");
 const optionsActive = ref(false);
@@ -783,6 +802,7 @@ const openModal = () => {
     newBoardStyle.value = boardStyle.value;
     newBoardStatus.value = boardStatus.value;
     newBoardImage.value = boardImage.value;
+    newBoardColor.value = boardColor.value;
     optionsActive.value = true;
     setBodyScrollLock(true);
 };
@@ -811,6 +831,7 @@ const saveBoard = async () => {
                 name: newName,
                 style: newBoardStyle.value,
                 image: newBoardImage.value ? newBoardImage.value : null,
+                color: newBoardColor.value || null,
                 status: newBoardStatus.value,
             },
         });
@@ -821,6 +842,7 @@ const saveBoard = async () => {
             boardStyle.value = newBoardStyle.value;
             boardStatus.value = newBoardStatus.value;
             boardImage.value = newBoardImage.value;
+            boardColor.value = newBoardColor.value;
             optionsActive.value = false;
             setBodyScrollLock(false);
             socket.emit("boardUpdated", {
@@ -1132,10 +1154,12 @@ try {
         boardStyle.value = data.value.board.style || "kanban";
         boardStatus.value = data.value.board.status || "private";
         boardImage.value = data.value.board.image || null;
+        boardColor.value = data.value.board.color || null;
         newBoardName.value = boardName.value;
         newBoardStyle.value = boardStyle.value;
         newBoardStatus.value = boardStatus.value;
         newBoardImage.value = boardImage.value;
+        newBoardColor.value = boardColor.value;
         writeAccess.value = data.value.writeAccess;
         if (data.value.board.user === userID) await fetchInvitations();
     }

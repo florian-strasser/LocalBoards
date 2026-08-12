@@ -58,7 +58,7 @@ jobs:
         image: mysql:8
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: localboards_test
+          MYSQL_DATABASE: lokalboards_test
         ports:
           - 3306:3306
         options: >-
@@ -91,7 +91,7 @@ jobs:
           TEST_MYSQL_HOST: 127.0.0.1
           TEST_MYSQL_USER: root
           TEST_MYSQL_PASSWORD: root
-          TEST_MYSQL_DATABASE: localboards_test
+          TEST_MYSQL_DATABASE: lokalboards_test
         run: npm run test:integration
 
       - name: Run end-to-end tests
@@ -99,7 +99,7 @@ jobs:
           TEST_MYSQL_HOST: 127.0.0.1
           TEST_MYSQL_USER: root
           TEST_MYSQL_PASSWORD: root
-          TEST_MYSQL_DATABASE: localboards_test
+          TEST_MYSQL_DATABASE: lokalboards_test
         run: npm run test:e2e
 
   browser-tests:
@@ -110,7 +110,7 @@ jobs:
         image: mysql:8
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: localboards_test
+          MYSQL_DATABASE: lokalboards_test
         ports:
           - 3306:3306
         options: >-
@@ -149,7 +149,7 @@ jobs:
           TEST_MYSQL_HOST: 127.0.0.1
           TEST_MYSQL_USER: root
           TEST_MYSQL_PASSWORD: root
-          TEST_MYSQL_DATABASE: localboards_test
+          TEST_MYSQL_DATABASE: lokalboards_test
         run: npm run test:browser
 
   docker-build:
@@ -170,6 +170,6 @@ jobs:
           context: .
           push: false
           platforms: linux/amd64
-          tags: localboards/localboards:ci
+          tags: florianstrasser/lokalboards:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max

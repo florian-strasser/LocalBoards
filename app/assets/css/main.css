@@ -481,3 +481,54 @@ select.form-control,
         transparent calc(100% - 1rem)
     );
 }
+
+/* A board tile with its own colour instead of the primary one. BoardTile sets
+   exactly two custom properties — `--board-color` (what the user picked) and
+   `--board-fg` (white or near-black, whichever is readable on it) — and every
+   rule below is derived from those, so the palette lives in one place.
+
+   The colour comes from `normalizeBoardColor`, which only ever returns
+   `#rrggbb`, so nothing else can reach these declarations. */
+.board-tile-colored {
+    background-color: var(--board-color);
+}
+
+/* Hover moves the colour toward the page's own extreme: darker on the light
+   theme, lighter on the dark one — the same direction --color-primary-hover
+   moves, so a coloured tile behaves like every other one. `in oklab` keeps the
+   mix perceptually even instead of muddying the mid-tones the way sRGB does. */
+.group:hover .board-tile-body {
+    background-color: color-mix(in oklab, var(--board-color) 82%, #000);
+}
+@media (prefers-color-scheme: dark) {
+    .group:hover .board-tile-body {
+        background-color: color-mix(in oklab, var(--board-color) 82%, #fff);
+    }
+}
+
+.board-tile-fg {
+    color: var(--board-fg);
+}
+.board-tile-solid {
+    background-color: var(--board-fg);
+}
+.board-tile-badge {
+    background-color: color-mix(in oklab, var(--board-fg) 20%, transparent);
+    color: var(--board-fg);
+}
+/* The name plate and the tile trade places: the plate takes the foreground
+   colour and writes the board's colour on it. On a dark board that is the
+   familiar white plate; on a pale one it becomes a dark plate, which keeps the
+   pairing readable instead of putting white on white. */
+.board-tile-name {
+    background-color: var(--board-fg);
+    color: var(--board-color);
+}
+.board-tile-avatar {
+    background-color: var(--board-color);
+    color: var(--board-fg);
+    --tw-ring-color: var(--board-fg);
+}
+.board-tile-ring {
+    --tw-ring-color: var(--board-fg);
+}

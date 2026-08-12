@@ -4,7 +4,7 @@ import { getBoardInviteEmail } from "../server/utils/translations";
 describe("getBoardInviteEmail", () => {
   it("links the board and describes read & write access", () => {
     const { subject, html } = getBoardInviteEmail({
-      appName: "LocalBoards",
+      appName: "LokalBoards",
       name: "Alice",
       inviterName: "Bob",
       boardName: "Roadmap",
@@ -12,7 +12,7 @@ describe("getBoardInviteEmail", () => {
       boardURL: "https://boards.example.com/board/7",
       language: "en",
     });
-    expect(subject).toBe("You've been invited to a board | LocalBoards");
+    expect(subject).toBe("You've been invited to a board | LokalBoards");
     expect(html).toContain("Bob");
     expect(html).toContain("Roadmap");
     expect(html).toContain("read &amp; write");
@@ -24,7 +24,7 @@ describe("getBoardInviteEmail", () => {
 
   it("describes read-only access for a read permission", () => {
     const { html } = getBoardInviteEmail({
-      appName: "LocalBoards",
+      appName: "LokalBoards",
       name: "Alice",
       inviterName: "Bob",
       boardName: "Roadmap",
@@ -38,7 +38,7 @@ describe("getBoardInviteEmail", () => {
 
   it("translates (de) and escapes HTML in the board name", () => {
     const { subject, html } = getBoardInviteEmail({
-      appName: "LocalBoards",
+      appName: "LokalBoards",
       name: "Alice",
       inviterName: "Bob",
       boardName: "<b>x</b>",
@@ -47,7 +47,7 @@ describe("getBoardInviteEmail", () => {
       language: "de",
     });
     expect(subject).toBe(
-      "Du wurdest zu einem Board eingeladen | LocalBoards",
+      "Du wurdest zu einem Board eingeladen | LokalBoards",
     );
     expect(html).toContain("Lesen &amp; Schreiben");
     expect(html).not.toContain("<b>x</b>");

@@ -18,7 +18,7 @@ export default async function globalSetup() {
   process.env.NUXT_MYSQL_USER = process.env.TEST_MYSQL_USER ?? "root";
   process.env.NUXT_MYSQL_PASSWORD = process.env.TEST_MYSQL_PASSWORD ?? "";
   process.env.NUXT_MYSQL_DATABASE =
-    process.env.TEST_MYSQL_DATABASE ?? "localboards_test";
+    process.env.TEST_MYSQL_DATABASE ?? "lokalboards_test";
   process.env.NUXT_MYSQL_SSL = "false";
 
   const { setupDatabase, runMigrations } = await import(

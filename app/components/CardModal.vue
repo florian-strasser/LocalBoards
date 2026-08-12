@@ -777,39 +777,36 @@ const handleFileSelect = async (event) => {
     await processFiles(files);
 };
 
-// Function to download an attachment. The file payload (filedata) is not
-// included in the prefetched card data to keep the board response lean, so it
-// is fetched on demand here.
-const downloadAttachment = async (attachment) => {
-    try {
-        const file = await $fetch(`/api/data/attachment?id=${attachment.id}`);
-        const filedata = file.filedata;
-
-        // Handle both URL-based and base64-based attachments
-        if (
-            filedata &&
-            (filedata.startsWith("http") || filedata.startsWith("/"))
-        ) {
-            // If it's a URL, open it in a new tab for download
-            window.open(filedata, "_blank");
-        } else {
-            // If it's base64, use the data URL approach
-            const link = document.createElement("a");
-            link.href = `data:${file.filetype};base64,${filedata}`;
-            link.download = file.filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    } catch (error) {
-        console.error("Failed to download attachment:", error);
-    }
+// Download an attachment. The endpoint answers with `Content-Disposition:
+// attachment` and the original filename, so the browser saves the file without
+// opening or navigating anywhere.
+//
+// The link is created and clicked synchronously, with nothing awaited first:
+// the previous version fetched the file and only then opened a tab, by which
+// point the click that started it had expired, so Safari treated the tab as a
+// popup and asked for permission before the download would run. Going straight
+// to the endpoint also means the file is never pulled through memory as a
+// base64 `data:` URL.
+const downloadAttachment = (attachment) => {
+    const link = document.createElement("a");
+    link.href = `/api/data/attachment?id=${attachment.id}&download=1`;
+    // Same-origin, so this is honoured as the saved name; the response header
+    // says the same thing for the redirected legacy case.
+    link.download = attachment.filename || "";
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
 
 // Open an attachment: images in the lightbox modal, PDFs in a new browser tab
-// (in-page PDF iframes are unreliable on mobile), everything else downloads.
-// The type is known from the prefetched metadata, so PDFs open synchronously
-// (no await → not blocked as a popup).
+// (in-page PDF iframes are unreliable on mobile). Those are the only two kinds
+// a browser can display — a spreadsheet, a Word file or a zip can only be
+// saved, so everything else downloads rather than opening a tab that would
+// immediately turn into a download anyway.
+//
+// The type is known from the prefetched metadata, so both branches run
+// synchronously and neither is mistaken for a popup.
 const openAttachment = (attachment) => {
     const type = (attachment.filetype || "").toLowerCase();
     if (type === "application/pdf") {

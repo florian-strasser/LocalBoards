@@ -10,7 +10,7 @@
             Collaborate in teams or with customers on your own server
           </h1>
           <p class="sm:text-lg mb-5">
-            LocalBoards is an open-source (MIT License), self-hosted Kanban
+            LokalBoards is an open-source (MIT License), self-hosted Kanban
             board system. It allows users to create boards, invite
             collaborators, and manage Kanban cards.
           </p>
@@ -24,8 +24,8 @@
           class="aspect aspect-16/9 relative rounded-3xl overflow-clip mt-10"
         >
           <img
-            src="/images/localboards-screen.webp"
-            alt="A user that is using LocalBoards in production"
+            src="/images/lokalboards-screen.webp"
+            alt="A user that is using LokalBoards in production"
             class="absolute top-0 left-0 w-full h-full object-cover"
           />
         </div>

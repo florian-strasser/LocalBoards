@@ -39,7 +39,7 @@ export function checklistToMarkdown(
 // just URLs — there's no file to host, so we keep them as a Markdown link list
 // appended to the card. **File** attachments (isUpload true) are real uploads;
 // their download URL 302-redirects to a public S3 file for public boards, so the
-// import endpoint downloads and re-hosts those as normal LocalBoards
+// import endpoint downloads and re-hosts those as normal LokalBoards
 // attachments (see ImportedAttachment below).
 export function linkAttachmentsToMarkdown(attachments: any[]): string {
   const list = (attachments || []).filter(
@@ -85,7 +85,7 @@ export interface ImportedBoard {
   }>;
 }
 
-// Transform a parsed Trello board-JSON export into the structure LocalBoards
+// Transform a parsed Trello board-JSON export into the structure LokalBoards
 // stores: a board name, its open lists (areas) in order, and each list's open
 // cards (name + description + checklists + attachment links, as Markdown, plus
 // comments). Returns null when the payload isn't a readable board export.

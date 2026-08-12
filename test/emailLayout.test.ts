@@ -41,12 +41,12 @@ describe("email layout", () => {
 describe("every transactional email uses the shared layout", () => {
   const mails: Record<string, string> = {
     "welcome (signup)": getWelcomeSignupEmail({
-      appName: "LocalBoards",
+      appName: "LokalBoards",
       name: "Alice",
       loginURL: "https://boards.example.com",
     }).html,
     "welcome (admin-created)": getWelcomeAdminEmail({
-      appName: "LocalBoards",
+      appName: "LokalBoards",
       name: "Alice",
       adminName: "Bob",
       email: "alice@example.com",
@@ -54,7 +54,7 @@ describe("every transactional email uses the shared layout", () => {
       loginURL: "https://boards.example.com",
     }).html,
     "board invitation": getBoardInviteEmail({
-      appName: "LocalBoards",
+      appName: "LokalBoards",
       name: "Alice",
       inviterName: "Bob",
       boardName: "Roadmap",
@@ -62,7 +62,7 @@ describe("every transactional email uses the shared layout", () => {
       boardURL: "https://boards.example.com/board/7",
     }).html,
     "account deleted": getAccountDeletedEmail({
-      appName: "LocalBoards",
+      appName: "LokalBoards",
       name: "Alice",
       reason: "spam",
     }).html,

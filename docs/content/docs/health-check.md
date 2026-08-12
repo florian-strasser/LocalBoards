@@ -1,6 +1,6 @@
 # Health Check
 
-LocalBoards exposes a public health endpoint so you can monitor whether an instance is up and able to reach its database. This is useful for Docker, Docker Compose, reverse proxies, load balancers, and uptime monitors.
+LokalBoards exposes a public health endpoint so you can monitor whether an instance is up and able to reach its database. This is useful for Docker, Docker Compose, reverse proxies, load balancers, and uptime monitors.
 
 ## The endpoint
 
@@ -42,7 +42,7 @@ Because the image ships its own health check, Compose reports it without extra c
 ```yaml
 services:
   app:
-    image: localboards/localboards:latest
+    image: florianstrasser/lokalboards:latest
     # ...
   db:
     image: mysql:8

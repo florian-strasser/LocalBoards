@@ -1,6 +1,6 @@
 import tailwindcss from "@tailwindcss/vite";
 
-const appName = process.env.NUXT_APP_NAME || "LocalBoards";
+const appName = process.env.NUXT_APP_NAME || "LokalBoards";
 const language = process.env.NUXT_LANGUAGE || "en";
 
 export default defineNuxtConfig({
@@ -35,9 +35,9 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
   llms: {
-    domain: "https://localboards.de",
-    title: "LocalBoards",
-    description: "Documentation for LocalBoards",
+    domain: "https://lokalboards.com",
+    title: "LokalBoards",
+    description: "Documentation for LokalBoards",
     contentRawMarkdown: {
       excludeCollections: ["content"],
     },
@@ -46,8 +46,8 @@ export default defineNuxtConfig({
   // sitemap — listing the redirecting form would make every entry a 301.
   // `trailingSlash` matches the same canonicalisation the live site performs.
   site: {
-    url: "https://localboards.de",
-    name: "LocalBoards",
+    url: "https://lokalboards.com",
+    name: "LokalBoards",
     trailingSlash: true,
     defaultLocale: "de",
   },

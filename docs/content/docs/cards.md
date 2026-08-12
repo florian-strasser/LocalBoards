@@ -1,6 +1,6 @@
 # Cards
 
-Cards are the fundamental units of work in LocalBoards. They represent tasks, ideas, or items that need to be tracked and managed within a board.
+Cards are the fundamental units of work in LokalBoards. They represent tasks, ideas, or items that need to be tracked and managed within a board.
 
 ## Creating a Card
 

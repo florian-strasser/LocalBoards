@@ -1,4 +1,4 @@
-# LocalBoards Roadmap
+# LokalBoards Roadmap
 
 This document tracks the work between the current `0.15.x` line and a stable
 **1.0.0** release.
@@ -100,7 +100,7 @@ These are the things that make a 1.0 promise credible.
 ## ✅ Should-have for 1.0.0
 
 - [x] **Versioning hygiene.** `package.json` now has a real `name`
-      (`localboards`) and `version` (`0.16.0`); the README badge is a dynamic
+      (`lokalboards`) and `version` (`0.16.0`); the README badge is a dynamic
       shields `package-json/v` badge that reads the version from `package.json`,
       so it stays in sync automatically.
 - [x] **`CONTRIBUTING.md`** — dev setup, unit + integration test instructions,

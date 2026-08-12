@@ -41,12 +41,12 @@ export default defineNuxtConfig({
   },
   site: {
     url: process.env.NUXT_BOARDS_URL || "http://localhost:3000",
-    name: process.env.NUXT_APP_NAME || "LocalBoards",
+    name: process.env.NUXT_APP_NAME || "LokalBoards",
     trailingSlash: true,
   },
   mcp: {
-    name: process.env.NUXT_APP_NAME || "LocalBoards",
-    version: "0.22.3",
+    name: process.env.NUXT_APP_NAME || "LokalBoards",
+    version: "0.23.0",
     enabled: process.env.NUXT_MCP || true,
   },
   runtimeConfig: {
@@ -71,7 +71,7 @@ export default defineNuxtConfig({
       colorDark: process.env.NUXT_PUBLIC_COLOR_DARK || "#1C1C1E",
       colorDarkDark: process.env.NUXT_PUBLIC_COLOR_DARK_DARK || "#1C1C1E",
     },
-    appName: process.env.NUXT_APP_NAME || "LocalBoards",
+    appName: process.env.NUXT_APP_NAME || "LokalBoards",
     language: process.env.NUXT_LANGUAGE || "en",
     boardsUrl: process.env.NUXT_BOARDS_URL || "http://localhost:3000",
     // How many days a login session stays valid. Defaults to 1 day.

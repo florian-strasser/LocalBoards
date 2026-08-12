@@ -1,12 +1,12 @@
 import { getApiKeyUser } from "../utils/auth";
 
-// The MCP server that lets AI agents work with LocalBoards. Every request is
+// The MCP server that lets AI agents work with LokalBoards. Every request is
 // authenticated by the caller's API key (x-api-key header); the middleware
 // resolves the key to a user + its permission scopes and stashes them on the
 // event context for the tools (see server/mcp/helpers.ts).
 export default defineMcpHandler({
   instructions: [
-    "LocalBoards is a Kanban project-management tool. Use these tools to read and",
+    "LokalBoards is a Kanban project-management tool. Use these tools to read and",
     "manage a user's boards on their behalf.",
     "",
     "Data model:",

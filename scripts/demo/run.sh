@@ -8,7 +8,7 @@
 #   bash scripts/demo/run.sh            # or: npm run demo:screenshots
 #
 # Override anything via env:
-#   DEMO_DB_HOST/USER/PASS/NAME   MySQL connection (default 127.0.0.1/root/root1234/localboards_demo)
+#   DEMO_DB_HOST/USER/PASS/NAME   MySQL connection (default 127.0.0.1/root/root1234/lokalboards_demo)
 #   DEMO_PORT                     server port (default 3100)
 #   DEMO_LANGS                    space-separated locales (default "en de")
 #   DEMO_OUT                      output dir (default demo-screenshots)
@@ -28,7 +28,7 @@ export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 DEMO_DB_HOST="${DEMO_DB_HOST:-127.0.0.1}"
 DEMO_DB_USER="${DEMO_DB_USER:-root}"
 DEMO_DB_PASS="${DEMO_DB_PASS:-root1234}"
-DEMO_DB_NAME="${DEMO_DB_NAME:-localboards_demo}"
+DEMO_DB_NAME="${DEMO_DB_NAME:-lokalboards_demo}"
 DEMO_PORT="${DEMO_PORT:-3100}"
 DEMO_LANGS="${DEMO_LANGS:-en de}"
 DEMO_OUT="${DEMO_OUT:-demo-screenshots}"
@@ -103,7 +103,7 @@ for lang in $DEMO_LANGS; do
 
   # The README's screenshot is one of these captures, so it can never go stale:
   # every run refreshes it from the first language's. Kept separate from
-  # localboards-screen.webp, which is the docs site's laptop composite.
+  # lokalboards-screen.webp, which is the docs site's laptop composite.
   if [ "$hero_done" != "1" ] && [ -f "$DEMO_OUT/$lang/$README_SHOT_VIEW.png" ]; then
     if command -v cwebp >/dev/null 2>&1; then
       echo "==> refreshing README screenshot -> $README_SHOT"

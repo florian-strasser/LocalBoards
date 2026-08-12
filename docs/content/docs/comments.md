@@ -1,6 +1,6 @@
 # Comments
 
-Comments in LocalBoards allow users to discuss specific tasks, provide updates, or ask questions directly on cards. This feature enhances collaboration by enabling real-time communication among team members.
+Comments in LokalBoards allow users to discuss specific tasks, provide updates, or ask questions directly on cards. This feature enhances collaboration by enabling real-time communication among team members.
 
 ## Adding a Comment
 

@@ -1,12 +1,12 @@
-# Using LocalBoards with AI agents (MCP)
+# Using LokalBoards with AI agents (MCP)
 
-LocalBoards ships a [Model Context Protocol](https://modelcontextprotocol.io)
+LokalBoards ships a [Model Context Protocol](https://modelcontextprotocol.io)
 server so AI agents can read and manage boards on a user's behalf — the same
 Kanban tool your team uses, now scriptable.
 
 ## Connecting
 
-- **Endpoint:** `POST https://<your-localboards>/mcp` (streamable HTTP).
+- **Endpoint:** `POST https://<your-lokalboards>/mcp` (streamable HTTP).
 - **Auth:** send an API key in the `x-api-key` header. Create one in the app
   under **Settings → API keys**. When creating a key you choose:
   - **Full access** — read and write (create/update/move/delete).
@@ -21,7 +21,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 const transport = new StreamableHTTPClientTransport(
-  new URL("https://your-localboards/mcp"),
+  new URL("https://your-lokalboards/mcp"),
   { requestInit: { headers: { "x-api-key": process.env.LOCALBOARDS_KEY } } },
 );
 const client = new Client({ name: "my-agent", version: "1.0.0" }, { capabilities: {} });

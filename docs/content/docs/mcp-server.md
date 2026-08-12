@@ -1,6 +1,6 @@
 # MCP Server
 
-The LocalBoards MCP Server allows you to integrate LocalBoards functionality directly into your LLM applications. This enables you to automate workflows, manage boards, areas, cards, and comments programmatically.
+The LokalBoards MCP Server allows you to integrate LokalBoards functionality directly into your LLM applications. This enables you to automate workflows, manage boards, areas, cards, and comments programmatically.
 
 ## Authentication
 
@@ -8,12 +8,12 @@ Most tool calls require authentication. You need to provide an API key in the he
 
 ## Integration
 
-To integrate the LocalBoards MCP Server with your LLM, add the following configuration to your LLM settings:
+To integrate the LokalBoards MCP Server with your LLM, add the following configuration to your LLM settings:
 
 ```json
 {
   "mcpServers": {
-    "localBoards": {
+    "lokalBoards": {
       "url": "http://yourdomain.com/mcp",
       "headers": {
         "x-api-key": "YOUR-API-KEY"

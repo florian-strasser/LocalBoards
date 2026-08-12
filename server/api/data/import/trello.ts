@@ -55,7 +55,7 @@ async function downloadAttachment(
   try {
     const res = await fetch(url, {
       redirect: "follow",
-      headers: { "user-agent": "LocalBoards board importer" },
+      headers: { "user-agent": "LokalBoards board importer" },
       signal: AbortSignal.timeout(30000),
     });
     if (!res.ok) return null;
@@ -103,7 +103,7 @@ export default defineEventHandler(async (event) => {
       redirect: "manual",
       headers: {
         accept: "application/json",
-        "user-agent": "LocalBoards board importer",
+        "user-agent": "LokalBoards board importer",
       },
       signal: AbortSignal.timeout(20000),
     });

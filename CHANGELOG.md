@@ -1,3 +1,33 @@
+## v0.23.0
+
+### Breaking
+
+- **LocalBoards is now LokalBoards.** "Local boards" is a phrase the dictionary already owns — it competes in search with local government boards, local message boards and local bulletin boards, and a purely descriptive name is close to unregistrable as a trademark. `LokalBoards` is a near-unique string, it nods to where the project comes from, and it sets the naming convention for the projects that follow. Better now, at two stars, than after the name has spread.
+
+  **Nothing about a running instance changes.** The app reads its display name from `NUXT_APP_NAME`, and the database, volume and image names in the documentation are only *suggested* values — no instance takes them from this repository. An existing deployment keeps working untouched; renaming anything is optional and entirely up to the operator.
+
+  What did move: the canonical site is now **lokalboards.com** (the old domain redirects), the repository is `florian-strasser/LokalBoards` — GitHub keeps the stars, issues and pull requests and permanently redirects the old URL, including existing git remotes — and the published image is **`florianstrasser/lokalboards`** — the maintainer's own namespace, shared with the projects that follow, rather than one named after a single app. The old image path is no longer updated, so a `docker pull localboards/localboards` needs changing to keep receiving releases; pinned deployments keep running on whatever tag they already have.
+
+  Entries below this one are left as they were written. They describe releases that shipped under the old name, and rewriting them would misreport what happened.
+
+### New Features
+
+- **A board tile can wear a colour instead of a picture.** The board settings gained a **Colour** row beside the thumbnail: twelve presets covering the hue circle, plus a pipette that opens the system colour picker for anything else. The first swatch is the default and leaves the tile in the app's own colour, which is what every existing board keeps — nothing changes until you pick something.
+
+  A picture covers the whole tile, so a colour behind one could never be seen. Rather than let the two quietly fight, they are one choice: picking a colour clears the image and picking an image clears the colour, so the dialog always shows what the tile will actually look like.
+
+  **Any colour stays readable.** The tile works out whether white or near-black gives better contrast against what you picked — by measuring the actual contrast ratio, not by thresholding brightness, which is the difference between getting `#00ff00` and `#0000ff` right and getting them backwards — and the name plate, the "shared" badge, the unread dot and the avatar rings all follow it. On a dark board that is the familiar white plate with the board's colour as its text; on a pale yellow the plate flips to dark with yellow text, instead of turning into white-on-white. The twelve presets are all chosen to clear 4.5:1 against white, with a unit test that fails if a future edit sneaks a brighter shade into the palette. Hovering shades the colour the same direction the primary colour shades — darker on the light theme, lighter on the dark one — so a coloured tile behaves like every other one.
+
+  The colour is a new nullable `color` column, added by a migration that existing installations pick up on their next start; boards that predate it simply read as "no colour". It is validated in one shared place used by the picker, the tile and the API, so a value can never be accepted by one and refused by another — which matters here, because the colour ends up in a CSS custom property and only `#rrggbb` may ever reach the stylesheet. Available over the REST API and through the `createBoard`/`updateBoard` MCP tools, which now also report a board's `image` and `color` back rather than only accepting them. Translated into all seven languages.
+
+### Fixes
+
+- **Attachments that can't be displayed now simply download.** Clicking a spreadsheet, a Word file or a zip asked for permission to open a popup first, and only downloaded the file once that was allowed — in Safari a dialog stood between the click and the file every time. The click fetched the attachment and *then* called `window.open`, by which point the browser no longer connected the new window to the click that caused it and treated it as a popup. A download link is now built and followed straight away, with nothing awaited in between, so there is no popup to allow and no tab that flashes open and closes. Verified in both Chromium and WebKit: the file arrives, no extra tab is opened, and the page underneath doesn't move.
+
+  Only images and PDFs can actually be shown in a browser, and both keep their behaviour — an image opens in the lightbox, a PDF in a new tab. Everything else was already meant to download; it just took a detour to get there.
+
+  Two things improve along the way. The download now carries the attachment's **original filename**, so a spreadsheet saves as `Quartalszahlen Q3.xlsx` instead of the 32-character storage name the file has on disk — including names with umlauts or other non-ASCII characters, which are sent in both the plain and the RFC 5987 form of the header. And the file is streamed from the server instead of being pulled through the browser's memory as a base64 `data:` URL, which for a large attachment meant holding several copies of it at once.
+
 ## v0.22.3
 
 ### Security

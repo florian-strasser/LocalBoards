@@ -5,7 +5,7 @@
         class="flex flex-col-reverse lg:grid lg:grid-cols-2 bg-white rounded-3xl"
       >
         <div class="px-8 sm:px-12 py-7 sm:py-10">
-          <p class="text-secondary sm:text-lg">Creator of LocalBoards</p>
+          <p class="text-secondary sm:text-lg">Creator of LokalBoards</p>
           <h2 class="text-primary text-4xl sm:text-5xl mb-4">
             Florian Strasser
           </h2>
@@ -13,7 +13,7 @@
             I'm an independant webdesigner & webdeveloper from germany. Since i
             don't like to store my personal or customer data on US Servers, i
             needed a smart alternative for KanBan Boards. Therefore i created
-            LocalBoards and shared it with the world.
+            LokalBoards and shared it with the world.
           </p>
 
           <p class="sm:text-lg mb-5">

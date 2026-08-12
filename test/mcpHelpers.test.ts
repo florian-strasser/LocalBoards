@@ -77,13 +77,33 @@ describe("serializeCard", () => {
 describe("serializeBoard / serializeArea", () => {
   it("shapes a board", () => {
     expect(
-      serializeBoard({ id: 1, name: "B", style: "kanban", status: "public", user: "u1" }),
-    ).toEqual({ id: 1, name: "B", style: "kanban", status: "public", ownerId: "u1" });
+      serializeBoard({
+        id: 1,
+        name: "B",
+        style: "kanban",
+        status: "public",
+        image: "/images/board_placeholder_01.png",
+        color: "#2563eb",
+        user: "u1",
+      }),
+    ).toEqual({
+      id: 1,
+      name: "B",
+      style: "kanban",
+      status: "public",
+      image: "/images/board_placeholder_01.png",
+      color: "#2563eb",
+      ownerId: "u1",
+    });
   });
   it("defaults board style/status", () => {
     const b = serializeBoard({ id: 1, name: "B", user: "u1" });
     expect(b.style).toBe("kanban");
     expect(b.status).toBe("private");
+    // A board with no appearance set reports both as null rather than omitting
+    // them, so a client can tell "default" from "not supported".
+    expect(b.image).toBeNull();
+    expect(b.color).toBeNull();
   });
   it("shapes an area", () => {
     expect(serializeArea({ id: 3, board: 1, name: "Backlog", sort: 0 })).toEqual({

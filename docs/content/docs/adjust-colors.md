@@ -1,6 +1,6 @@
 # Adjust Colors
 
-You can customize all UI colors in LocalBoards by setting environment variables. This allows you to match the application's appearance to your brand or personal preferences without modifying source files.
+You can customize all UI colors in LokalBoards by setting environment variables. This allows you to match the application's appearance to your brand or personal preferences without modifying source files.
 
 ## Available Color Variables
 
