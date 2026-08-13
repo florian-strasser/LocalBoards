@@ -1,3 +1,25 @@
+## v0.24.0
+
+### Breaking
+
+- **The secondary colour is gone.** The palette had a green accent alongside the blue, meant to mark "done and positive" — completed cards, ticked checkboxes, live indicators, unread dots, the "+N" avatar overflow. It earned that second hue nowhere: every place it appeared already said what it meant by other means — a tick, a filled circle, a count reaching its total — so the colour added a competing accent without adding information. All of it uses the primary colour now, and the UI reads as one palette instead of two again.
+
+  `NUXT_PUBLIC_COLOR_SECONDARY` and `NUXT_PUBLIC_COLOR_SECONDARY_DARK` no longer exist. An instance that sets them keeps running; the values are simply ignored, and the documentation says so.
+
+  Two deliberate exceptions. The board colour picker marks its chosen swatch with a neutral ring in the page's own foreground rather than the primary colour — the primary colour is itself one of the swatches, so a primary ring would disappear on exactly the swatch it needs to mark. And rich-text link hovers take `primary-hover`, keeping a visible change of state without a second hue.
+
+### Improvements
+
+- **Input fields are a neutral grey instead of faintly blue.** Every text input, textarea, select and the rich-text editor mixed its resting fill and border from the brand colour, which tinted every form in the app. They now mix from `--color-gray` — the same formula and the same weights, just a neutral base — so a field reads as a place to type rather than as something being pointed at. The brand colour still appears on `:focus`, where it marks the field you are in. The dark theme already mixed from white and is unchanged.
+
+### Fixes
+
+- **The image viewer's close button now fades in with the picture.** Opening an image zooms it up from the thumbnail and fades the backdrop in behind it, but the close button appeared instantly, fully formed, before the picture had finished moving. It sits outside the element that animates — unlike the card dialog's close button, which rides along inside its card — so it had nothing to animate it. It now fades and scales in on the backdrop's own signal, using the image's easing and duration, so the three arrive as one movement, and it fades back out on the way down instead of vanishing.
+
+- **The demo attachment no longer says "LocalBoards".** The seeded image had the old name drawn into the picture itself, so the rename's text pass could not reach it and every generated screenshot still carried it. Regenerated at the same 640×400 with the same gradient and, apart from the one word, the same type set in the same place — the heading lands on exactly the rows and columns it did before.
+
+- **An image opened from a card is no longer hidden behind that card.** The viewer and the card dialog both sat at the same stacking level, and Vue places the viewer's teleported markup *ahead* of the app root in the document — so the tie broke the wrong way and the card was drawn over the picture, leaving only the strips either side of the dialog visible. The viewer now sits one level above, which is what it always meant: it is opened from something and belongs on top of it. Closing by button, by backdrop and by Escape all still work and still leave the card open underneath.
+
 ## v0.23.0
 
 ### Breaking

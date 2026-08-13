@@ -57,7 +57,7 @@
                         class="flex items-center justify-center size-8 rounded-full shrink-0 grow-0"
                         @click="toggleStatus"
                         :class="{
-                            'bg-secondary border-2 border-secondary text-white':
+                            'bg-primary border-2 border-primary text-white':
                                 currentStatus,
                             'border-2 border-gray hover:border-primary text-white dark:text-slate':
                                 !currentStatus && writeAccess,

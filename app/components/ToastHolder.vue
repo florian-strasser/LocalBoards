@@ -8,10 +8,10 @@
                 <div class="w-3 shrink-0 grow-0 pt-1.5">
                     <span class="relative flex size-3">
                         <span
-                            class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-secondary"
+                            class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-primary"
                         ></span>
                         <span
-                            class="relative inline-flex size-3 rounded-full bg-secondary"
+                            class="relative inline-flex size-3 rounded-full bg-primary"
                         ></span>
                     </span>
                 </div>

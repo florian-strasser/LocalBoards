@@ -5,7 +5,7 @@
                 type="checkbox"
                 :required="props.required"
                 v-model="data"
-                class="col-start-1 row-start-1 appearance-none rounded-sm border border-gray/33 bg-white checked:border-secondary checked:bg-secondary indeterminate:border-secondary indeterminate:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:border-gray/20 disabled:bg-gray/10 disabled:checked:bg-gray/10 forced-colors:appearance-auto"
+                class="col-start-1 row-start-1 appearance-none rounded-sm border border-gray/33 bg-white checked:border-primary checked:bg-primary indeterminate:border-primary indeterminate:bg-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:border-gray/20 disabled:bg-gray/10 disabled:checked:bg-gray/10 forced-colors:appearance-auto"
             />
             <svg
                 viewBox="0 0 14 14"

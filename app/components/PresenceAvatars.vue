@@ -19,10 +19,10 @@
             aria-hidden="true"
         >
             <span
-                class="absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75 motion-safe:animate-ping"
+                class="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 motion-safe:animate-ping"
             />
             <span
-                class="relative inline-flex rounded-full bg-secondary"
+                class="relative inline-flex rounded-full bg-primary"
                 :class="dotClass"
             />
         </span>

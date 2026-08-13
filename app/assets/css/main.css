@@ -2,15 +2,19 @@
 
 @theme {
     --color-*: initial;
-    /* Two brand colours with distinct jobs:
-     * primary   — the action colour: buttons, links, focus, selection.
-     * secondary — completion and positive state: done cards, checkboxes,
-     *             "live" indicators.
-     * primary-hover is the darker/lighter shade of primary used on hover — the
-     * job secondary used to do, which is why it had to be another blue. */
+    /* One brand colour with two shades. `primary` is the action colour —
+     * buttons, links, focus, selection — and everything the UI marks out: a
+     * completed card, a ticked checkbox, a live indicator, an unread dot.
+     * `primary-hover` is its darker (light theme) or lighter (dark theme)
+     * shade, used for hover and for entries that should read as heavier than
+     * routine ones.
+     *
+     * There used to be a green `secondary` for "done" states. It earned its own
+     * hue nowhere — every place it appeared already said what it meant by other
+     * means (a tick, a filled circle, a count reaching its total) — so it added
+     * a competing accent without adding information. */
     --color-primary: #0066cc;
     --color-primary-hover: #004c99;
-    --color-secondary: #12784f;
     --color-white: #ffffff;
     --color-gray: #4e4e52;
     --color-slate: #f5f5f7;
@@ -40,7 +44,6 @@ body {
         :root {
             --color-primary: #0f72de;
             --color-primary-hover: #1c84ec;
-            --color-secondary: #17996a;
             --color-gray: #aeaeb2;
             --color-slate: #2c2c2e;
             --color-code-bg: #161618;
@@ -168,14 +171,19 @@ body {
  * wins over Tailwind's (layered) utilities; call sites can still override an
  * individual property with a Tailwind `!` utility (e.g. `!w-auto`, `!pr-12`).
  * Change the appearance here and it updates everywhere: InputField.vue, the
- * rich-text editor (.tiptap, below) and any element carrying .form-control. */
+ * rich-text editor (.tiptap, below) and any element carrying .form-control.
+ *
+ * At rest the fill and border are mixed from `--color-gray`, not the brand
+ * colour: a field is a place to type, not something the UI is pointing at, and
+ * a tinted one made every form read as faintly blue. The brand colour appears
+ * on `:focus` only, where it means "this is the field you are in". */
 .form-control {
     display: block;
     width: 100%;
     padding: 0.5rem 0.875rem;
     border-radius: 0.625rem;
-    border: 1px solid color-mix(in oklab, var(--color-primary) 22%, transparent);
-    background-color: color-mix(in oklab, var(--color-primary) 6%, var(--color-white));
+    border: 1px solid color-mix(in oklab, var(--color-gray) 22%, transparent);
+    background-color: color-mix(in oklab, var(--color-gray) 6%, var(--color-white));
     color: var(--color-dark);
     outline: 0;
 }
@@ -215,8 +223,8 @@ select.form-control,
 /* The rich-text editor shares the same skin as the form controls. */
 .tiptap {
     padding: 1.5rem;
-    border: 1px solid color-mix(in oklab, var(--color-primary) 22%, transparent);
-    background-color: color-mix(in oklab, var(--color-primary) 6%, var(--color-white));
+    border: 1px solid color-mix(in oklab, var(--color-gray) 22%, transparent);
+    background-color: color-mix(in oklab, var(--color-gray) 6%, var(--color-white));
     color: var(--color-dark);
     border-radius: var(--radius-xl);
     outline: 0 !important;
@@ -307,7 +315,7 @@ select.form-control,
     display: none;
 }
 /* Task-list checkboxes: a small rounded-square checkbox (not a round radio) that
- * fills with the secondary colour and shows a check when ticked — the same
+ * fills with the primary colour and shows a check when ticked — the same
  * "this is done" colour as a card's status tick, which is the same idea at a
  * larger size. */
 .tiptap ul[data-type="taskList"] input[type="checkbox"],
@@ -329,8 +337,8 @@ select.form-control,
 }
 .tiptap ul[data-type="taskList"] input[type="checkbox"]:checked,
 .wysiwyg-wrapper ul[data-type="taskList"] input[type="checkbox"]:checked {
-    background-color: var(--color-secondary);
-    border-color: var(--color-secondary);
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
 }
 .tiptap ul[data-type="taskList"] input[type="checkbox"]:checked::after,
 .wysiwyg-wrapper ul[data-type="taskList"] input[type="checkbox"]:checked::after {
@@ -413,7 +421,7 @@ select.form-control,
 }
 .tiptap a:hover,
 .wysiwyg-wrapper a:hover {
-    color: var(--color-secondary);
+    color: var(--color-primary-hover);
     cursor: pointer;
 }
 .tiptap img,

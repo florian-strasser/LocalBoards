@@ -11,7 +11,7 @@
             <div
                 class="w-6 h-6 rounded-full flex justify-center items-center shrink-0 grow-0"
                 :class="{
-                    'border-2 border-secondary bg-secondary text-white':
+                    'border-2 border-primary bg-primary text-white':
                         props.card.status,
                     'border-2 border-gray': !props.card.status,
                 }"
@@ -50,7 +50,7 @@
             <div
                 v-if="checklist.total"
                 class="flex gap-x-1.5 shrink-0"
-                :class="{ 'text-secondary': checklist.done === checklist.total }"
+                :class="{ 'text-primary': checklist.done === checklist.total }"
             >
                 <ListChecks class="size-4 shrink-0 grow-0" />
                 <div class="shrink-0 grow-0">

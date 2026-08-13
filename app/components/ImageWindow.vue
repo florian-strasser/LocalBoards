@@ -2,9 +2,14 @@
     <!-- Teleported to <body> so its fixed positioning is relative to the
          viewport even when rendered inside a transformed modal. -->
     <Teleport to="body">
+        <!-- z-50, one step above ModalWindow's z-40. The lightbox is always
+             opened *from* something — usually a card modal — so it has to sit
+             above it. Sharing z-40 left the two tied, and Vue teleports these
+             roots ahead of `#__nuxt` in <body>, so the tie broke the wrong way:
+             an image opened from a card rendered behind that card. -->
         <div
             v-show="visible"
-            class="fixed inset-0 z-40 flex items-center justify-center"
+            class="fixed inset-0 z-50 flex items-center justify-center"
         >
             <div
                 class="absolute inset-0 bg-black/60 transition-opacity duration-300 ease-out"
@@ -25,7 +30,21 @@
                 />
                 <slot />
             </div>
-            <div v-if="!hideClose" class="absolute top-4 right-4 z-30">
+            <!-- The close button sits outside the element that animates, so
+                 unlike ModalWindow's — which rides along inside its card — it
+                 has to be faded in on its own, or it snaps into place while the
+                 image is still zooming. It follows `shown` (the backdrop's own
+                 signal) and borrows the image's easing and duration, so the
+                 three arrive as one movement. -->
+            <div
+                v-if="!hideClose"
+                class="absolute top-4 right-4 z-30 transition-[opacity,scale]"
+                :style="{
+                    transitionDuration: `${DURATION}ms`,
+                    transitionTimingFunction: EASE,
+                }"
+                :class="shown ? 'scale-100 opacity-100' : 'scale-90 opacity-0'"
+            >
                 <button
                     type="button"
                     @click="closeModal"

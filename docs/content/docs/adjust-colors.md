@@ -10,7 +10,6 @@ All colors support both light and dark mode variants. For dark mode colors, appe
 |----------|----------------|----------------|
 | `NUXT_PUBLIC_COLOR_PRIMARY` | `#0066CC` | `#0F72DE` |
 | `NUXT_PUBLIC_COLOR_PRIMARY_HOVER` | `#004C99` | `#1C84EC` |
-| `NUXT_PUBLIC_COLOR_SECONDARY` | `#12784F` | `#17996A` |
 | `NUXT_PUBLIC_COLOR_WHITE` | `#ffffff` | `#ffffff` |
 | `NUXT_PUBLIC_COLOR_GRAY` | `#4E4E52` | `#AEAEB2` |
 | `NUXT_PUBLIC_COLOR_SLATE` | `#F5F5F7` | `#2C2C2E` |
@@ -24,8 +23,6 @@ Modify your `.env` file:
 # Custom Colors
 NUXT_PUBLIC_COLOR_PRIMARY="#ff0000"
 NUXT_PUBLIC_COLOR_PRIMARY_DARK="#cc0000"
-NUXT_PUBLIC_COLOR_SECONDARY="#00ff00"
-NUXT_PUBLIC_COLOR_SECONDARY_DARK="#00cc00"
 NUXT_PUBLIC_COLOR_GRAY="#333333"
 NUXT_PUBLIC_COLOR_GRAY_DARK="#aaaaaa"
 NUXT_PUBLIC_COLOR_SLATE="#f5f5f5"
@@ -41,6 +38,10 @@ NUXT_PUBLIC_COLOR_SLATE_DARK="#2a2a2a"
 
 ## Tips
 
+- `NUXT_PUBLIC_COLOR_SECONDARY` no longer exists. The app used to have a second
+  green accent for "done" states; it was removed, and everything it used to
+  colour — completed cards, ticked checkboxes, live indicators, unread dots —
+  now uses the primary colour. Setting it has no effect.
 - Use valid HEX color codes (with or without `#` prefix)
 - Test your color combinations in both light and dark modes
 - Consider accessibility - ensure sufficient contrast between text and background colors

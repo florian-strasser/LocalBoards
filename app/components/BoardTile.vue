@@ -95,7 +95,7 @@
                     </span>
                     <span
                         v-if="props.memberCount > props.members.length"
-                        class="size-8 rounded-full bg-secondary text-white flex items-center justify-center text-xs font-medium ring-2"
+                        class="size-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-medium ring-2"
                         :class="color ? 'board-tile-ring' : 'ring-white'"
                         :title="`+${props.memberCount - props.members.length}`"
                     >

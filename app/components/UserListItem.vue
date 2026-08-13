@@ -44,7 +44,7 @@
                 </span>
                 <span
                     v-if="props.isSelf"
-                    class="shrink-0 rounded-full bg-secondary/15 px-2 py-0.5 text-xs font-medium text-secondary"
+                    class="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary"
                 >
                     {{ $t("you") }}
                 </span>

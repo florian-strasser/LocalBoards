@@ -12,7 +12,7 @@
                     @dragleave.prevent="handleDragLeave"
                     @drop.prevent="handleDrop"
                     :class="{
-                        'border-2 border-dashed border-secondary': isDragging,
+                        'border-2 border-dashed border-primary': isDragging,
                         'cursor-pointer': !data,
                     }"
                 >
@@ -57,7 +57,7 @@
                         type="button"
                         class="relative aspect-square w-full rounded-lg overflow-clip"
                         :class="{
-                            'border-2 border-secondary': data === image,
+                            'border-2 border-primary': data === image,
                         }"
                         @click="data = image"
                     >

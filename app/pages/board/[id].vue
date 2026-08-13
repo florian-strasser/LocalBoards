@@ -22,7 +22,7 @@
             <div class="container">
                 <div
                     v-if="accessError"
-                    class="bg-secondary text-white text-center py-3 px-6 rounded-lg"
+                    class="bg-primary text-white text-center py-3 px-6 rounded-lg"
                 >
                     {{ accessError }}
                 </div>
@@ -946,7 +946,8 @@ const handleCommentCountUpdated = ({ cardId, commentCount, comments }) => {
 };
 
 // Menu item styling, matching the dashboard's action menu. Destructive entries
-// (delete, leave) use the secondary colour so they don't read as routine.
+// (delete, leave) take the deeper primary-hover shade, so they read as heavier
+// than the routine ones without introducing a second hue.
 const menuItemClass =
     "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-primary/10 hover:text-primary dark:text-white";
 const menuItemDestructiveClass =

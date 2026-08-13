@@ -59,9 +59,6 @@ export default defineNuxtConfig({
         process.env.NUXT_PUBLIC_COLOR_PRIMARY_HOVER || "#004C99",
       colorPrimaryHoverDark:
         process.env.NUXT_PUBLIC_COLOR_PRIMARY_HOVER_DARK || "#1C84EC",
-      colorSecondary: process.env.NUXT_PUBLIC_COLOR_SECONDARY || "#12784F",
-      colorSecondaryDark:
-        process.env.NUXT_PUBLIC_COLOR_SECONDARY_DARK || "#17996A",
       colorWhite: process.env.NUXT_PUBLIC_COLOR_WHITE || "#ffffff",
       colorGray: process.env.NUXT_PUBLIC_COLOR_GRAY || "#4E4E52",
       colorGrayDark: process.env.NUXT_PUBLIC_COLOR_GRAY_DARK || "#AEAEB2",

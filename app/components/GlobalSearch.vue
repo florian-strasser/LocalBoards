@@ -106,7 +106,7 @@
                                     </span>
                                     <span
                                         v-if="board.memberCount > board.members.length"
-                                        class="flex size-6 items-center justify-center rounded-full bg-secondary text-xs font-medium text-white ring-2 ring-white dark:ring-slate"
+                                        class="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-white ring-2 ring-white dark:ring-slate"
                                         >+{{
                                             board.memberCount -
                                             board.members.length
@@ -134,7 +134,7 @@
                                         class="flex size-6 shrink-0 grow-0 items-center justify-center rounded-full"
                                         :class="
                                             card.status
-                                                ? 'border-2 border-secondary bg-secondary text-white'
+                                                ? 'border-2 border-primary bg-primary text-white'
                                                 : 'border-2 border-gray'
                                         "
                                     >
@@ -164,7 +164,7 @@
                                         v-if="card.checklist?.total"
                                         class="flex shrink-0 gap-x-1.5"
                                         :class="{
-                                            'text-secondary':
+                                            'text-primary':
                                                 card.checklist.done ===
                                                 card.checklist.total,
                                         }"

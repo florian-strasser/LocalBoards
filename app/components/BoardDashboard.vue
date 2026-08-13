@@ -68,7 +68,7 @@
                     }}</span>
                     <button
                         type="button"
-                        class="flex size-7 shrink-0 items-center justify-center rounded-md text-gray hover:text-secondary"
+                        class="flex size-7 shrink-0 items-center justify-center rounded-md text-gray hover:text-primary"
                         :aria-label="$t('deleteGroup')"
                         @click="askDeleteGroup(group)"
                     >
