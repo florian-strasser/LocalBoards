@@ -58,12 +58,12 @@ We herewith advise you that the transmission of data via the Internet (i.e., thr
 
 The data processing controller on this website is:
 
-Florian Strasser
-Florian Strasser - Webdesign & Programmierung
-Max-Schmeling-Str. 1A
+Florian Strasser\
+Florian Strasser - Webdesign & Programmierung\
+Max-Schmeling-Str. 1A\
 40597 Düsseldorf
 
-Phone: 0211 / 97632121
+Phone: 0211 / 97632121\
 E-mail: kontakt@florian-strasser.de
 
 The controller is the natural person or legal entity that single-handedly or jointly with others makes decisions as to the purposes of and resources for the processing of personal data (e.g., names, e-mail addresses, etc.).

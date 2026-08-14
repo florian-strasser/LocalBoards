@@ -5,7 +5,7 @@
     <ul>
       <template v-for="menuItem in props.menuItems">
         <li v-for="childItem in props.menuItems[0]?.children">
-          <NuxtLink class="hover:text-secondary" :to="childItem.path">{{
+          <NuxtLink class="hover:text-primary" :to="childItem.path">{{
             childItem.title
           }}</NuxtLink>
         </li>

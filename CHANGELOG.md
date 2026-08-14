@@ -1,3 +1,31 @@
+## v0.25.0
+
+### Improvements
+
+- **Inter, self-hosted, in the app and the documentation site.** Both ran on whatever sans-serif the visitor's operating system happened to supply, so the product looked different on every platform. They now share one typeface. The files are committed rather than fetched: an instance is meant to run on your own server without leaking a request per visitor to a font CDN, and a build that reaches out for fonts is a build that fails when the network hiccups. Verified on a running instance — zero requests to `fonts.googleapis.com` or `fonts.gstatic.com`, and the browser reports Inter as the resolved family.
+
+  Two variable files per site cover the whole weight range, 100–900, so no weight costs an extra download. The `latin-ext` subset is not optional: Polish (ł ą ę ż ź ć ń ś) lives there and the UI ships in Polish — checked by running the app in Polish and confirming both faces load. Inter is under the SIL Open Font License 1.1, and the licence travels with the files in `public/fonts/`.
+
+- **The documentation site uses the app's colours.** It had a palette of its own — a dark green with an orange accent — which made the product and the site documenting it look like two different things. It now takes the app's tokens verbatim, and the `secondary` colour it used for calls to action and nav hovers is gone the same way it went from the app, replaced by `primary` with `primary-hover` for the hover state that used to be a change of hue. Only the light values are taken: the site has no dark mode, and half of one would be worse than none.
+
+  Headings moved to the dark token rather than following `primary`. The old primary was a near-black green, so a heading set in it read as dark text with a tint; the app's primary is a saturated blue, and the app reserves it for actions. Carrying the old rule across would have turned every heading into a shout.
+
+- **The documentation homepage shows the app instead of a laptop.** The hero was a stock photo of a laptop with a screen composited into it — it aged the moment the UI changed, and it showed a desk rather than the product. It now uses the same capture the README does, produced by `npm run demo:screenshots` from the running app, so it is refreshed on every demo run and cannot go stale. Shown whole rather than cropped, so no part of the board is sliced off at narrow widths. The laptop composite is deleted.
+
+### Fixes
+
+- **Code examples in the documentation had their indentation stripped.** Three separate things were wrong with the code-block styling, and the nesting was the worst of them: `white-space: pre-line` preserves newlines but collapses every run of spaces, so a JSON response or a `docker-compose` file rendered flush left with all its structure gone — exactly the part of an example a reader needs. It also carried `text-align: justify`, which stretched the spaces *inside* code to reach both margins, and a white background on a white content box, so the block had no edge at all.
+
+  The block now uses the same rules as the app: the shared code background, text and border tokens — which also arrived with the palette — a monospace stack, and `white-space: pre-wrap`, which keeps the indentation while still wrapping a long `docker run` line rather than forcing a horizontal scrollbar. Verified in the rendered page: the JSON example comes back with its two- and four-space levels intact.
+
+  Inline code in prose was styled not at all — `api/data/board` in a sentence was monospace text and nothing else. It now gets the same small chip the app uses.
+
+- **The address blocks on the site notice and privacy policy run onto separate lines again.** The postal address, the phone/e-mail pairs and the VAT number were each written one item per line in the Markdown, but a single newline inside a paragraph is a *soft* break in CommonMark — it renders as a space. So the four-line address collapsed into one run of text, and so did the contact pairs.
+
+  Ten lines across the two files gained a CommonMark hard break (a trailing `\\`): six on the site notice — the address, `Phone`/`E-mail` under Contact, the VAT number, and the DSA contact pair — and four on the privacy policy, for the controller's address and its phone/e-mail pair. Verified in the rendered DOM: six `<br>` elements on one page and four on the other, all inside the right blocks.
+
+  Fixed in the content rather than by turning on the parser's `breaks: true`, which is shared with the `docs` and `api` collections — there, any paragraph wrapped across several source lines would suddenly gain hard breaks inside it. The trailing backslash is also visible in the source, unlike the two-trailing-spaces form that editors and linters strip on save.
+
 ## v0.24.0
 
 ### Breaking

@@ -4,26 +4,26 @@
       <NuxtLink
         to="/"
         aria-label="LokalBoards"
-        class="text-primary hover:text-secondary cursor-pointer block"
+        class="text-primary hover:text-primary-hover cursor-pointer block"
       >
         <Logo />
       </NuxtLink>
       <nav role="navigation">
         <ul class="flex gap-x-4 items-center">
           <li>
-            <NuxtLink class="hover:text-secondary" to="/">About</NuxtLink>
+            <NuxtLink class="hover:text-primary" to="/">About</NuxtLink>
           </li>
           <li>
-            <NuxtLink class="hover:text-secondary" to="/docs">Docs</NuxtLink>
+            <NuxtLink class="hover:text-primary" to="/docs">Docs</NuxtLink>
           </li>
           <li>
-            <NuxtLink class="hover:text-secondary" to="/api">API</NuxtLink>
+            <NuxtLink class="hover:text-primary" to="/api">API</NuxtLink>
           </li>
           <li>
             <a
               href="https://github.com/florian-strasser/LokalBoards/releases"
               target="_blank"
-              class="block py-2 px-4 rounded-full bg-secondary text-white"
+              class="block py-2 px-4 rounded-full bg-primary hover:bg-primary-hover text-white"
               >Download</a
             >
           </li>

@@ -8,18 +8,18 @@
             <a
               href="https://github.com/florian-strasser"
               target="_blank"
-              class="text-gray hover:text-secondary"
+              class="text-gray hover:text-primary"
               >Florian Strasser</a
             >
           </div>
           <ul class="flex gap-x-3">
             <li>
-              <NuxtLink class="hover:text-secondary" to="/privacy-policy"
+              <NuxtLink class="hover:text-primary" to="/privacy-policy"
                 >Privacy policy</NuxtLink
               >
             </li>
             <li>
-              <NuxtLink class="hover:text-secondary" to="/site-notice"
+              <NuxtLink class="hover:text-primary" to="/site-notice"
                 >Site notice</NuxtLink
               >
             </li>

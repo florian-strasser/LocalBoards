@@ -4,32 +4,32 @@
   >
     <ul>
       <li>
-        <NuxtLink class="hover:text-secondary" to="/api/"
+        <NuxtLink class="hover:text-primary" to="/api/"
           >Authentification</NuxtLink
         >
       </li>
       <li>
-        <NuxtLink class="hover:text-secondary" to="/api/boards"
+        <NuxtLink class="hover:text-primary" to="/api/boards"
           >Boards</NuxtLink
         >
       </li>
       <li>
-        <NuxtLink class="hover:text-secondary" to="/api/board">Board</NuxtLink>
+        <NuxtLink class="hover:text-primary" to="/api/board">Board</NuxtLink>
       </li>
       <li>
-        <NuxtLink class="hover:text-secondary" to="/api/areas">Areas</NuxtLink>
+        <NuxtLink class="hover:text-primary" to="/api/areas">Areas</NuxtLink>
       </li>
       <li>
-        <NuxtLink class="hover:text-secondary" to="/api/area">Area</NuxtLink>
+        <NuxtLink class="hover:text-primary" to="/api/area">Area</NuxtLink>
       </li>
       <li>
-        <NuxtLink class="hover:text-secondary" to="/api/cards">Cards</NuxtLink>
+        <NuxtLink class="hover:text-primary" to="/api/cards">Cards</NuxtLink>
       </li>
       <li>
-        <NuxtLink class="hover:text-secondary" to="/api/card">Card</NuxtLink>
+        <NuxtLink class="hover:text-primary" to="/api/card">Card</NuxtLink>
       </li>
       <li>
-        <NuxtLink class="hover:text-secondary" to="/api/comment"
+        <NuxtLink class="hover:text-primary" to="/api/comment"
           >Comment</NuxtLink
         >
       </li>

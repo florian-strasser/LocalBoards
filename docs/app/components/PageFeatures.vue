@@ -1,8 +1,8 @@
 <template>
   <section>
     <div class="container">
-      <p class="text-secondary sm:text-lg">What you can do</p>
-      <h2 class="text-primary text-4xl sm:text-5xl mb-4">Features</h2>
+      <p class="text-primary sm:text-lg">What you can do</p>
+      <h2 class="text-dark text-4xl sm:text-5xl mb-4">Features</h2>
       <div
         class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-x-6 gap-y-4 px-8 sm:px-12 py-7 sm:py-10 bg-white rounded-3xl"
       >
@@ -12,10 +12,10 @@
           :class="{ 'opacity-75': feature.soon }"
         >
           <CircleCheck
-            class="text-secondary size-7 sm:size-8 shrink-0 grow-0"
+            class="text-primary size-7 sm:size-8 shrink-0 grow-0"
             :stroke-width="1.5"
           />
-          <p class="text-primary sm:text-lg grow shrink pt-0.75">
+          <p class="text-dark sm:text-lg grow shrink pt-0.75">
             {{ feature.title }}
           </p>
         </div>
