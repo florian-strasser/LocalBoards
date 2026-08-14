@@ -1,6 +1,6 @@
 # LokalBoards
-[![Nuxt](https://img.shields.io/badge/Nuxt-4.4.6-00DC82?style=flat&logo=nuxt)](https://nuxt.com)
-[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.3-25C2A0?style=flat&logo=socketdotio)](https://socket.io)
+[![Nuxt](https://img.shields.io/github/package-json/dependency-version/florian-strasser/LokalBoards/nuxt?label=Nuxt&logo=nuxt&color=00DC82&style=flat)](https://nuxt.com)
+[![Socket.IO](https://img.shields.io/github/package-json/dependency-version/florian-strasser/LokalBoards/socket.io?label=Socket.IO&logo=socketdotio&color=25C2A0&style=flat)](https://socket.io)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/florian-strasser/LokalBoards/blob/master/LICENSE)
 [![Version](https://img.shields.io/github/package-json/v/florian-strasser/LokalBoards?label=version&color=orange)](https://github.com/florian-strasser/LokalBoards/releases)
 

@@ -1,3 +1,17 @@
+## v0.25.1
+
+### Fixes
+
+- **The MCP server told agents it was version 0.23.0.** The version an MCP client sees in the handshake was a second copy of the number, written out in `nuxt.config.ts`, and releases stopped touching it — so it sat two versions behind while the project shipped 0.24.0 and 0.25.0. It now derives from `package.json`, leaving one place where the version lives.
+
+  Worth knowing for release day: `package.json` and the lockfile are still the source of that number, and nothing updates them automatically. `npm version <x> --no-git-tag-version` sets both in one step; the README's version badge and the MCP handshake then follow from it.
+
+- **The README's Nuxt badge was three releases behind.** It read 4.4.6 while the project has been on 4.5.2 since v0.22.1, when Nuxt was upgraded to clear eleven advisories — so the one badge a visitor uses to judge whether a self-hosted project is maintained was understating it, and pointing at a version with known CVEs. Corrected to 4.5.2, which is what both `package.json` and the lockfile resolve to.
+
+  Both dependency badges are now read from `package.json` by Shields.io rather than typed by hand, so they follow an upgrade on their own and cannot drift again. The Socket.IO badge was accurate, and both endpoints were checked to resolve before the swap.
+
+- **The documentation site's favicon was still the old green.** The app generates its icons at request time from the configured primary colour, so it followed the palette change on its own; the documentation site ships a static `touchicon.png`, and that file was still the dark green (`#104332`) of the palette the site used before it adopted the app's. Regenerated with the app's own renderer at `#0066cc`, so both sites now serve the same artwork in the same colour — verified against the served file, not just the one on disk.
+
 ## v0.25.0
 
 ### Improvements

@@ -1,4 +1,5 @@
 import tailwindcss from "@tailwindcss/vite";
+import pkg from "./package.json";
 
 export default defineNuxtConfig({
   features: {
@@ -46,7 +47,10 @@ export default defineNuxtConfig({
   },
   mcp: {
     name: process.env.NUXT_APP_NAME || "LokalBoards",
-    version: "0.23.0",
+    // Read from package.json rather than repeated here. This is the version an
+    // MCP client sees in the handshake, and as a second copy it silently fell
+    // two releases behind.
+    version: pkg.version,
     enabled: process.env.NUXT_MCP || true,
   },
   runtimeConfig: {
