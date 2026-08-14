@@ -1,3 +1,13 @@
+## Unreleased
+
+### Security
+
+- **`nanoid` in the documentation site's lockfile, 3.3.17 → 3.3.18** (high, GHSA-2v37-7h3g-55p8). A custom generator called with a size of zero never satisfies its loop's exit condition and spins forever, hanging the calling thread — a denial of service where the size is attacker-controlled. It arrives through PostCSS, which the docs build uses.
+
+  Not something that was missed earlier: the app's copy was raised to 3.3.18 back in v0.22.3, when the advisory covered `<3.3.17` and the documentation site's 3.3.17 was outside it. The range has since been widened to `<3.3.18`, which brought that copy into scope.
+
+  Both lockfiles now report zero known vulnerabilities, the documentation site builds, and all 135 tests pass.
+
 ## v0.25.1
 
 ### Fixes
