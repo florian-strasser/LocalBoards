@@ -1,0 +1,46 @@
+# The quick start: one container, its own database inside it.
+#
+#   cp .env.example .env   # set NUXT_BOARDS_URL and the SMTP details
+#   docker compose up -d
+#
+# Nothing else to install. The database lives in the `database` volume and the
+# uploaded files in `uploads`; both survive `docker compose down` and a new
+# image.
+#
+# For an external database — a managed one, or a separate container — see
+# docker-compose.external-db.yml, which is the better choice for anything you
+# intend to back up and monitor properly.
+
+services:
+  lokalboards:
+    image: florianstrasser/lokalboards:latest
+    # Comment the line above and uncomment this to run your own build.
+    # build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # Deliberately unset, which is what selects the built-in database. Setting
+      # it to anything else makes the container skip its own MySQL entirely.
+      NUXT_MYSQL_HOST: ""
+    volumes:
+      - uploads:/app/public/uploads
+      - database:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      # A first run initialises the data directory before the app can start, so
+      # the container must not be declared unhealthy while that is happening.
+      start_period: 90s
+      retries: 3
+
+volumes:
+  uploads:
+  database:

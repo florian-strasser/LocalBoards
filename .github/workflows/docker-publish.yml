@@ -15,6 +15,14 @@ on:
       - "v*"
   workflow_dispatch:
 
+# Least privilege, matching ci.yml. This workflow only reads the repository:
+# it authenticates to Docker Hub with its own secrets, not with GITHUB_TOKEN,
+# and the build cache uses the Actions runtime token rather than this one. A
+# workflow without an explicit block inherits the repository default, which on
+# older repositories is read-write — CodeQL flags exactly that.
+permissions:
+  contents: read
+
 env:
   IMAGE: florianstrasser/lokalboards
 

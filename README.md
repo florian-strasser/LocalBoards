@@ -90,10 +90,15 @@ Prebuilt images are published on Docker Hub:
 
 **https://hub.docker.com/r/florianstrasser/lokalboards**
 
-The image contains only the LokalBoards app. You still need a reachable **MySQL**
-database — the required tables are created automatically on first start, so an
-empty database is enough. Configure the app through the same environment
-variables described in [Configure Environment Variables](#configure-environment-variables).
+The image carries a MySQL server of its own, so a single `docker run` gives you
+a working instance with nothing else to install. Point `NUXT_MYSQL_HOST` at a
+database and it uses that one instead, leaving its own MySQL unstarted — which
+is the better arrangement for anything long-lived, since a separate database can
+be backed up, upgraded and monitored on its own schedule.
+
+Either way the tables are created automatically on first start. Configure the
+app through the environment variables described in
+[Configure Environment Variables](#configure-environment-variables).
 
 ### Pull the image
 
@@ -104,8 +109,9 @@ docker pull florianstrasser/lokalboards:latest
 ### Run the container
 
 Put your settings in a `.env` file (see the variables above) and start the
-container. The app listens on port `3000`, and uploaded files are stored in
-`/app/public/uploads`, so mount a volume there to persist them:
+container. The app listens on port `3000`. Two volumes are worth mounting:
+uploaded files live in `/app/public/uploads`, and — if you are using the
+built-in database — its data lives in `/var/lib/mysql`:
 
 ```bash
 docker run -d \
@@ -113,8 +119,14 @@ docker run -d \
   --env-file .env \
   -p 3000:3000 \
   -v lokalboards_uploads:/app/public/uploads \
+  -v lokalboards_database:/var/lib/mysql \
   florianstrasser/lokalboards:latest
 ```
+
+Leave `NUXT_MYSQL_HOST` empty (or unset) to use the built-in database. A
+password for it is generated on first start and kept next to the data, so there
+is nothing to choose; the server only ever listens on the container's loopback
+interface.
 
 Then open `http://localhost:3000` (or whatever you set as `NUXT_BOARDS_URL`).
 
@@ -126,56 +138,24 @@ database, or `503` if the database is unreachable. The Docker image already
 declares a `HEALTHCHECK` against it, so `docker ps` / orchestrators show the
 container's health automatically — no extra configuration needed.
 
-### Run with Docker Compose (app + database)
+### Run with Docker Compose
 
-For a self-contained setup including MySQL, use a `compose.yaml` like this:
+Two compose files ship with the repository:
 
-```yaml
-services:
-  app:
-    image: florianstrasser/lokalboards:latest
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      NUXT_APP_NAME: LokalBoards
-      NUXT_BOARDS_URL: http://localhost:3000
-      NUXT_LANGUAGE: en
-      NUXT_PUBLIC_PRIVACY_URL: https://www.yourdomain.com/privacy-policy/
-      NUXT_MYSQL_HOST: db
-      NUXT_MYSQL_USER: lokalboards
-      NUXT_MYSQL_PASSWORD: change-me
-      NUXT_MYSQL_DATABASE: lokalboards
-      NUXT_EMAIL_HOST: mail.yourserver.de
-      NUXT_EMAIL_PORT: "465"
-      NUXT_EMAIL_SECURE: "true"
-      NUXT_EMAIL_USER: contact@yourdomain.com
-      NUXT_EMAIL_PASS: password1234
-    volumes:
-      - uploads:/app/public/uploads
-    depends_on:
-      - db
-
-  db:
-    image: mysql:8
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: lokalboards
-      MYSQL_USER: lokalboards
-      MYSQL_PASSWORD: change-me
-      MYSQL_ROOT_PASSWORD: change-me-too
-    volumes:
-      - db_data:/var/lib/mysql
-
-volumes:
-  uploads:
-  db_data:
-```
-
-Start it with:
+| File | What it does |
+| --- | --- |
+| [`docker-compose.yml`](docker-compose.yml) | One container with its own database inside it. The quick start. |
+| [`docker-compose.external-db.yml`](docker-compose.external-db.yml) | The app and a MySQL service side by side. Better for anything long-lived. |
 
 ```bash
+cp .env.example .env          # set NUXT_BOARDS_URL and your SMTP details
 docker compose up -d
+```
+
+Or, with the database as its own service:
+
+```bash
+docker compose -f docker-compose.external-db.yml up -d
 ```
 
 ### How configuration is applied

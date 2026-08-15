@@ -1,0 +1,67 @@
+# The same image, with the database as its own service.
+#
+#   docker compose -f docker-compose.external-db.yml up -d
+#
+# This is the better arrangement for anything long-lived. The built-in database
+# exists so a single `docker run` works on a bare machine; a database in its own
+# container can be backed up, restored, upgraded and monitored on its own
+# schedule, and the app can be restarted without touching it.
+#
+# Setting NUXT_MYSQL_HOST is all it takes: the entrypoint sees an external host
+# and never starts the MySQL inside the image.
+
+services:
+  lokalboards:
+    image: florianstrasser/lokalboards:latest
+    # build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NUXT_MYSQL_HOST: database
+      NUXT_MYSQL_DATABASE: lokalboards
+      NUXT_MYSQL_USER: lokalboards
+      NUXT_MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+      # Plain TCP inside the compose network. Turn this on for a managed
+      # database reached over the internet.
+      NUXT_MYSQL_SSL: "false"
+    volumes:
+      - uploads:/app/public/uploads
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  database:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: lokalboards
+      MYSQL_USER: lokalboards
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    # No ports published: the database is reachable from the app service over
+    # the compose network and from nowhere else.
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
+
+volumes:
+  uploads:
+  database:

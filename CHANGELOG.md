@@ -1,3 +1,27 @@
+## v0.27.0
+
+### New Features
+
+- **The image now carries its own database.** `docker run` on a bare machine gives a working instance with nothing else to install — no MySQL to provision, no credentials to invent, no compose file required. The tables are created on first start as before.
+
+  An external database is still supported and still the better choice for anything long-lived, and nothing about that path changes: set `NUXT_MYSQL_HOST` and the container skips its own MySQL entirely rather than running a second, unused one. A database in its own container can be backed up, upgraded and monitored on its own schedule; the built-in one exists so that trying LokalBoards costs one command.
+
+  Two compose files ship with the repository — [`docker-compose.yml`](docker-compose.yml) for the bundled database and [`docker-compose.external-db.yml`](docker-compose.external-db.yml) for the app and MySQL side by side — replacing the example that previously only existed inline in the README.
+
+  The password for the built-in database is generated on first start and kept beside the data it protects, so no default is shared between instances and nothing has to be chosen. The server binds to the container's loopback interface only; port 3306 is never published. Both processes run as the unprivileged `mysql` user, and `docker stop` shuts them down together so the next start does not begin with a crash recovery.
+
+  **The cost is image size**: the runtime stage is built on `mysql:8.4` instead of `node:slim`, taking the download from about 83 MB to roughly 285 MB, and every deployment pays it — including those using an external database. Publishing two images instead would double the release surface and force a choice on readers before they know what they want.
+
+  One behaviour change worth checking if it applies to you: `NUXT_MYSQL_HOST` set to `localhost`, `127.0.0.1` or `::1` now selects the *built-in* database. An instance running with `network_mode: host` and pointing at a MySQL on the host that way would silently start using the container's own database instead. Any other hostname, including a compose service name, is unaffected.
+
+  Verified end to end on a built image: a container started with no database configuration at all initialised its data directory, applied all 15 migrations, created 20 tables and answered `/api/health` with `{"status":"ok","database":"ok"}`; data survived a restart with the password reused rather than regenerated; `docker stop` shut down cleanly with no crash recovery on the next start; and a container pointed at an external database ran no `mysqld` of its own and migrated the external schema instead.
+
+### Internal
+
+- **The publish workflow declares its token permissions.** `docker-publish.yml` had no `permissions:` block, so it inherited the repository default for `GITHUB_TOKEN` — read-write on repositories created before February 2023 — which CodeQL flagged as `actions/missing-workflow-permissions`. It now declares `contents: read`, matching `ci.yml`, which has always had one.
+
+  Nothing in the job needed more: Docker Hub is authenticated with its own secrets rather than `GITHUB_TOKEN`, and the layer cache uses the Actions runtime token. The omission came from the workflow being adapted from another project whose copy has the same gap.
+
 ## v0.26.0
 
 ### New Features
