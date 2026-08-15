@@ -16,6 +16,9 @@ import esLocale from "../../i18n/locales/es.json";
 import itLocale from "../../i18n/locales/it.json";
 import nlLocale from "../../i18n/locales/nl.json";
 import plLocale from "../../i18n/locales/pl.json";
+import ukLocale from "../../i18n/locales/uk.json";
+import ptLocale from "../../i18n/locales/pt.json";
+import csLocale from "../../i18n/locales/cs.json";
 
 const runtimeConfig = useRuntimeConfig();
 
@@ -34,6 +37,9 @@ const textList: Record<string, Record<string, string>> = {
   it: itLocale,
   nl: nlLocale,
   pl: plLocale,
+  uk: ukLocale,
+  pt: ptLocale,
+  cs: csLocale,
 };
 
 const dateLocales: Record<string, string> = {
@@ -44,6 +50,9 @@ const dateLocales: Record<string, string> = {
   it: "it-IT",
   nl: "nl-NL",
   pl: "pl-PL",
+  uk: "uk-UA",
+  pt: "pt-BR",
+  cs: "cs-CZ",
 };
 
 const formatDate = (iso: string): string => {

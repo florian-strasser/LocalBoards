@@ -1,4 +1,32 @@
-## Unreleased
+## v0.26.0
+
+### New Features
+
+- **Three more languages: Ukrainian, Portuguese and Czech.** That takes the interface from seven to ten. All 319 interface strings and all 16 e-mail strings are translated in each — no partial locales, and no English falling through mid-sentence.
+
+  Chosen for reach rather than for count. Portuguese is the largest single addition by far once Brazil is counted, and Brazil has one of the biggest self-hosting communities anywhere. Ukrainian covers around 35 million speakers with an active developer community and an unusually concrete interest in keeping data on their own hardware. Czech is the smallest of the three by population and the strongest by self-hosting culture. Russian is deliberately not included.
+
+  Each language matches `en.json` key for key and in the same order, and every `{placeholder}` survives translation intact — both checked mechanically rather than by eye, since a missing placeholder shows up as a literal `{cardName}` in someone's inbox. Native punctuation throughout: `«»` for Ukrainian, `„“` for Czech, `“”` for Portuguese, following what the existing locales already do. Dates format as `uk-UA`, `pt-BR` and `cs-CZ`.
+
+  Verified by running the app in each language: the dashboard, the header and the search placeholder all render correctly, with no console errors.
+
+  A note for whoever reviews these: they are careful translations, not reviewed by native speakers. The interface strings are short and mechanical, but the longer explanatory ones — the webhook and API-key hints especially — would benefit from a native eye. Corrections are a small pull request, and `CONTRIBUTING.md` now has a Translations section spelling out the five places a language lives and the two rules that matter — identical key sets, and placeholders left intact.
+
+### Internal
+
+- **The README no longer explains how to build and publish Docker images.** It carried a section on `docker buildx ... --push florianstrasser/lokalboards` — instructions nobody but the maintainer can run, in a document people read to *use* the project. Now that CI publishes on a tag, they were wrong as well as misplaced.
+
+  Deleted rather than trimmed: anyone building their own image is a contributor, and contributors read `CONTRIBUTING.md`. The one part worth keeping — that building on an Apple Silicon Mac and deploying to an `amd64` server gives `exec ... : Exec format error`, and why the Dockerfile pins its build stage — moved there, next to the other build instructions. The README now stops at pulling and running the published image, which is what a reader of it wants.
+
+- **Releases publish the Docker image themselves.** Pushing a `v*` tag now triggers `docker-publish.yml`, which builds and pushes to `florianstrasser/lokalboards` — replacing a `docker buildx build --push` run by hand. Adapted from the same workflow in LokalTransfer.
+
+  Three things change beyond saving the manual step. The image is built for **linux/arm64 as well as amd64**, so `docker run` stops failing outright on Apple Silicon and ARM servers with `no matching manifest`; every hand-published image so far was amd64 only. Each release gets the full tag ladder — `0.26.0`, `0.26`, `0` and `latest` — so an operator can pin `:0` and take fixes without a surprise upgrade. And the build is cached across runs through GitHub's cache backend.
+
+  Publishing is deliberately tied to the tag rather than to every push to master: `latest` moving on each commit would hand people whatever happened to be in the tree. `workflow_dispatch` is there to re-run a publish whose failure had nothing to do with the code.
+
+  Cutting a release is now `npm version <patch|minor|major> && git push --follow-tags`. A new `.npmrc` sets `message=v%s` so the commit `npm version` creates keeps this project's naming (`v0.26.0`, matching its tag) instead of npm's bare `0.26.0`. `package.json` and the lockfile are bumped together, which is what had been drifting — and the MCP handshake and the README badges both read from `package.json`, so they follow on their own.
+
+## v0.25.2
 
 ### Security
 

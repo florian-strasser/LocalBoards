@@ -1,0 +1,77 @@
+name: docker-publish
+
+# Publishing is tied to a tag rather than to every push: an image on Docker Hub
+# is something other people pull, and `latest` moving on each commit to master
+# would hand them whatever happened to be in the tree.
+#
+# Release with:
+#   npm version <patch|minor|major> && git push --follow-tags
+#
+# `workflow_dispatch` is there for re-publishing a tag whose run failed for a
+# reason unrelated to the code.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+env:
+  IMAGE: florianstrasser/lokalboards
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # QEMU is what lets one runner emit the arm64 image as well. Only the
+      # runtime stage is emulated: the Dockerfile pins its build stage to the
+      # host architecture (`--platform=$BUILDPLATFORM`), so the slow, fragile
+      # part (Vite, esbuild) runs natively and only the file copying is
+      # emulated. Nuxt's `.output` is portable JavaScript, so the resulting
+      # image still runs on the target architecture.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Produces the full ladder from the tag: 1.2.3, 1.2, 1 and latest. Someone
+      # who wants to stay on a major version can then pin `:1` and get fixes
+      # without a surprise upgrade.
+      - name: Derive tags
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # There is deliberately no step here syncing the README to Docker Hub's
+      # description. That endpoint refuses personal access tokens — it only
+      # accepts the account password — so automating it would mean putting a
+      # credential with full account access into CI in exchange for keeping a
+      # cosmetic field up to date. The description is set once by hand in the
+      # Docker Hub UI instead.

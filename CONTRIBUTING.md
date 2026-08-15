@@ -69,6 +69,30 @@ Please add or update tests for any behavior you change. Security-sensitive logic
 npm run build
 ```
 
+### Building a Docker image
+
+Only needed if you want to run your changes as a container; `npm run build` is
+enough for development.
+
+> **Build for the architecture you will run it on.** A plain `docker build`
+> only produces your own machine's architecture, so an image built on an Apple
+> Silicon Mac (`arm64`) fails on an `amd64` server with
+> `exec ... : Exec format error`.
+
+```bash
+docker buildx build --platform linux/amd64 -t my-lokalboards:latest --load .
+```
+
+The `Dockerfile` pins its build stage to your machine's native architecture
+(`--platform=$BUILDPLATFORM`) and only the runtime stage targets the platform
+you ask for, so Vite and esbuild run natively rather than under QEMU — which
+otherwise segfaults at random. Nuxt's `.output` is portable JavaScript, so the
+image still runs on the target.
+
+The official image is built and pushed by
+[`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml)
+when a `v*` tag is pushed. It is never published by hand.
+
 ## Database schema changes
 
 The schema is managed by a small migration runner in
@@ -76,6 +100,47 @@ The schema is managed by a small migration runner in
 startup. To change the schema, **append a new migration** to the `migrations`
 array (e.g. `0002_add_x`) with an `up(db)` function — never edit or remove an
 existing migration, as it may already be applied in the wild.
+
+## Translations
+
+The interface ships in ten languages. **Improving one you speak natively is a
+genuinely useful pull request** — most of the current locales were translated
+carefully but not reviewed by a native speaker, so tone and idiom are where they
+are weakest. Fixing a handful of awkward strings is a perfectly good
+contribution; you do not have to review a whole file.
+
+Everything a language needs lives in four places:
+
+1. `i18n/locales/<code>.json` — the ~320 interface strings.
+2. `nuxt.config.ts` — one line in the `i18n.locales` array.
+3. `server/utils/translations.ts` — a block of 16 e-mail strings.
+4. `server/tasks/notification.ts` — the locale in `textList`, and a date locale
+   (`cs` → `cs-CZ`) in `dateLocales`.
+
+Two rules, both worth checking before you open the PR:
+
+- **Keep the key set identical to `en.json`**, in the same order. A missing key
+  falls back to English mid-sentence.
+- **Keep every `{placeholder}` exactly as it appears in English.** They are
+  substituted at runtime, so a dropped or renamed one ships a literal
+  `{cardName}` into somebody's notification e-mail. This fails silently — the
+  build will not catch it.
+
+You can check both at once:
+
+```bash
+node -e "
+const en = require('./i18n/locales/en.json');
+const l  = require('./i18n/locales/YOUR_CODE.json');
+const ph = s => (String(s).match(/\{[a-zA-Z]+\}/g) || []).sort().join();
+const bad = Object.keys(en).filter(k => !(k in l) || ph(en[k]) !== ph(l[k]));
+console.log(bad.length ? bad : 'ok');
+"
+```
+
+Use the punctuation your language actually uses — the existing files do
+(`«»` in Ukrainian, `„“` in Czech and German, `« »` in French). Leave
+`systemActor` as `LokalBoards`; it is the product name, not a word.
 
 ## Pull request checklist
 

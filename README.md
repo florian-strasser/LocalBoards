@@ -10,7 +10,7 @@ LokalBoards is an open-source (MIT License), self-hosted Kanban board system. It
 
 We support real-time multiplayer updates. When you edit a card, area, or rename it, the changes are instantly reflected for all users viewing the board. Comments on cards are also updated in real-time across all browsers. This is powered by an internal Socket.IO integration.
 
-LokalBoards is currently available in the following languages: English (EN), German (DE), French (FR), Spanish (ES), Italian (IT), Dutch (NL), and Polish (PL).
+LokalBoards is currently available in the following languages: English (EN), German (DE), French (FR), Spanish (ES), Italian (IT), Dutch (NL), Polish (PL), Ukrainian (UK), Portuguese (PT), and Czech (CS).
 
 ## AI agents (MCP)
 
@@ -195,9 +195,6 @@ these ways:
 > `.env` used during development is excluded from the image (`.dockerignore`), so
 > no secrets are baked into the build.
 
-> Building and publishing the image is documented under
-> [Build the Docker image and push to Docker Hub](#build-the-docker-image-and-push-to-docker-hub).
-
 ## Backup and Restore
 
 LokalBoards keeps all its state in two places, so a complete backup is just
@@ -275,48 +272,4 @@ To build the application locally:
 
 ```bash
 npx nuxt build --dotenv .env.local
-```
-
-### Build the Docker image and push to Docker Hub
-
-> **Important: build for the architecture of your target server.**
-> `docker build` only builds for your machine's architecture. If you build on
-> an Apple Silicon Mac (`arm64`) and deploy to an `amd64`/`x86_64` server, the
-> container fails to start with `exec ... : Exec format error`. Use
-> `docker buildx` to build for the server's platform.
-
-One-time setup of a builder that supports cross-platform builds:
-
-```bash
-docker buildx create --use --name multiarch
-```
-
-Build for the server architecture (`amd64` for most hosts) and push straight to
-Docker Hub:
-
-```bash
-docker buildx build --platform linux/amd64 -t florianstrasser/lokalboards:latest --push .
-```
-
-> The `Dockerfile` pins its build stage to your machine's native architecture
-> (`--platform=$BUILDPLATFORM`) and only the final runtime image targets the
-> platform you request. This keeps the build toolchain (esbuild/Vite) running
-> natively instead of under QEMU emulation, which otherwise crashes with random
-> segfaults when cross-building. Nuxt's `.output` is portable JavaScript, so the
-> resulting image still runs on the target architecture.
-
-To produce an image that also runs natively on Apple Silicon, build for both
-architectures:
-
-```bash
-docker buildx build --platform linux/amd64,linux/arm64 -t florianstrasser/lokalboards:latest --push .
-```
-
-> Use `--push` (not `--load`): multi-platform images can't be loaded into the
-> local image store and are pushed to the registry directly.
-
-Verify that the published image contains the expected architecture(s):
-
-```bash
-docker buildx imagetools inspect florianstrasser/lokalboards:latest
 ```

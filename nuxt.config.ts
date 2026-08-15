@@ -108,6 +108,9 @@ export default defineNuxtConfig({
       { code: "it", file: "it.json" },
       { code: "nl", file: "nl.json" },
       { code: "pl", file: "pl.json" },
+      { code: "uk", file: "uk.json" },
+      { code: "pt", file: "pt.json" },
+      { code: "cs", file: "cs.json" },
     ],
   },
   nitro: {

@@ -4,7 +4,7 @@ LokalBoards is an open-source (MIT License), self-hosted Kanban board system. It
 
 We support real-time multiplayer updates. When you edit a card, area, or rename it, the changes are instantly reflected for all users viewing the board. Comments on cards are also updated in real-time across all browsers. This is powered by an internal Socket.IO integration.
 
-LokalBoards is currently available in the following languages: English (EN), German (DE), French (FR), Spanish (ES), Italian (IT), Dutch (NL), and Polish (PL).
+LokalBoards is currently available in the following languages: English (EN), German (DE), French (FR), Spanish (ES), Italian (IT), Dutch (NL), Polish (PL), Ukrainian (UK), Portuguese (PT), and Czech (CS).
 
 ## Install
 

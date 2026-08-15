@@ -180,6 +180,78 @@ export function translate(key: string, language: string = "en"): string {
       account_deleted_message:
         "Cześć {name},\n\nTwoje konto w {appName} zostało usunięte przez administratora.\n\nPowód:\n{reason}\n\nJeśli uważasz, że to pomyłka, skontaktuj się z administratorem.",
     },
+    uk: {
+      welcome_cta: "Увійти",
+      board_invite_cta: "Відкрити дошку",
+      reset_password_cta: "Задати новий пароль",
+      reset_your_password_subject: "Скидання пароля",
+      reset_your_password_message:
+        "Натисніть це посилання, щоб задати новий пароль:",
+      password_reset_success: "Пароль успішно скинуто",
+      password_reset_email_sent:
+        "Посилання для скидання пароля надіслано на вашу пошту",
+      welcome_subject: "Ласкаво просимо",
+      welcome_signup_message:
+        "Вітаємо, {name}!\n\nЛаскаво просимо до {appName}! Ваш обліковий запис створено та готовий до роботи.\n\nУвійти можна будь-коли тут:\n{loginURL}",
+      welcome_admin_message:
+        "Вітаємо, {name}!\n\n{adminName} створив(-ла) для вас обліковий запис у {appName}.\n\nДані для входу:\nПошта: {email}\nПароль: {password}\n\nУвійти тут:\n{loginURL}\n\nЗ міркувань безпеки змініть пароль після першого входу.",
+      board_invite_subject: "Вас запросили на дошку",
+      board_invite_message:
+        'Вітаємо, {name}!\n\n{inviterName} запросив(-ла) вас на дошку "{boardName}" у {appName}.\n\nВаш доступ: {permission}\n\nВідкрити дошку:\n{boardURL}',
+      board_invite_permission_read: "лише читання",
+      board_invite_permission_edit: "читання та запис",
+      account_deleted_subject: "Ваш обліковий запис видалено",
+      account_deleted_message:
+        "Вітаємо, {name}!\n\nВаш обліковий запис у {appName} видалено адміністратором.\n\nПричина:\n{reason}\n\nЯкщо ви вважаєте це помилкою, зверніться до адміністратора.",
+    },
+    pt: {
+      welcome_cta: "Entrar",
+      board_invite_cta: "Abrir quadro",
+      reset_password_cta: "Definir nova senha",
+      reset_your_password_subject: "Redefinir sua senha",
+      reset_your_password_message:
+        "Clique neste link para definir uma nova senha:",
+      password_reset_success: "Senha redefinida com sucesso",
+      password_reset_email_sent:
+        "O link para redefinir a senha foi enviado para seu e-mail",
+      welcome_subject: "Bem-vindo",
+      welcome_signup_message:
+        "Olá {name},\n\nbem-vindo ao {appName}! Sua conta foi criada e está pronta para uso.\n\nVocê pode entrar a qualquer momento aqui:\n{loginURL}",
+      welcome_admin_message:
+        "Olá {name},\n\n{adminName} criou uma conta do {appName} para você.\n\nVocê pode entrar com os seguintes dados:\nE-mail: {email}\nSenha: {password}\n\nEntre aqui:\n{loginURL}\n\nPor segurança, altere sua senha após o primeiro acesso.",
+      board_invite_subject: "Você foi convidado para um quadro",
+      board_invite_message:
+        'Olá {name},\n\n{inviterName} convidou você para o quadro "{boardName}" no {appName}.\n\nSeu acesso: {permission}\n\nAbra o quadro aqui:\n{boardURL}',
+      board_invite_permission_read: "somente leitura",
+      board_invite_permission_edit: "leitura e escrita",
+      account_deleted_subject: "Sua conta foi excluída",
+      account_deleted_message:
+        "Olá {name},\n\nsua conta no {appName} foi excluída por um administrador.\n\nMotivo:\n{reason}\n\nSe você acha que isso foi um engano, entre em contato com o administrador.",
+    },
+    cs: {
+      welcome_cta: "Přihlásit se",
+      board_invite_cta: "Otevřít nástěnku",
+      reset_password_cta: "Nastavit nové heslo",
+      reset_your_password_subject: "Obnovení hesla",
+      reset_your_password_message:
+        "Kliknutím na tento odkaz nastavíte nové heslo:",
+      password_reset_success: "Heslo bylo úspěšně obnoveno",
+      password_reset_email_sent:
+        "Odkaz pro obnovení hesla byl odeslán na váš e-mail",
+      welcome_subject: "Vítejte",
+      welcome_signup_message:
+        "Dobrý den, {name},\n\nvítejte v {appName}! Váš účet byl vytvořen a je připraven k použití.\n\nPřihlásit se můžete kdykoli zde:\n{loginURL}",
+      welcome_admin_message:
+        "Dobrý den, {name},\n\n{adminName} pro vás vytvořil(a) účet v {appName}.\n\nPřihlásit se můžete těmito údaji:\nE-mail: {email}\nHeslo: {password}\n\nPřihlaste se zde:\n{loginURL}\n\nZ bezpečnostních důvodů si po prvním přihlášení změňte heslo.",
+      board_invite_subject: "Byli jste pozváni na nástěnku",
+      board_invite_message:
+        'Dobrý den, {name},\n\n{inviterName} vás pozval(a) na nástěnku "{boardName}" v {appName}.\n\nVáš přístup: {permission}\n\nOtevřete nástěnku zde:\n{boardURL}',
+      board_invite_permission_read: "pouze čtení",
+      board_invite_permission_edit: "čtení a zápis",
+      account_deleted_subject: "Váš účet byl smazán",
+      account_deleted_message:
+        "Dobrý den, {name},\n\nváš účet v {appName} byl smazán administrátorem.\n\nDůvod:\n{reason}\n\nPokud si myslíte, že jde o omyl, kontaktujte prosím administrátora.",
+    },
   };
 
   // Fallback to English if language not found or key not found
