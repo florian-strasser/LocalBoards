@@ -39,7 +39,6 @@
   "signUpBtn": "Jetzt registrieren",
   "successfullySignedUp": "Erfolgreich registriert",
   "privacyPolicy": "Datenschutzerklärung",
-  "privacyPolicyUrl": "https://www.florian-strasser.de/datenschutz/",
   "remove": "Entfernen",
   "delete": "Löschen",
   "save": "Speichern",
@@ -118,9 +117,9 @@
   "inviteMoreUser": "MEHR NUTZER EINLADEN",
   "invitationSent": "Einladung gesendet",
   "invitationRemoved": "Einladung gelöscht",
+  "enterAnAreaName": "Einen Bereichsnamen eingeben",
   "createNewArea": "Neuen Bereich erstellen",
   "createArea": "Bereich erstellen",
-  "enterAnAreaName": "Einen Bereichsnamen eingeben",
   "createNewCard": "Neue Karte erstellen",
   "enterAnCardName": "Geben Sie einen Namen ein",
   "createCard": "Karte erstellen",
@@ -318,5 +317,8 @@
   "activityAssigned": "hat diese Karte {name} zugewiesen",
   "activityUnassigned": "hat die Zuweisung entfernt",
   "activityDueSet": "hat das Fälligkeitsdatum auf {date} gesetzt",
-  "activityDueCleared": "hat das Fälligkeitsdatum entfernt"
+  "activityDueCleared": "hat das Fälligkeitsdatum entfernt",
+  "invitationInvalid": "Dieser Einladungslink ist nicht mehr gültig.",
+  "inviteByEmailHint": "Noch kein Konto — wir senden eine Einladung zu diesem Board per E-Mail.",
+  "signupDisabled": "Die Registrierung ist auf dieser Instanz deaktiviert."
 }

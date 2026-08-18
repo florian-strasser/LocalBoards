@@ -7,7 +7,9 @@
         <input
             :type="props.type"
             :required="props.required"
+            :readonly="props.readonly"
             class="form-control"
+            :class="{ 'opacity-70 cursor-not-allowed': props.readonly }"
             v-model="data"
         />
     </label>
@@ -17,6 +19,9 @@ const props = defineProps({
     type: String,
     label: String,
     required: Boolean,
+    // Shown but not editable — an invited address, for instance, where the
+    // whole point of the token is that it is good for that address only.
+    readonly: Boolean,
 });
 const data = defineModel();
 </script>

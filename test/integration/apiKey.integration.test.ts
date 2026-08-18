@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { db, migrate, resetData, insertUser } from "./db";
-import { verifyApiKey } from "../../server/utils/auth";
+import { verifyApiKey, getApiKeyUser } from "../../server/utils/auth";
 import { hashApiKey } from "../../server/utils/apiKey";
+import { fakeEvent } from "./event";
 
 beforeAll(async () => {
   await migrate();
@@ -74,5 +75,55 @@ describe("verifyApiKey (integration, real MySQL)", () => {
 
     const res = await verifyApiKey(plain);
     expect(res.error).toBeTruthy();
+  });
+});
+
+describe("getApiKeyUser (integration, real MySQL)", () => {
+  const plain = "abcdef0123456789abcdef0123456789";
+
+  beforeEach(async () => {
+    await insertUser("u1");
+    await insertApiKey({ id: "k1", key: hashApiKey(plain), userId: "u1" });
+  });
+
+  it("resolves a key from the x-api-key header", async () => {
+    const res = await getApiKeyUser(fakeEvent({ headers: { "x-api-key": plain } }));
+    expect(res?.user?.id).toBe("u1");
+  });
+
+  // Le Chat and the OpenAI Responses API can only send a bearer token, so the
+  // same key has to work that way round or those clients cannot connect at all.
+  it("resolves the same key from an Authorization: Bearer header", async () => {
+    const res = await getApiKeyUser(
+      fakeEvent({ headers: { authorization: `Bearer ${plain}` } }),
+    );
+    expect(res?.user?.id).toBe("u1");
+  });
+
+  it("accepts the bearer scheme case-insensitively", async () => {
+    const res = await getApiKeyUser(
+      fakeEvent({ headers: { authorization: `bearer ${plain}` } }),
+    );
+    expect(res?.user?.id).toBe("u1");
+  });
+
+  it("prefers x-api-key when both headers are present", async () => {
+    const res = await getApiKeyUser(
+      fakeEvent({
+        headers: { "x-api-key": plain, authorization: "Bearer not-a-key" },
+      }),
+    );
+    expect(res?.user?.id).toBe("u1");
+  });
+
+  it("returns null for a bearer value that is not a key", async () => {
+    const res = await getApiKeyUser(
+      fakeEvent({ headers: { authorization: "Bearer not-a-key" } }),
+    );
+    expect(res).toBeNull();
+  });
+
+  it("returns null when neither header is present", async () => {
+    expect(await getApiKeyUser(fakeEvent())).toBeNull();
   });
 });

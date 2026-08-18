@@ -317,5 +317,8 @@
   "activityAssigned": "assigned this to {name}",
   "activityUnassigned": "removed the assignee",
   "activityDueSet": "set the due date to {date}",
-  "activityDueCleared": "removed the due date"
+  "activityDueCleared": "removed the due date",
+  "invitationInvalid": "This invitation link is no longer valid.",
+  "inviteByEmailHint": "No account yet — we will e-mail an invitation to join this board.",
+  "signupDisabled": "Registration is disabled on this instance."
 }

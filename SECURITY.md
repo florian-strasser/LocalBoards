@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you believe you have discovered a security issue within LokalBoards, please open a new private security vulnerability report through https://github.com/florian-strasser/LokalBoards/security/advisories/new. Alternatively, reach out to me directly over email: admin@florian-strasser.de. We will then open a [GitHub Security Advisory](https://github.com/florian-strasser/LokalBoards/security/advisories) for tracking the fix on your
+If you believe you have discovered a security issue within LokalBoards, please open a new private security vulnerability report through https://github.com/florian-strasser/LokalBoards/security/advisories/new. Alternatively, reach out to me directly over email: info@lokalboards.com. We will then open a [GitHub Security Advisory](https://github.com/florian-strasser/LokalBoards/security/advisories) for tracking the fix on your
 behalf.
 
 We value the members of the independent security research community who find security vulnerabilities and work with us so that proper fixes can be issued to users. Our policy is to credit all researchers in the fix's release notes. In order to receive credit, security researchers must follow responsible disclosure practices, including:

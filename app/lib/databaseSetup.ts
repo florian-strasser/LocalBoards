@@ -569,6 +569,37 @@ const migrations: Migration[] = [
     },
   },
 
+  {
+    // Invitations to people who have no account yet. The board owner supplies an
+    // e-mail address, we send a link carrying a one-time token, and signing up
+    // through it both creates the account and grants the board access that was
+    // promised — so the invitation is honoured even on an instance where public
+    // signup is switched off.
+    //
+    // Only the token's SHA-256 is stored. It is a 256-bit random value rather
+    // than a password, so a single fast hash is the right choice: a leaked
+    // database cannot be used to accept an invitation, and verification stays an
+    // indexed equality lookup. (Same reasoning as `hashApiKey`.)
+    id: "0016_board_email_invites",
+    up: async (db) => {
+      await db.execute(`CREATE TABLE IF NOT EXISTS \`board_email_invites\` (
+        \`id\` int NOT NULL AUTO_INCREMENT,
+        \`board\` int NOT NULL,
+        \`email\` varchar(255) NOT NULL,
+        \`permission\` enum('read','edit') NOT NULL DEFAULT 'read',
+        \`tokenHash\` char(64) NOT NULL,
+        \`invitedBy\` varchar(36) NOT NULL,
+        \`expiresAt\` timestamp NOT NULL,
+        \`usedAt\` timestamp NULL DEFAULT NULL,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        UNIQUE KEY \`board_email_invites_token\` (\`tokenHash\`),
+        KEY \`board_email_invites_email\` (\`email\`),
+        KEY \`board_email_invites_board\` (\`board\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
   //   id: "0015_add_x",

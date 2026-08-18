@@ -1,7 +1,11 @@
 import { defineEventHandler, readBody, getQuery } from "h3";
 import { setupDatabase } from "../../../app/lib/databaseSetup";
 import { sendEmail } from "../../../app/lib/sendEmail";
-import { getBoardInviteEmail } from "../../utils/translations";
+import {
+  getBoardInviteEmail,
+  getBoardInviteSignupEmail,
+} from "../../utils/translations";
+import { createInviteToken, hashInviteToken } from "../../utils/inviteToken";
 
 const runtimeConfig = useRuntimeConfig();
 const appName = runtimeConfig.appName;
@@ -112,10 +116,30 @@ export default defineEventHandler(async (event) => {
         ? await db.query("SELECT * FROM user WHERE id = ?", [inviteUserId])
         : await db.query("SELECT * FROM user WHERE email = ?", [mail]);
       if (creatorRows.length === 0) {
-        // Do NOT reveal whether an account exists for this email address
-        // (prevents email enumeration by a board owner). Return the same generic
-        // success shape as a real invite — no invitation is created, and the UI
-        // only adds a row when `invitation` is present.
+        // Nobody here holds that address. If the caller gave us one, invite them
+        // to the instance: a token goes to the address, and signing up through
+        // it creates the account and grants this board. Without an address —
+        // i.e. a picked user id that no longer resolves — there is nothing to
+        // send, and the response stays the same either way so a board owner
+        // still cannot use this to discover which addresses have accounts.
+        if (mail) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          const address = String(mail).trim().toLowerCase();
+
+          if (emailRegex.test(address)) {
+            await inviteByEmail({
+              db,
+              boardId: Number(boardId),
+              board,
+              address,
+              permission,
+              invitedBy: userId,
+              appName,
+              baseURL,
+              language: defaultLanguage,
+            });
+          }
+        }
         return { message: "Invitation created successfully", invitation: null };
       }
       const creatorId = creatorRows[0].id;
@@ -248,3 +272,76 @@ export default defineEventHandler(async (event) => {
     return { error: "Internal server error" };
   }
 });
+
+// Invite an address that has no account here yet.
+//
+// Re-inviting the same address to the same board replaces the outstanding
+// invitation rather than accumulating live tokens: the newest link is the only
+// one that works, which is what somebody clicking "invite" a second time
+// expects — they think they are resending it.
+//
+// Best-effort by design. The board owner has already been told the invitation
+// was sent; a mail server that is briefly down should leave a row behind and a
+// line in the log, not an error on a screen they can do nothing about.
+async function inviteByEmail({
+  db,
+  boardId,
+  board,
+  address,
+  permission,
+  invitedBy,
+  appName,
+  baseURL,
+  language,
+}: {
+  db: any;
+  boardId: number;
+  board: any;
+  address: string;
+  permission: string;
+  invitedBy: string;
+  appName: string;
+  baseURL: string;
+  language: string;
+}) {
+  const token = createInviteToken();
+  const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+  try {
+    await db.execute(
+      "DELETE FROM `board_email_invites` WHERE `board` = ? AND `email` = ? AND `usedAt` IS NULL",
+      [boardId, address],
+    );
+    await db.execute(
+      "INSERT INTO `board_email_invites` (`board`, `email`, `permission`, `tokenHash`, `invitedBy`, `expiresAt`) VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        boardId,
+        address,
+        permission === "edit" ? "edit" : "read",
+        hashInviteToken(token),
+        invitedBy,
+        expiresAt,
+      ],
+    );
+  } catch (error) {
+    logger.error("Email invitation could not be stored:", error);
+    return;
+  }
+
+  try {
+    const [inviterRows] = await db.query("SELECT name FROM user WHERE id = ?", [
+      invitedBy,
+    ]);
+    const { subject, html } = getBoardInviteSignupEmail({
+      appName,
+      inviterName: inviterRows[0]?.name || appName,
+      boardName: board.name,
+      permission,
+      signupURL: `${baseURL}/sign-up/?invite=${token}`,
+      language,
+    });
+    await sendEmail({ to: address, subject, text: html });
+  } catch (mailError) {
+    logger.error("Email invitation could not be sent:", mailError);
+  }
+}

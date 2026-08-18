@@ -1,7 +1,8 @@
 import { getApiKeyUser } from "../utils/auth";
 
 // The MCP server that lets AI agents work with LokalBoards. Every request is
-// authenticated by the caller's API key (x-api-key header); the middleware
+// authenticated by the caller's API key (`x-api-key`, or a bearer token for
+// clients that can only send `Authorization`); the middleware
 // resolves the key to a user + its permission scopes and stashes them on the
 // event context for the tools (see server/mcp/helpers.ts).
 export default defineMcpHandler({
@@ -15,7 +16,8 @@ export default defineMcpHandler({
     "- A **card** has a name, a Markdown `content` (description), a done flag, an",
     "  optional due date and assignee, plus **comments** and **attachments**.",
     "",
-    "Authentication: send the user's API key in the `x-api-key` header. `whoami`",
+    "Authentication: send the user's API key in the `x-api-key` header, or as",
+    "`Authorization: Bearer <key>` if that is all your client can send. `whoami`",
     "returns who you are acting as. A read-only key can call the read tools but not",
     "create/update/move/delete.",
     "",

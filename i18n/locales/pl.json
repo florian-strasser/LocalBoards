@@ -165,6 +165,9 @@
   "settingsKeyExpiresIn365Days": "365 dni",
   "settingsSaveNewKey": "Utwórz nowy klucz",
   "savedKey": "Klucz zapisany",
+  "deleteKeyHeadline": "Czy chcesz usunąć ten klucz?",
+  "deleteKeyText": "Aplikacje korzystające z tego klucza stracą dostęp.",
+  "deleteKeyButton": "Usuń klucz",
   "keyDeleted": "Klucz usunięty",
   "settingsOldPassword": "Stare hasło",
   "settingsNewPassword": "Nowe hasło",
@@ -225,7 +228,7 @@
   "newPassword": "Nowe hasło",
   "generatePassword": "Wygeneruj hasło",
   "newPasswordMessage": "Tutaj możesz skopiować hasło, aby je zapisać lub przesłać osobie korzystającej z tego konta:",
-  "deleteCardHeadline": "Czy chcesz usunąć tę kartę?",
+  "deleteCardTitle": "Czy chcesz usunąć tę kartę?",
   "deleteCardBtn": "Usuń kartę",
   "cardDeleted": "Karta usunięta",
   "areas": "Obszary",
@@ -314,5 +317,8 @@
   "activityAssigned": "przypisał(a) to do {name}",
   "activityUnassigned": "usunął(-ęła) przypisanie",
   "activityDueSet": "ustawił(a) termin na {date}",
-  "activityDueCleared": "usunął(-ęła) termin"
+  "activityDueCleared": "usunął(-ęła) termin",
+  "invitationInvalid": "Ten link z zaproszeniem nie jest już ważny.",
+  "inviteByEmailHint": "Brak konta — wyślemy e-mailem zaproszenie do tej tablicy.",
+  "signupDisabled": "Rejestracja jest wyłączona w tej instancji."
 }

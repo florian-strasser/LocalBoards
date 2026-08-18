@@ -317,5 +317,8 @@
   "activityAssigned": "atribuiu isto a {name}",
   "activityUnassigned": "removeu o responsável",
   "activityDueSet": "definiu o prazo para {date}",
-  "activityDueCleared": "removeu o prazo"
+  "activityDueCleared": "removeu o prazo",
+  "invitationInvalid": "Esta ligação de convite já não é válida.",
+  "inviteByEmailHint": "Ainda sem conta — enviaremos por e-mail um convite para participar neste quadro.",
+  "signupDisabled": "O registo está desativado nesta instância."
 }

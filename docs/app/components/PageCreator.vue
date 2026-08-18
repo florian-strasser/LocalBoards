@@ -1,8 +1,8 @@
 <template>
-  <section>
+  <section class="section">
     <div class="container">
       <div
-        class="flex flex-col-reverse lg:grid lg:grid-cols-2 bg-white rounded-3xl"
+        class="flex flex-col-reverse lg:grid lg:grid-cols-2 bg-slate rounded-3xl"
       >
         <div class="px-8 sm:px-12 py-7 sm:py-10">
           <p class="text-primary sm:text-lg">Creator of LokalBoards</p>

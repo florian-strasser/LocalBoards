@@ -317,5 +317,8 @@
   "activityAssigned": "a attribué ceci à {name}",
   "activityUnassigned": "a retiré l'attribution",
   "activityDueSet": "a défini l'échéance au {date}",
-  "activityDueCleared": "a supprimé l'échéance"
+  "activityDueCleared": "a supprimé l'échéance",
+  "invitationInvalid": "Ce lien d'invitation n'est plus valide.",
+  "inviteByEmailHint": "Pas encore de compte — nous enverrons une invitation à rejoindre ce tableau par e-mail.",
+  "signupDisabled": "L'inscription est désactivée sur cette instance."
 }

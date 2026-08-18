@@ -1,12 +1,18 @@
 <template>
-  <div class="space-y-16">
-    <PageHero />
-    <PageFeatures />
-    <PageCreator />
+  <div>
+    <AppHeader light />
+    <main role="main">
+      <PageHero />
+      <PageAbout />
+      <PageFeatures />
+      <PagePricing />
+      <PageFaq />
+      <PageCta />
+    </main>
   </div>
 </template>
 <script setup lang="ts">
-useSeoMeta({
+usePageMeta({
   title: "Self-hosted Kanban boards for teams",
   description:
     "LokalBoards is an open-source (MIT License), self-hosted Kanban board system. It allows users to create boards, invite collaborators, and manage Kanban cards.",

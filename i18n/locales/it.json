@@ -228,7 +228,7 @@
   "newPassword": "Nuova password",
   "generatePassword": "Genera password",
   "newPasswordMessage": "Qui puoi copiare la password per salvarla o inviarla alla persona che utilizza questo account:",
-  "deleteCardHeadline": "Vuoi eliminare questa carta?",
+  "deleteCardTitle": "Vuoi eliminare questa carta?",
   "deleteCardBtn": "Elimina carta",
   "cardDeleted": "Carta eliminata",
   "areas": "Aree",
@@ -317,5 +317,8 @@
   "activityAssigned": "ha assegnato questa a {name}",
   "activityUnassigned": "ha rimosso l'assegnatario",
   "activityDueSet": "ha impostato la scadenza al {date}",
-  "activityDueCleared": "ha rimosso la scadenza"
+  "activityDueCleared": "ha rimosso la scadenza",
+  "invitationInvalid": "Questo link di invito non è più valido.",
+  "inviteByEmailHint": "Nessun account ancora: invieremo per e-mail un invito a unirsi a questa bacheca.",
+  "signupDisabled": "La registrazione è disattivata su questa istanza."
 }

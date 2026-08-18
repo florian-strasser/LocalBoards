@@ -1,126 +1,164 @@
 # Getting started
 
-LokalBoards is an open-source (MIT License), self-hosted Kanban board system. It allows users to create boards, invite collaborators, and manage Kanban cards. It also includes admin features for user management. All data is stored in your own database, with no reliance on external services.
+LokalBoards is an open-source (MIT) Kanban board you run on your own server.
+Boards, areas, cards, checklists, comments and files — all of it in your own
+database, with nothing phoning home and no third-party service in the path.
 
-We support real-time multiplayer updates. When you edit a card, area, or rename it, the changes are instantly reflected for all users viewing the board. Comments on cards are also updated in real-time across all browsers. This is powered by an internal Socket.IO integration.
+![A LokalBoards board with three areas of cards](/images/docs/board-kanban.webp)
 
-LokalBoards is currently available in the following languages: English (EN), German (DE), French (FR), Spanish (ES), Italian (IT), Dutch (NL), Polish (PL), Ukrainian (UK), Portuguese (PT), and Czech (CS).
+Boards are live for everyone on them: a card someone moves, a comment someone
+writes and a box someone ticks all appear immediately for anybody else looking,
+over an internal Socket.IO connection. It also ships an
+[MCP server](/docs/mcp-server), so an assistant can work a board through an API
+key you issue and can revoke.
 
-## Install
+The interface is available in ten languages: English, German, French, Spanish,
+Italian, Dutch, Polish, Ukrainian, Portuguese and Czech. Pick one with
+`NUXT_LANGUAGE`.
 
-To install LokalBoards, follow these steps:
+## The quickest start
 
-### Clone the Repository
+The published image carries its own MySQL, so one command gives you a working
+instance with nothing else to install:
+
+```bash
+docker run -d \
+  --name lokalboards \
+  -p 3000:3000 \
+  -v lokalboards_uploads:/app/public/uploads \
+  -v lokalboards_database:/var/lib/mysql \
+  -e NUXT_ADMIN_EMAIL=you@example.com \
+  -e NUXT_ADMIN_PASSWORD=a-long-password \
+  florianstrasser/lokalboards:latest
+```
+
+Open `http://localhost:3000` and sign in with the address and password you just
+set. Both volumes matter: the first keeps your attachments across updates, the
+second keeps the database.
+
+The database password is generated on first start and kept beside the data it
+protects, so no default is shared between instances and there is nothing to
+choose. MySQL listens on the container's loopback interface only; port 3306 is
+never published.
+
+## Running your own database
+
+For anything long-lived a separate database is the better arrangement — it can
+be backed up, upgraded and monitored on its own schedule. Set `NUXT_MYSQL_HOST`
+and the built-in one never starts:
+
+```bash
+docker run -d \
+  --name lokalboards \
+  -p 3000:3000 \
+  -v lokalboards_uploads:/app/public/uploads \
+  -e NUXT_MYSQL_HOST=db.internal \
+  -e NUXT_MYSQL_USER=lokalboards \
+  -e NUXT_MYSQL_PASSWORD=... \
+  -e NUXT_MYSQL_DATABASE=lokalboards \
+  florianstrasser/lokalboards:latest
+```
+
+An empty database is enough — the tables are created on first start, and every
+later start applies whatever schema changes are outstanding.
+
+> One thing to check if it applies to you: `NUXT_MYSQL_HOST` set to `localhost`,
+> `127.0.0.1` or `::1` selects the **built-in** database. An instance running
+> with `network_mode: host` that means the MySQL on the host would quietly use
+> the container's own instead. Any other hostname, including a Compose service
+> name, is unaffected.
+
+## Docker Compose
+
+Two files ship with the repository:
+[`docker-compose.yml`](https://github.com/florian-strasser/LokalBoards/blob/master/docker-compose.yml)
+for the bundled database, and
+[`docker-compose.external-db.yml`](https://github.com/florian-strasser/LokalBoards/blob/master/docker-compose.external-db.yml)
+for the app and MySQL side by side.
+
+```bash
+docker compose up -d
+```
+
+## Configuration
+
+Configuration is read from **environment variables at runtime**, so nothing ever
+has to be rebuilt to change a setting. Pass them as real environment variables
+(`--env-file`, Compose `environment:`, your host panel) or mount a `.env` at
+`/app/.env`. Real environment variables win over the file.
+
+```dotenv
+# App
+NUXT_APP_NAME=LokalBoards
+NUXT_BOARDS_URL=https://boards.example.com
+NUXT_LANGUAGE=en
+NUXT_PUBLIC_PRIVACY_URL=https://www.example.com/privacy-policy/
+NUXT_PUBLIC_SIGNUP=false
+
+# The first administrator, created at startup when the instance has none.
+NUXT_ADMIN_EMAIL=you@example.com
+NUXT_ADMIN_PASSWORD=a-long-password
+
+# Database — omit these entirely to use the one inside the image
+NUXT_MYSQL_HOST=db.internal
+NUXT_MYSQL_USER=lokalboards
+NUXT_MYSQL_PASSWORD=...
+NUXT_MYSQL_DATABASE=lokalboards
+# true if your database requires TLS (common for managed MySQL). Set
+# NUXT_MYSQL_SSL_REJECT_UNAUTHORIZED=false if its certificate cannot be
+# verified against a public CA.
+NUXT_MYSQL_SSL=false
+
+# E-mail, for invitations, password resets and the hourly digest
+NUXT_EMAIL_HOST=mail.example.com
+NUXT_EMAIL_PORT=465
+NUXT_EMAIL_SECURE=true
+NUXT_EMAIL_USER=contact@example.com
+NUXT_EMAIL_PASS=...
+```
+
+The colours are configurable too — see [Adjust Colors](/docs/adjust-colors).
+
+## Running from source
+
+If you would rather not use Docker, LokalBoards is an ordinary Nuxt application.
+It needs **Node 22** and a reachable **MySQL 8+**.
 
 ```bash
 git clone https://github.com/florian-strasser/LokalBoards
 cd LokalBoards
-```
-
-### Install Dependencies
-
-```bash
 npm install
-```
-
-### Configure Environment Variables
-Create a `.env` file (and optionally a `.env.local` file for local development) with the following settings. Adjust the values to match your database and email configuration. Additionally you can define the used language with `NUXT_LANGUAGE` and one of these properties: `en, de, fr, es, it, nl, pl`
-
-```dotenv
-# App Name
-NUXT_APP_NAME=LokalBoards
-NUXT_BOARDS_URL=http://localhost:3000
-NUXT_LANGUAGE=en
-NUXT_PUBLIC_PRIVACY_URL=https://www.yourdomain.com/privacy-policy/
-
-# DB
-NUXT_MYSQL_HOST=localhost
-NUXT_MYSQL_USER=root
-NUXT_MYSQL_PASSWORD=root1234
-NUXT_MYSQL_DATABASE=root
-# Set NUXT_MYSQL_SSL=true if your database requires a TLS connection
-# (common for managed/external MySQL). Optionally set
-# NUXT_MYSQL_SSL_REJECT_UNAUTHORIZED=false if its certificate can't be
-# verified against a public CA.
-NUXT_MYSQL_SSL=false
-
-# Email Configuration
-NUXT_EMAIL_HOST=mail.yourserver.de
-NUXT_EMAIL_PORT=465
-NUXT_EMAIL_SECURE=true
-NUXT_EMAIL_USER=contact@yourdomain.com
-NUXT_EMAIL_PASS=password1234
-```
-
-### Build the Application
-
-```bash
 npx nuxt build
 ```
 
-Move the builded app from /.output to your favorite hosting solution, that is able to run a nodejs app.
-
-### Run the Application
+The build lands in `.output`. Copy that to wherever you run Node, put your
+environment variables in place, and start it:
 
 ```bash
 node ./server/index.mjs
 ```
 
-## Run with Docker
+## Building the image yourself
 
-LokalBoards ships with a `Dockerfile` and is also published as a prebuilt image
-on Docker Hub. The image contains only the app — you still need a reachable
-**MySQL** database. The required tables are created automatically on first
-start, so an empty database is enough.
-
-### Using the prebuilt image (Docker Hub)
-
-The image is available at
-[hub.docker.com/r/florianstrasser/lokalboards](https://hub.docker.com/r/florianstrasser/lokalboards).
-
-Put your settings in a `.env` file (see [Configure Environment Variables](#configure-environment-variables)) and start the container. It listens on
-port `3000`, and uploaded files are stored in `/app/public/uploads`, so mount a
-volume there to keep them across updates:
+The build toolchain runs on your machine's architecture while the finished image
+may target another, so use `docker buildx` and name the platform of the **server**
+you are deploying to — otherwise the container fails to start with an
+`Exec format error`:
 
 ```bash
-docker pull florianstrasser/lokalboards:latest
-
-docker run -d \
-  --name lokalboards \
-  --env-file .env \
-  -p 3000:3000 \
-  -v lokalboards_uploads:/app/public/uploads \
-  florianstrasser/lokalboards:latest
-```
-
-For a self-contained setup including MySQL, a Docker Compose example is provided
-in the [project README](https://github.com/florian-strasser/LokalBoards#run-with-docker).
-
-### Building the image yourself
-
-You can build the image from the `Dockerfile` in the repository. Because the
-build toolchain runs on your machine's architecture while the final image can
-target another, use `docker buildx` and pick the platform of your **target
-server** (`linux/amd64` for most hosts) — otherwise the container fails to start
-with an `Exec format error`:
-
-```bash
-# one-time: a builder that supports cross-platform builds
+# one-time: a builder that can do cross-platform builds
 docker buildx create --use --name multiarch
 
-# build for the server architecture and push to your registry
+# build for the server's architecture and push
 docker buildx build --platform linux/amd64 -t <your-registry>/lokalboards:latest --push .
 ```
 
 The build stage is pinned to your machine's native architecture, so the heavy
-build runs natively (no slow/unstable emulation) while the runtime image targets
-the platform you requested.
+part runs natively rather than under emulation, while the runtime image targets
+the platform you asked for.
 
-### How configuration is applied
+## Next
 
-LokalBoards reads its configuration from **environment variables at runtime** —
-you never need to rebuild the image to change settings. Provide them either as
-real environment variables (`docker run --env-file`, Compose `environment:`, or
-your host panel's env settings) or as a `.env` file mounted at `/app/.env`
-(`-v /path/to/.env:/app/.env:ro`). Real environment variables take precedence
-over the mounted file.
+- [Boards](/docs/boards) — creating one, sharing it, and what the options do
+- [Users](/docs/users) — the first administrator, and inviting everyone else
+- [Health Check](/docs/health-check) — the endpoint to point a monitor at

@@ -15,6 +15,12 @@
 #   README_SHOT                   README screenshot written on each run
 #                                 (default docs/public/images/readme-screenshot.webp)
 #   README_SHOT_VIEW              which capture to use for it (default 26-modal-card)
+#   HERO_SHOT                     homepage hero screenshot written on each run
+#                                 (default docs/public/images/hero-screenshot.webp)
+#   HERO_SHOT_VIEW                which capture to use for it (default 11-board-kanban)
+#   HERO_SHOT_MOBILE              phone-shaped hero for the narrow homepage
+#                                 (default docs/public/images/hero-screenshot-mobile.webp)
+#   HERO_SHOT_MOBILE_VIEW         which capture to use for it (default 40-board-kanban-mobile)
 #   SKIP_BUILD=1                  reuse the existing .output build
 #   KEEP_DB=1                     don't drop the demo database at the end
 set -euo pipefail
@@ -39,6 +45,15 @@ README_SHOT="${README_SHOT:-docs/public/images/readme-screenshot.webp}"
 # description, checklist, attachments and the comment/activity timeline; the
 # plain board leaves the lower half of the image empty.
 README_SHOT_VIEW="${README_SHOT_VIEW:-26-modal-card}"
+# The homepage hero wants the opposite of what the README wants: the board
+# itself, so the first thing anyone sees is what LokalBoards looks like in use
+# rather than one card's detail view. Taken whole, at the captured 16:10 — the
+# demo board carries enough cards to fill it.
+HERO_SHOT="${HERO_SHOT:-docs/public/images/hero-screenshot.webp}"
+HERO_SHOT_VIEW="${HERO_SHOT_VIEW:-11-board-kanban}"
+# The same hero, shot at phone proportions, for the narrow homepage.
+HERO_SHOT_MOBILE="${HERO_SHOT_MOBILE:-docs/public/images/hero-screenshot-mobile.webp}"
+HERO_SHOT_MOBILE_VIEW="${HERO_SHOT_MOBILE_VIEW:-40-board-kanban-mobile}"
 export DEMO_DB_HOST DEMO_DB_USER DEMO_DB_PASS DEMO_DB_NAME DEMO_TOKEN
 export DEMO_BASE_URL="http://127.0.0.1:${DEMO_PORT}"
 export DEMO_LANGS
@@ -101,16 +116,34 @@ for lang in $DEMO_LANGS; do
   mkdir -p "$DEMO_OUT/$lang"
   node scripts/demo/screenshots.mjs "$DEMO_OUT/$lang"
 
-  # The README's screenshot is one of these captures, so it can never go stale:
-  # every run refreshes it from the first language's. Kept separate from
-  # lokalboards-screen.webp, which is the docs site's laptop composite.
-  if [ "$hero_done" != "1" ] && [ -f "$DEMO_OUT/$lang/$README_SHOT_VIEW.png" ]; then
+  # The README's and the homepage's screenshots are both among these captures,
+  # so neither can go stale: every run refreshes them from the first language's.
+  if [ "$hero_done" != "1" ]; then
     if command -v cwebp >/dev/null 2>&1; then
-      echo "==> refreshing README screenshot -> $README_SHOT"
-      cwebp -quiet -q 82 -resize 1440 0 "$DEMO_OUT/$lang/$README_SHOT_VIEW.png" -o "$README_SHOT"
+      if [ -f "$DEMO_OUT/$lang/$README_SHOT_VIEW.png" ]; then
+        echo "==> refreshing README screenshot -> $README_SHOT"
+        cwebp -quiet -q 82 -resize 1440 0 "$DEMO_OUT/$lang/$README_SHOT_VIEW.png" -o "$README_SHOT"
+      fi
+      if [ -f "$DEMO_OUT/$lang/$HERO_SHOT_VIEW.png" ]; then
+        echo "==> refreshing hero screenshot -> $HERO_SHOT"
+        cwebp -quiet -q 82 -resize 1440 0 "$DEMO_OUT/$lang/$HERO_SHOT_VIEW.png" -o "$HERO_SHOT"
+      fi
+      if [ -f "$DEMO_OUT/$lang/$HERO_SHOT_MOBILE_VIEW.png" ]; then
+        echo "==> refreshing mobile hero screenshot -> $HERO_SHOT_MOBILE"
+        # Trimmed from the top rather than shipped at the phone's own 1:2.2. A
+        # full-height screenshot fills the whole viewport in the hero, and the
+        # bytes for the last stretch of it are spent on something nobody scrolls
+        # to; 1:1.9 keeps the picture tall enough to read as a phone while
+        # taking about a tenth off the bottom. Derived from the capture, so it
+        # survives a change of device size.
+        _mw=$(sips -g pixelWidth "$DEMO_OUT/$lang/$HERO_SHOT_MOBILE_VIEW.png" | awk '/pixelWidth/{print $2}')
+        _mh=$(( _mw * 19 / 10 ))
+        cwebp -quiet -q 82 -crop 0 0 "$_mw" "$_mh" -resize 786 0 \
+          "$DEMO_OUT/$lang/$HERO_SHOT_MOBILE_VIEW.png" -o "$HERO_SHOT_MOBILE"
+      fi
       hero_done=1
     else
-      echo "==> skipping README screenshot refresh: cwebp not installed (brew install webp)"
+      echo "==> skipping screenshot refresh: cwebp not installed (brew install webp)"
     fi
   fi
   stop_server

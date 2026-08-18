@@ -317,5 +317,8 @@
   "activityAssigned": "přiřadil(a) toto uživateli {name}",
   "activityUnassigned": "odebral(a) řešitele",
   "activityDueSet": "nastavil(a) termín na {date}",
-  "activityDueCleared": "odebral(a) termín"
+  "activityDueCleared": "odebral(a) termín",
+  "invitationInvalid": "Tento pozvánkový odkaz už není platný.",
+  "inviteByEmailHint": "Účet zatím neexistuje — pošleme e-mailem pozvánku na tuto nástěnku.",
+  "signupDisabled": "Registrace je na této instanci vypnutá."
 }

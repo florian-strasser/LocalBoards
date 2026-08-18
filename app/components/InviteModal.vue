@@ -100,7 +100,7 @@
                     @blur="onBlur"
                 />
                 <ul
-                    v-if="showList"
+                    v-if="showList && !invitingByEmail"
                     class="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-auto rounded-xl border border-gray/20 dark:border-white/15 bg-white dark:bg-slate shadow-xl p-1"
                 >
                     <li
@@ -148,6 +148,16 @@
                         </button>
                     </li>
                 </ul>
+                <!-- Nobody here matches, and what was typed is an address. This
+                     sits under the field rather than in the list: it is not an
+                     option to pick, and as a list item it covered the very
+                     controls the reader needs next. -->
+                <p
+                    v-if="invitingByEmail"
+                    class="mt-2 rounded-lg bg-primary/10 px-3 py-2 text-sm text-gray"
+                >
+                    {{ $t("inviteByEmailHint") }}
+                </p>
             </div>
             <div>
                 <label class="mb-1 block text-sm/6 font-medium text-gray">{{
@@ -164,7 +174,7 @@
             </div>
             <input
                 type="submit"
-                :disabled="!selectedUser"
+                :disabled="!selectedUser && !typedEmail"
                 class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
                 :value="$t('sendInvitation')"
             />
@@ -243,14 +253,33 @@ const { data: session } = await useFetch("/api/auth/get-session");
 
 const userID = session.value.data.user.id;
 
+// A full e-mail address typed into the search box, when it matched nobody here.
+// That is the case the invitation link exists for: the address is sent an
+// invitation to create an account, and signing up through it joins this board.
+const typedEmail = computed(() => {
+    if (selectedUser.value) return "";
+    const value = search.value.trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? value : "";
+});
+
+// A typed address the directory could not match. Both the note under the field
+// and the closing of the suggestion list hang off this: with no account to pick
+// there is nothing for the list to offer.
+const invitingByEmail = computed(
+    () => !!typedEmail.value && !loading.value && results.value.length === 0,
+);
+
 const createInvitation = async () => {
-    if (!selectedUser.value) return;
+    if (!selectedUser.value && !typedEmail.value) return;
     try {
         const data = await $fetch("/api/data/invite", {
             method: "POST",
             body: {
                 boardId: Number(props.boardID),
-                userId: selectedUser.value.id,
+                // One or the other: a picked account, or an address to invite.
+                ...(selectedUser.value
+                    ? { userId: selectedUser.value.id }
+                    : { mail: typedEmail.value }),
                 permission: invitePermission.value,
             },
         });

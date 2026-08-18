@@ -41,6 +41,18 @@ const auth = await browser.newContext({ viewport, deviceScaleFactor: 2 });
 await auth.addCookies([{ name: "session_token", value: TOKEN, url: base }]);
 const pub = await browser.newContext({ viewport, deviceScaleFactor: 2 });
 
+// A phone-shaped pass, for the one place a 1440-wide board is the wrong picture:
+// the homepage hero, where a desktop screenshot scaled to a phone's width turns
+// the cards into unreadable specks. Only the board is captured this way — the
+// rest of the gallery documents the interface people work in.
+const phone = await browser.newContext({
+  viewport: { width: 393, height: 852 },
+  deviceScaleFactor: 3,
+  isMobile: true,
+  hasTouch: true,
+});
+await phone.addCookies([{ name: "session_token", value: TOKEN, url: base }]);
+
 // --- Public pages (no session) ---
 await shot(pub, "01-sign-in", "/");
 await shot(pub, "02-sign-up", "/sign-up");
@@ -104,6 +116,9 @@ await shot(auth, "29-modal-delete-user", "/users", async (p) => {
   await p.locator("li", { hasText: "Ben Schmidt" }).locator("button").last().click();
   await p.waitForTimeout(600);
 });
+
+// --- Phone ---
+await shot(phone, "40-board-kanban-mobile", "/board/1");
 
 console.log(results.join("\n"));
 const failed = results.filter((r) => r.startsWith("FAIL")).length;

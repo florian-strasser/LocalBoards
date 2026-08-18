@@ -228,7 +228,7 @@
   "newPassword": "Nueva contraseña",
   "generatePassword": "Generar contraseña",
   "newPasswordMessage": "Aquí puedes copiar la contraseña para guardarla o enviársela a la persona que utiliza esta cuenta:",
-  "deleteCardHeadline": "¿Quieres eliminar esta tarjeta?",
+  "deleteCardTitle": "¿Quieres eliminar esta tarjeta?",
   "deleteCardBtn": "Eliminar tarjeta",
   "cardDeleted": "Tarjeta eliminada",
   "areas": "Áreas",
@@ -317,5 +317,8 @@
   "activityAssigned": "asignó esto a {name}",
   "activityUnassigned": "quitó la asignación",
   "activityDueSet": "fijó la fecha de vencimiento en {date}",
-  "activityDueCleared": "quitó la fecha de vencimiento"
+  "activityDueCleared": "quitó la fecha de vencimiento",
+  "invitationInvalid": "Este enlace de invitación ya no es válido.",
+  "inviteByEmailHint": "Aún no tiene cuenta: enviaremos por correo una invitación para unirse a este tablero.",
+  "signupDisabled": "El registro está desactivado en esta instancia."
 }

@@ -1,33 +1,41 @@
 @import "tailwindcss";
 
-/* Inter, self-hosted — the same face and the same files the app uses, so the
-   product and its documentation read as one thing. No font CDN is contacted;
+/* Inter Tight, self-hosted — the marketing site's typeface. Tighter letter
+   spacing than Inter, which is what the large display sizes on the homepage
+   want; the app itself stays on Inter. No font CDN is contacted, and
    `latin-ext` carries the accented characters the German pages need.
    SIL Open Font License 1.1 — see public/fonts/Inter-LICENSE.txt. */
 @font-face {
-  font-family: "Inter";
+  font-family: "Inter Tight";
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url("/fonts/inter-latin.woff2") format("woff2");
+  src: url("/fonts/inter-tight-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
     U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
     U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: "Inter";
+  font-family: "Inter Tight";
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url("/fonts/inter-latin-ext.woff2") format("woff2");
+  src: url("/fonts/inter-tight-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
     U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
     U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+  --font-sans: "Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* One step below `sm` (40rem), for the phones the other breakpoints never
+     separate: `sm` already covers a 390px iPhone, so anything meant for a small
+     screen alone had nowhere to live. Being a breakpoint rather than a one-off
+     media query, it works both ways round — `xs:` from 30rem up, `max-xs:`
+     below it, which is the half that "only the smallest phones" usually wants. */
+  --breakpoint-xs: 30rem;
 
   /* The app's palette, verbatim, so the documentation and the product it
      documents are the same colour. Only the light values are taken: this site
@@ -49,16 +57,62 @@
   --color-code-text: #1d1d1f;
   --color-code-border: #d2d2d7;
 }
+html {
+  /* No `scrollbar-gutter` here, and nothing else that touches the page's own
+     scrollbar. Declaring a gutter makes a browser draw the reserved, always-on
+     bar instead of the platform's overlay one, which is thinner and not what
+     the rest of the system looks like. It was reserving space against a scroll
+     lock that no longer exists — the menu stops Lenis rather than setting
+     `overflow: hidden`, so the bar never leaves and there is no space to hold
+     open for it. */
+  font-size: 16px;
+  font-size: clamp(16px, 0.833vw, 96px);
+}
 html,
 body {
-  background: var(--color-slate);
+  /* White page, grey tiles — the same relationship the app has, where the
+     surface is the quiet layer and the panels sit on top of it. */
+  background: var(--color-white);
   color: var(--color-gray);
 }
+/* Last, so it wins wherever it applies: while the small-screen menu is open the
+   page's bar is painted transparent rather than removed. The menu is a
+   scrolling panel of its own and two tracks side by side is one too many — but
+   hiding the bar outright would take its width back out of the layout and
+   reintroduce the very shift the gutter above is there to prevent. Colour costs
+   no space. */
+html.menu-open {
+  scrollbar-color: transparent transparent;
+}
+
+/* One width for every section on the site. Sections used to set their own
+   `max-w-4xl` / `max-w-5xl` / `max-w-2xl`, so nothing lined up down the page
+   and the left edge moved as you scrolled. */
 .container {
-  padding-left: 2rem;
-  padding-right: 2rem;
+  width: 100%;
+  max-width: 72rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
   margin-left: auto;
   margin-right: auto;
+}
+@media (min-width: 640px) {
+  .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* And one rhythm between them, for the same reason. */
+.section {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+@media (min-width: 640px) {
+  .section {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
 }
 
 .hide-scrollbar {
@@ -156,8 +210,11 @@ body {
    the spaces inside code to reach both margins; and a white background on a
    white content box meant the block had no edge at all. `pre-wrap` keeps the
    indentation and still wraps a long command rather than forcing a horizontal
-   scrollbar. */
-.wysiwyg-wrapper > pre {
+   scrollbar. A descendant selector rather than a child one, because the blocks
+   inside a `::code-example` sit a few levels down and were left unstyled — no
+   background, no padding, and no wrapping, so a long cURL line pushed the whole
+   page sideways. */
+.wysiwyg-wrapper pre {
   margin-top: 1rem;
   padding: 1rem 1.25rem;
   background: var(--color-code-bg);
@@ -183,11 +240,96 @@ body {
     "Liberation Mono", "Courier New", monospace;
   font-size: 0.875em;
 }
+/* Body links in the documentation and the reference. They had no styling at
+   all: the same grey as the sentence around them and no underline, so every
+   cross-reference on every page — and there are a great many — was invisible as
+   a link and only discoverable by running a cursor over the text.
+
+   Body links only. Nuxt Content wraps each heading in an anchor to itself, so a
+   bare `a` rule would turn the whole outline blue. */
+.wysiwyg-wrapper p a,
+.wysiwyg-wrapper li a,
+.wysiwyg-wrapper td a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+.wysiwyg-wrapper p a:hover,
+.wysiwyg-wrapper li a:hover,
+.wysiwyg-wrapper td a:hover {
+  color: var(--color-primary-hover);
+}
+/* An inline-code link — `PATCH /api/data/board` pointing at its page — keeps
+   the chip and takes the colour, rather than sitting in a blue box. */
+.wysiwyg-wrapper p a code,
+.wysiwyg-wrapper li a code,
+.wysiwyg-wrapper td a code {
+  color: inherit;
+}
+/* Parameter tables. Without any styling at all the cells ran together —
+   "integeryes" where a type met a "required" — so the reference was unreadable
+   exactly where it has to be precise. Rows are separated by a hairline rather
+   than boxed in: the columns are short and the borders would out-shout them.
+   The table fills the measure so its rules line up with everything else; only
+   the first three columns — a name, a type and a yes or no — are kept off the
+   wrap, and the description takes whatever is left. */
+.wysiwyg-wrapper table {
+  width: 100%;
+  table-layout: auto;
+  margin-top: 1rem;
+  border-collapse: collapse;
+  font-size: 0.9375em;
+}
+.wysiwyg-wrapper th,
+.wysiwyg-wrapper td {
+  padding: 0.55em 1em 0.55em 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid color-mix(in oklab, var(--color-gray) 15%, transparent);
+}
+.wysiwyg-wrapper th {
+  color: var(--color-dark);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.wysiwyg-wrapper tr:last-child td {
+  border-bottom: 0;
+}
+/* A parameter's name, type and whether it is required are all short, and read
+   better unwrapped. Never the last cell, though: in a two-column table that is
+   the prose, and holding it on one line pushed the page sideways on a phone. */
+.wysiwyg-wrapper td:not(:last-child):nth-child(-n + 3) {
+  white-space: nowrap;
+}
+/* Below `xs` a four-column parameter table does not fit however it is wrapped —
+   an id or a variable name is one unbreakable word wider than the screen, and
+   `/api/card` pushed 58px past the edge of a 320px one. There the table becomes
+   its own scrolling box: it slides sideways under a finger while the page
+   behind it stays put, which is the usual bargain for a wide table on a narrow
+   screen and better than breaking identifiers mid-word. */
+@media (width < 30rem) {
+  .wysiwyg-wrapper table {
+    display: block;
+    overflow-x: auto;
+    width: max-content;
+    max-width: 100%;
+  }
+  .wysiwyg-wrapper td {
+    white-space: normal;
+  }
+}
+/* Screenshots in the documentation. They are pictures of an interface that is
+   itself mostly white, so they need an edge of their own or they bleed into the
+   page; the radius matches the panels in the app they are showing. */
 .wysiwyg-wrapper img {
   display: block;
   height: auto;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
   max-width: 100%;
+  border-radius: 0.9rem;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-gray) 18%, transparent);
 }
 .has-triangle-bottom::before,
 .has-triangle-top::before {
@@ -209,4 +351,272 @@ body {
   border-left: 0.5rem transparent solid;
   border-right: 0.5rem transparent solid;
   border-bottom: 0.5rem var(--color-primary) solid;
+}
+
+/* --- The classes FadeInBottom and FaqItem reach for -----------------------
+   They are global rather than scoped to those components because the animation
+   has to be in place on first paint, before either component runs. */
+
+/* The starting state FadeInBottom animates out of. It has to be CSS rather
+   than an inline style: the element must already be shifted and invisible on
+   first paint, before any JavaScript has run. */
+.fadeInBottom {
+  opacity: 0;
+  transform: translateY(4rem);
+}
+
+
+.faq-frage {
+  padding: 1rem 2rem;
+}
+.faq-frage .active-bars {
+  width: 1em;
+  height: 1em;
+  margin-left: 1em;
+  position: relative;
+}
+/* Two bars crossed into a plus; the second rotates away to leave a minus. */
+.faq-frage .active-bars .bar {
+  position: absolute;
+  width: 1em;
+  height: 0.1em;
+  background: currentColor;
+}
+.faq-antwort .faq-inner-antwort {
+  padding: 2rem;
+  padding-top: 0;
+}
+.faq-antwort ul li {
+  position: relative;
+  padding-left: 2rem;
+}
+.faq-antwort ul li::before {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 0;
+  width: 1em;
+  height: 0.05em;
+  background: currentColor;
+  display: block;
+  content: "";
+}
+
+/* Without JavaScript-driven motion the tiles must still be visible, so the
+   starting state is neutralised rather than animated away. */
+@media (prefers-reduced-motion) {
+  .fadeInBottom {
+    opacity: 1;
+    transform: translateY(0rem);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Fragments of the app, shared by the feature demos.
+
+   These mirror the real components rather than approximating them: a white
+   area panel, grey cards inside it, the card's status circle and meta row, the
+   primary button. Kept here instead of repeated across a dozen scoped blocks,
+   and sized in `em` so a demo can scale the whole fragment with one font-size.
+   --------------------------------------------------------------------------- */
+.ui {
+  /* One size for a whole fragment, tied to the tile it sits in rather than
+     fixed. At 0.7rem flat, the realtime demo's three columns became narrower
+     than the "Create new card" button inside them — the button does not wrap,
+     so it hung out of the tile by 10px on a 390px screen and 34px on a 320px
+     one. Scaling the fragment keeps every piece in proportion, which a
+     narrower column or a smaller button would not.
+
+     The cap is the size it always was, reached at a 361px-wide tile, so nothing
+     changes on a desktop; the floor stops the smallest screens rendering an
+     illegible board. */
+  font-size: clamp(0.55rem, 3.1cqw, 0.7rem);
+  line-height: 1.25;
+}
+.ui-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 0.7em;
+  border-radius: 0.7em;
+  background: var(--color-white);
+}
+.ui-area__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  color: var(--color-dark);
+  font-weight: 700;
+}
+.ui-area__head svg {
+  width: 1.05em;
+  height: 1.05em;
+  color: var(--color-primary);
+  flex: none;
+}
+.ui-card {
+  padding: 0.5em;
+  border-radius: 0.45em;
+  /* The app tints the foreground colour rather than using a surface of its
+     own, which is what lets one set of values work in both themes. */
+  background: color-mix(in oklab, var(--color-dark) 10%, transparent);
+}
+.ui-card__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.ui-card__title {
+  color: var(--color-dark);
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-status {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 999px;
+  border: 0.15em solid var(--color-gray);
+  color: transparent;
+}
+.ui-status svg {
+  width: 0.85em;
+  height: 0.85em;
+}
+.ui-status--done {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+.ui-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65em;
+  margin-top: 0.3em;
+  padding-left: 1.8em;
+  color: var(--color-gray);
+  font-size: 0.9em;
+}
+.ui-meta__item {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  flex: none;
+}
+.ui-meta__item svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  align-self: flex-start;
+  padding: 0.45em 0.7em;
+  border-radius: 0.45em;
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ui-button svg {
+  width: 1.1em;
+  height: 1.1em;
+  flex: none;
+}
+.ui-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-white);
+  font-size: 0.8em;
+  font-weight: 600;
+}
+.ui-input {
+  padding: 0.45em 0.6em;
+  border-radius: 0.45em;
+  border: 1px solid color-mix(in oklab, var(--color-gray) 22%, transparent);
+  background: color-mix(in oklab, var(--color-gray) 6%, var(--color-white));
+  color: var(--color-dark);
+}
+.ui-code {
+  padding: 0.8em;
+  border-radius: 0.6em;
+  background: var(--color-code-bg);
+  color: var(--color-code-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.95em;
+  line-height: 1.6;
+  overflow: hidden;
+}
+.ui-code__comment {
+  color: color-mix(in oklab, var(--color-code-text) 55%, transparent);
+}
+.ui-code__key {
+  color: var(--color-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   The wipe between pages.
+
+   Both halves are one pseudo-element on the page being animated, moved with
+   `clip-path`: on the way out a panel in the primary colour sweeps up from
+   below to cover the page; on the way in the same panel carries on up and off
+   the top, uncovering the new one. The `opacity` transition on the page itself
+   is not a fade — it stays at 1 throughout, and exists only to hold the element
+   in the DOM for the 0.4s the wipe needs.
+   --------------------------------------------------------------------------- */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.4s;
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 1;
+}
+.page-enter-active::before,
+.page-leave-active::before {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  display: block;
+  transition: 0.4s clip-path;
+  content: "";
+  pointer-events: none;
+  z-index: 9999;
+  background: var(--color-primary);
+}
+.page-enter-active::before {
+  clip-path: polygon(0 100%, 100% 100%, 100% 0, 0 0);
+}
+.page-enter-to::before {
+  clip-path: polygon(0 0, 100% -20%, 100% -20%, 0 0);
+}
+.page-leave-active::before {
+  clip-path: polygon(0 100%, 100% 120%, 100% 120%, 0% 100%);
+}
+.page-leave-to::before {
+  clip-path: polygon(0 100%, 100% 100%, 100% 0, 0 0);
+}
+
+/* A full-screen panel sweeping past is not something to impose on a reader who
+   has asked for less motion. The pages still swap, just without the wipe. */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active::before,
+  .page-leave-active::before {
+    display: none;
+  }
 }

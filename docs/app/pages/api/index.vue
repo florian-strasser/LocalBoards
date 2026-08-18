@@ -1,26 +1,26 @@
 <template>
-  <div class="container">
-    <div class="flex flex-col-reverse lg:flex-row gap-12 items-start">
-      <DocsNav :menuItems="menuApi" />
-      <ContentWrapper>
-        <ContentRenderer
-          v-if="install"
-          :value="install"
-          class="wysiwyg-wrapper"
-        />
-      </ContentWrapper>
-    </div>
+  <div>
+    <AppHeader />
+    <main role="main" class="container pt-30 pb-16 sm:pb-24">
+      <div class="flex flex-col gap-10 md:flex-row md:gap-12 md:items-start">
+        <DocsNav />
+        <ContentWrapper>
+          <ContentRenderer
+            v-if="install"
+            :value="install"
+            class="wysiwyg-wrapper"
+          />
+        </ContentWrapper>
+      </div>
+    </main>
   </div>
 </template>
 <script setup lang="ts">
-const { data: menuApi } = await useAsyncData("navigationApi", () => {
-  return queryCollectionNavigation("api").order("title", "ASC");
-});
 const { data: install } = await useAsyncData(() =>
   queryCollection("api").path("/api/").first(),
 );
 
-useSeoMeta({
+usePageMeta({
   title: install.value?.title,
   description: install.value?.description,
 });

@@ -1,10 +1,9 @@
 <template>
     <div>
         <NuxtRouteAnnouncer />
-        <AppHeader />
-        <main role="main">
+        <SmoothScroll>
             <NuxtPage />
-        </main>
-        <AppFooter />
+            <AppFooter />
+        </SmoothScroll>
     </div>
 </template>

@@ -1,3 +1,176 @@
+## v0.28.0
+
+### New Features
+
+- **Invite somebody who has no account yet.** Until now a board could only be shared with a person who was already on the instance, so bringing in a colleague meant an admin creating their account first. Type a full e-mail address into the invite dialog instead and they are sent a link that creates their account and joins them to the board in one step, with the read or write access you chose.
+
+  The link is a 256-bit random token, of which only the SHA-256 is stored. It is good for **one** registration, expires after **14 days**, and carries the address it was issued to — the sign-up form shows that address and will not let it be changed, and the server pins it regardless of what the request asks for. Inviting the same address again replaces the outstanding link rather than leaving two live.
+
+  It works on an instance with `NUXT_PUBLIC_SIGNUP=false`, which is the point of it: the board owner decides who joins, not the sign-up form. The account and the board access are created in one transaction with the token being spent, so two people racing the same link cannot both get in — one wins and the other's registration rolls back whole.
+
+  Verified end to end against a real database, on an instance with public signup **disabled**: signing up without a token was refused; signing up with the token created the account, granted the board, and spent the link; the request asked to register `attacker@evil.com` and got `newcomer@example.com`, the address the invitation was issued to; the invited user's dashboard showed the board immediately after signing up; and replaying the link, or using an expired one, created nothing.
+
+- **The first administrator comes from the environment.** Set `NUXT_ADMIN_EMAIL` and `NUXT_ADMIN_PASSWORD` and a fresh instance starts with an admin account already in place, rather than asking you to sign up and then change a `role` column in MySQL by hand. `NUXT_ADMIN_NAME` is optional and defaults to "Administrator".
+
+  It is written to be safe to leave configured for ever:
+
+  - It only acts when the instance has **no administrator at all**. Once one exists the variables are ignored, so a role changed in the interface is never quietly reapplied from a stale environment.
+  - An address that already has an account is **promoted in place** and its password is left alone. No password is ever overwritten from the environment.
+  - Nothing secret reaches the log — not the password, not the hash. The address is the most it will say.
+  - A failure is logged rather than thrown. A typo in the address must not stop a running service.
+
+  That also makes it a recovery hatch: if the last administrator is ever deleted, restarting with these set restores access.
+
+  One thing found while testing it: the `1.` filename prefix does **not** reliably order a Nitro plugin after `0.database-migrate.ts`. On a fresh database the bootstrap reached the `user` table 73 ms before the migrations created it. It now waits for the schema itself through the memoised `runMigrations()`, so it awaits the same run rather than starting a second one.
+
+  Verified end to end against a real database: created the account and signed in with it (200, and 401 on a wrong password); a restart with a *different* `NUXT_ADMIN_PASSWORD` left the stored hash untouched; demoting the admin and restarting promoted the same account back without touching its password; an invalid address and a too-short password each logged one clear error, created nothing, and left the server serving; and with nothing configured it says nothing at all.
+
+  The documentation's "access your database directly" instruction is gone with it.
+
+- **The MCP server accepts its key as a bearer token too.** `x-api-key` remains the documented header, and `Authorization: Bearer <key>` is now the same thing. This is not a preference: Mistral's Le Chat sends credentials only as an `Authorization` header, and the OpenAI Responses API passes its `authorization` value the same way — so an instance that read one header name was simply unreachable from both, whatever the user typed. `x-api-key` still wins when a caller sends both, and the bearer form is only consulted for API-key resolution, which the endpoints that also accept session tokens reach after resolving the session.
+
+  The MCP documentation now says how to connect from each client — Claude Code, Claude Desktop, claude.ai, Le Chat, the OpenAI API — and, as plainly, where it cannot: ChatGPT's custom connectors take OAuth or nothing at all, so a LokalBoards instance cannot be added there today. The unauthorized message and the server's own instructions name both headers.
+
+  Six integration tests cover it against a real database, and the flow was checked end to end against a running instance: `tools/list` and a `listBoards` call both succeed with a bearer key and with `x-api-key`, an unauthenticated tool call is still refused, and the tool catalogue stays public.
+
+### Fixes
+
+- **The invitation link bounced off an instance with signup disabled.** `NUXT_PUBLIC_SIGNUP=false` sent every `/sign-up` request to the front page, invitation links included — which defeated the one case the feature exists for. The route middleware now lets `/sign-up` through when the URL carries a 64-hex invitation token. Only the shape is checked there; whether the token is real, unspent and unexpired stays the server's answer, so a bad link lands on the form with a message rather than on a silent redirect.
+
+  Verified against a real database on an instance with signup **off**: `/sign-up/` alone still redirects, `?invite=` with a malformed token still redirects, and a genuine link opens the form with the invited address filled in and read-only, creates the account, grants the board with the permission it was issued for, and spends the token.
+
+- **An e-mail invitation could be typed but not sent.** The permissions dialog recognised an address with no account and said what would happen — and then left **Send invitation** disabled, because the button was gated on a *picked* account and an invitation by address has none to pick. It is enabled by a valid address as well now, which is the whole point of the feature.
+
+  The note explaining it moved out of the suggestion list and under the field. As a list item it was pretending to be something to choose, and it covered the read/write control the reader needs next; the list now closes when there is no account to offer.
+
+- **Four languages were missing the card-deletion prompt.** Spanish, Italian, Dutch and Polish still had it under `deleteCardHeadline`, the name it went by before the key was renamed to `deleteCardTitle` — so the text existed, correctly translated, and the interface never used it. Polish was also missing all three of the API-key deletion strings. Both are now where the code looks for them.
+
+- **A refused registration answered with `200`.** `POST /api/auth/sign-up` on an instance with signup switched off returned `{ "error": "DISABLED_SIGNUP" }` under a success status — fine for the sign-up form, which reads the body, but an error wearing a success code for anything reading the status: proxies, logs, monitoring. It is a `403` now, and the form shows a translated message rather than a raw failure.
+
+### Documentation
+
+- **The documentation was rewritten against the actual interface.** Every page was checked against a running instance, and the steps were wrong in more places than the prose suggested: there is no "Edit" button on a board (it is **⋮ › Board options**), no "Add Card" or "Add Area" button (**Create new card**, **Create new area**), and inviting somebody never worked by typing an address into a field — the dialog searches accounts that already exist. Checklists, due dates, assignees, attachments, the image lightbox and agent accounts were not documented at all.
+
+  Eleven screenshots taken from the demo capture run now illustrate the dashboard, the create and options dialogs, permissions, deletion, an open card, the lightbox and both board layouts — 544 KB of WebP for all of them.
+
+  Two pages were materially out of date rather than merely thin. **Getting started** still said the image "contains only the app — you still need a reachable MySQL", which stopped being true when the image gained its own database; it now opens with the one-command install and keeps the external-database route beside it, points at the two Compose files that ship with the repository, and lists all ten languages rather than seven. **MCP Server** was a connection snippet; it now lists the twenty-six tools by area, explains `claimCard`/`releaseCard` for keeping two agents off the same card, and says to give an assistant its own marked account.
+
+  **Disable Signup** used to end at the flag. It now says how people still get in — a board invitation or an admin-created account — because an instance with signup off is otherwise a locked door with no key.
+
+- **The API reference was rewritten, with examples in five languages.** Every request now carries a tabbed block showing the same call as cURL, JavaScript `fetch`, a Vue `<script setup>` component, a React component and PHP with curl — and the language is remembered, so picking Vue once turns every example on every page into Vue, across navigations and across visits. It is one shared piece of state behind a cookie, and each snippet is highlighted at build time and hidden rather than swapped in, so switching costs nothing.
+
+  Checking each endpoint against its handler while writing them turned up documentation that would not have worked. `POST /api/data/boards` was documented as taking a `userId`; it takes no such thing — the key decides whose boards come back, which is exactly what stops a key being pointed at somebody else's. `DELETE /api/data/area` needs `boardId` as well as `id`. `PUT /api/data/card` is a replacement rather than a patch and rejects a body without `name`, so the old "send only what changes" advice returned a `400`. Three endpoints were not documented at all: moving a card between areas, reordering one inside its area, and the invitation endpoint.
+
+  The reference reads in the order you would use it — authentication, boards, their areas, the cards in them, then comments and invitations — rather than alphabetically, where `Area` came before `Areas` and both before `Board`. Two pages moved to `/api/card-move` and `/api/card-order`: content paths are lower-cased, so the camelCase names resolved to nothing and both pages rendered blank.
+
+  A mistyped documentation or reference URL answers `404` now. Both `/docs/[slug]` and `/api/[slug]` used to render the header and the sidebar around an empty article and return `200`, so a wrong address looked like a real page that happened to have nothing on it — and a crawler had no way to tell either.
+
+  On a 320px screen a four-column parameter table cannot fit however it is wrapped — an id or a variable name is one unbreakable word wider than the screen — so below `xs` the table becomes its own scrolling box rather than pushing the page sideways.
+
+  Two pieces of styling were missing underneath. Parameter tables had no CSS at all, so a type ran straight into whether it was required — "integeryes" — and code blocks were styled by a child selector that the blocks inside a tabbed example did not match, leaving them unstyled and wide enough to push the whole page sideways. Checked at 1440, 768 and 390 px: no page scrolls horizontally.
+
+- **The closing section no longer measures itself against the viewport's height.** It was `min-h-screen`, and `100vh` is the one length on a phone that changes while you are only scrolling: the URL bar slides away, the section grows, and the tile field jumps with it — measured at 74 px of movement for a 100 px change of height, which is what made the animation look broken on a phone and while dragging a window. Its height now comes from the viewport's **width** (`min(56.25vw, 44rem)` — 16:9, the proportion the composition was drawn against), which nothing about scrolling can alter.
+
+  The path itself was redrawn in container units — a share of the section's own width and height, rather than of the tile. It used to be percentages of the tile, whose size follows the section's *width*, so the vertical travel did too: the same animation spanned 73 % of the height on a desktop and 19 % on a phone. Both ends of the path now land on edges the viewer can actually see, whatever shape the section is, and the path now starts as far up from the bottom edge as a full-size tile reaches, rather than at a fixed 74 %. That was the visible fault at 1920×704: a 342 px tile beginning 74 % of the way down a 704 px box, with 159 px of it sliced off by the bottom edge. Moving the start point rather than shrinking the tile matters, because a tile is a quarter of the section's width while the seven are spaced a seventh of the path apart — 19.3 % — so they overlap by about a quarter of a tile, and that overlap is what makes the field read as the logo's two stacked cards instead of a row of separate squares.
+
+  The field is also one isolated stacking context now, at `z-index: 0`. The seven tiles' own z-indexes ran loose in the section's context next to the copy's `z-10` — ten beats seven on paper, but each tile is a composited layer of its own (`will-change` plus an animated `filter`), and a browser sorting those against text that is not composited is where tiles flickering over the "Getting started" button came from. Isolated, they sort among themselves and the field is a single layer beneath the copy, with no ordering left to get wrong.
+
+  Verified by watching every tile for a full cycle at 1920, 1280 and 390, in Chromium and WebKit: no tile that is still solid is cut by any edge, tiles are always overlapping, and after a resize the painted transform matches the keyframes exactly in both axes.
+
+- **Every heading on the homepage now writes itself in, and everything else fades in.** The hero and the closing section had the character-by-character reveal; Features, Pricing and Questions were static text that simply existed when you arrived at them. All three use it now, and so do the lines above them — the three blue ones and the hero's white one — they are part of the same phrase as the heading, so a fade under a character cascade read as two different ideas. The line leads and the heading follows a fifth of a second behind it. The note under the pricing cards fades in. 100 characters of headline across the page, none of them left unrevealed after a full scroll.
+
+  `SplitText` had to stop forcing `display: inline` on itself to make that possible. It is what a `span` already is, and it quietly broke the component the moment it was asked to *be* the heading rather than sit inside one — an inline `h2` drops its vertical margins, so the space under every section title would have vanished.
+
+  **In the hero, the screenshot starts with the headline instead of queueing behind it.** It waited 1.1s for its turn, which made the largest thing on the page the last to appear and read as a delay rather than a sequence. It now begins at 0.15s and takes 1.1s, so it still settles last — because it is the one that takes longest, not the one that starts latest. That needed a gentler curve as well as a longer one: `FadeIn`'s default is a hard expo-out that lands almost immediately and spends the remaining time easing the last few pixels, so raising the duration alone stretched the movement without slowing the fade. The curve is a prop now, defaulting to the old one.
+
+- **An `xs` breakpoint at 25rem**, one step below `sm`. `sm` starts at 40rem and so already covers a 390px phone, which left anything meant for a small screen alone with nowhere to live. Being a breakpoint rather than a one-off media query it works both ways round: `xs:` from 400px up, `max-xs:` below it — the half that "only the smallest phones" usually means.
+
+- **The hero shows a phone-shaped screenshot on a phone.** It was the 1440-wide capture at every size, and scaled into 390 px of viewport the cards became specks — a picture of a board nobody could read, in the place meant to show what the product looks like. The demo run now takes a second capture of the same board at 393×852, trimmed to 1:1.9 from the top — tall enough to read as a phone, without spending bytes on the stretch nobody scrolls to — and the hero picks between them at the `xs` breakpoint. Both carry their own dimensions, so the space is reserved before either loads even though the two ratios differ.
+
+  It comes from the same pipeline as everything else rather than by hand: `scripts/demo/screenshots.mjs` grew a phone context and one view, `40-board-kanban-mobile`, and `run.sh` writes it out beside the desktop one. Neither can go stale while the other is refreshed.
+
+- **The first feature tile broke on a narrow screen.** Its demo is three areas side by side, and below about 400 px a third of the tile is narrower than the "Create new card" button standing in it — which does not wrap, so it hung out of the tile by 10 px on a 390 px screen and 34 px on a 320 px one, taking the cards' due dates with it. Three changes, none of them a scrollbar: the fragments now size themselves from the tile they sit in (`clamp(0.55rem, 3.1cqw, 0.7rem)` against a container query, capped at exactly the size they were, so nothing moves on a desktop); the button says "Create card", since the plus already says "new"; and below `xs` the clock time goes while the date stays — "Aug 14, 10:41 PM" does not fit a third of a 390px screen, "Aug 14" does, and it is the half that says something.
+
+  Measured across 320, 360, 393, 430, 640 and 1280 px in two engines: nothing inside the tile crosses its edge at any width.
+
+- **The pricing section says something now.** Its blue line read "Our", above the word "Pricing" — grammar holding a slot open, telling a reader who had scrolled that far nothing they did not know. It answers the question people arrive with instead: **Free unless we run it for you**.
+
+  The plan rows were rewritten to the same standard. "More of everything whenever you need it" sat directly under the line listing CPU, RAM and storage and said less than that line already had — and it read as though the extra came free. It now names what can be raised and that raising it costs more each month, in the same spirit as the restore fee under the cards: a charge belongs in front of the decision, not on the invoice after it. The two lists also run in the same order — where it runs, what it runs on, who updates it, who backs it up, where support comes from — so the eye can cross between them row by row. Both cards still measure the same height.
+
+  In the FAQ, "a hosted option exists for **people** who would rather not run one" now says organisations, matching the note under the pricing cards; the answer also states plainly that a team of five and a team of five hundred run the same build.
+
+- **Opening the small-screen menu shoved the page around.** Two separate faults, both visible on a documentation page. The header switched from `relative` to `fixed` while the menu was open, which takes it out of the flow, so the article underneath jumped up by the height the header had been occupying. It keeps its ordinary position now, and only the button that opens and closes the menu is pinned — at the exact offsets it rests at when closed, so it does not move at the moment it is pressed. Pinning the whole row instead put the logo over the scrolling list, with menu entries sliding behind it; the logo is simply out of sight while the sheet is open. And the scroll lock removed the scrollbar, taking fifteen pixels of page width with it — the whole page slid sideways. The lock is gone entirely — the menu stops Lenis rather than setting `overflow: hidden` — so the bar never leaves and there is no space to hold open for it. The page's own scrollbar is left exactly as the platform draws it; while the menu is open it is only painted transparent, because the menu is a scrolling panel with a bar of its own and two tracks side by side is one too many. Colour costs no space. The panel declares its own `scrollbar-color` to keep the bar it should have — the property is inherited, so the transparent pair on the root had been taking the menu's own scrollbar with it. It also spans a window's width rather than the page's and reserves a stable gutter of its own, so the bar sits at the right edge of the screen where a page scrollbar belongs — and the list, which fits until a submenu opens, does not reflow by a scrollbar's width the moment it starts scrolling. That reserved channel is also what keeps the entries in line with the close button above them, the panel being exactly one channel wider than the page.
+
+  While looking at that: **smooth scrolling was never actually being stopped.** The code put `lenis-stopped` on the root element by hand, but that class is what Lenis *sets on itself* once stopped — not a switch that stops it. It calls `stop()` and `start()` now, and the menu panel is marked `data-lenis-prevent` so it scrolls on its own while the page behind it does not — which matters as soon as a submenu is open and the entries run past the bottom of the screen. The panel covers the whole viewport rather than starting below the header, and the header row goes transparent to the pointer while the menu is open (its logo and close button take their own back), so the wheel reaches the panel wherever it is on screen instead of dying on the strip across the top. The `overflow: hidden` lock is gone with it: it was only ever compensating for the thing that was not working.
+
+  Measured on the documentation, the reference and the homepage: opening the menu moves the heading 0 px in either axis, and closing it returns everything to where it started.
+
+- **The API section of the small-screen menu opened onto nothing.** The row expanded, the chevron turned, and the list underneath was empty. Its `section` said `"API"` while the navigation calls that section `"API reference"`, and that string is the key the pages are looked up by — so the lookup matched nothing and returned an empty list rather than failing. It lists all eleven reference pages now, and opens itself when you are already reading one.
+
+- **The close mark was not a cross.** Its two bars each travelled `0.3rem` to meet in the middle, but they sit 8px apart — 2px of bar plus a 6px gap — so half that distance is `0.25rem`. The extra 0.8px on each carried them past one another, leaving a visible offset where the strokes should intersect. Measured after: the two bars' centres agree to 0.00px in both axes.
+
+- **Opening the menu and then widening the window left the header wrong.** The sheet, the overlay and the burger are all `md:hidden`, so widening past `md` hid them — but the state behind them stayed open, and everything hanging off it stayed with it: the header pinned `fixed`, the scroll lock still on so the page could not be scrolled at all, and the homepage's white nav and burger rendered in their dark variant against the blue hero. That last one is why it looked like a header at the wrong breakpoint: what came back after a resize was the small-screen colouring at desktop width. Crossing the breakpoint now closes the menu, which is what the visitor sees happen anyway.
+
+  Checked as a round trip on both header variants — open at 500 px, widen to 1200, narrow back, reopen, close with Escape: position, colours, the scroll lock and Lenis all return to where they started each time, and the page scrolls afterwards.
+
+- **The legal pages use the documentation's sidebar.** They had a copy of it — a grey rounded panel, the shape the documentation had already moved away from — so the two halves of the site no longer matched. Both render one `SideNav` component now, which is why they will not drift again: the duplicate markup was the whole cause. The legal sidebar also follows the same breakpoint, hidden below `md`, where the footer's Legal column covers the same ground.
+
+- **Every contact address is `info@lokalboards.com`.** The site, the withdrawal form and the security policy all pointed at a personal address; LokalBoards has its own now. Seven places: the header and footer "Contact" links, the pricing enquiry, the site notice (both the imprint and the DSA contact point), the privacy policy, and `SECURITY.md`. The author's own website is still linked from the footer and the about section — that credits him rather than invites mail.
+
+- **A link to the site unfurls as a card now.** There was no `og:image` anywhere, so sharing lokalboards.com in Slack, on Mastodon or anywhere else produced a bare line of text. A 1200×630 card — the wordmark, the promise, the three badges and the board itself — is the site-wide default, while each page contributes its own `og:title` and `og:description` through a small `usePageMeta` helper. `useSeoMeta` does not derive the Open Graph pair from `title`/`description`, and a crawler falling back to `<title>` is luck rather than a contract, so both pairs are set explicitly.
+
+  **`cloud.png` was 1.3 MB**, and the hero loads it twice. As WebP it is 148 KB — 89 % off the heaviest asset on the front page, with the transparency intact (checked pixel-for-pixel against the original, not assumed).
+
+  **Links in the documentation were invisible.** Body links in the docs and the reference had no styling whatsoever — the same grey as the sentence around them, no underline — so every cross-reference on every page was findable only by dragging a cursor across the text. They are the primary colour and underlined now, in the article only: Nuxt Content wraps each heading in an anchor to itself, and a bare `a` rule turns the whole outline blue.
+
+  **The last two documentation pages were rewritten.** *Health Check* and *Contributing* were the only ones still in the older voice, and *Contributing* had drifted: it described two test suites where there are four, and credited CI with a CodeQL scan it does not run. It now covers the unit, integration, end-to-end and browser suites, says which one a given change needs, and warns that `npm run test:browser` serves the built app on **port 3000** and will silently reuse a dev server it finds there — testing that instead of your build.
+
+  **The site has an error page.** Now that a wrong address actually answers `404` rather than an empty article, the page behind it is something a visitor sees — and it was Nuxt's default: no header, no footer, the browser's own font, and "Page not found" printed twice. It carries the site's chrome now, and offers the homepage, the documentation and the reference rather than one link back.
+
+  **Both sidebar menus read in order now.** The documentation opened on "Adjust Colors" and the reference put "Area" before "Areas", because both were sorted alphabetically; they run install → boards → areas → cards → comments and authentication → boards → … instead. The order lives in numeric filename prefixes, which the content layer strips from the paths, so no URL moved.
+
+- **A rebuilt homepage for [lokalboards.com](https://lokalboards.com).** The old page was a stack of grey tiles under a stock laptop composite. It is now a sequence of sections that each do one job: the screenshot flanked by two drifting clouds, an about block whose text is revealed character by character as you scroll through it, the feature grid, pricing, the FAQ, and a closing call to action.
+
+  Headings are set in **Inter Tight**, self-hosted alongside the Inter the site already served — no request leaves the visitor's browser for a font.
+
+  **The page is white and the tiles on it are grey**, which is the relationship the app itself has between its surface and its panels — and it means a demo can bring the app's own white panels with it and have them land correctly. Every section now shares one container width and one vertical rhythm; they each used to set their own `max-w-2xl` / `max-w-4xl` / `max-w-5xl`, so nothing lined up down the page and the left edge moved as you scrolled.
+
+  The motion is built on [`motion-v`](https://motion.dev/docs/vue), added as a Nuxt module. Two reusable pieces came out of it: `SplitText`, which masks a heading into characters or words and reveals them in sequence, and `FadeIn`, which fades a block in as it enters the viewport. Both observe their *container* rather than their pieces — a character that starts translated outside its own mask is never intersecting, so an observer on the pieces would wait forever.
+
+  The clouds and the about text are scroll-driven rather than time-driven: the clouds rotate and sink as the page moves, and the about text scrubs its reveal against scroll position, so the animation is something the reader controls.
+
+  **The feature tiles show the product rather than describing it.** Each of the eleven carries a piece of the actual interface, built from the same areas, cards, status circles, meta rows and buttons the app draws — not simplified stand-ins, and no grey bars standing in for text.
+
+  Six of them move: a card dragged out of Backlog and dropped into In Progress — the areas opening and closing a slot for it as they do in the app — ticked off a beat after it lands, and only then filed in Done, with a blue cursor making the first hand-over and a green one the second; a board tile working through all twelve colour presets with the picker marking each one as it comes round; the *Create new card* button relabelling itself in all ten languages, the button easing to each new width as it goes; a checklist ticking itself off while the card's count keeps up, 1/3, 2/3, 3/3; the board switching between its column and list layouts; and the same area lit for light and dark. A seventh is the European flag, whose twelve stars turn once a minute and pulse one after another round the ring. The remaining four stand still — the invite dialog with the board's members and their roles, the `docker run` that installs the whole thing, an API request with the agent-marked card it created, and the Trello import — and they are interleaved with the moving ones rather than collected at the bottom.
+
+  That last tile says what the licence alone did not: MIT, written in Germany, and running wherever you put it, with no American cloud standing between a team and its own data. Self-hosting is a question of digital independence before it is a question of price, and the flag says so faster than a paragraph can.
+
+  Every tile's heading is one line and every tile's text is exactly four, which is what makes a row of them read as one object rather than three of different sizes — and each demo carries enough of the interface to fill the space above the words. Measured on the built page: the tiles in a row now come out at identical heights.
+
+  The strings are real throughout: the ten button labels are the `createNewCard` values from the locale files, the board is the one in the demo screenshots, and the twelve colours are `BOARD_COLORS` verbatim.
+
+  All of it is CSS keyframes on transform, opacity, colour and width — no scroll position, so a tile is never caught half-finished, and `prefers-reduced-motion` stops every one. The one exception is the language button, which has to measure its labels to animate between widths, because `width: auto` is not something CSS can transition between. Layouts are fixed rather than generated, so the server and the client render the same markup.
+
+  **The demo screenshots were regenerated.** They still showed the green `secondary` that the app dropped in v0.24.0 — on every completed card, every ticked checkbox and the notification dot — so the site was illustrating a colour the product no longer has. `npm run demo:screenshots` re-captured all 21 views in both languages and refreshed the screenshot the README links to.
+
+  **The homepage hero shows the board now, not one open card.** The two had been sharing a single image, and what suits the README suits the hero badly: the first thing anyone sees should be what LokalBoards looks like in use. The run therefore emits a second file, [`hero-screenshot.webp`](docs/public/images/hero-screenshot.webp), taken whole from the Kanban capture. Both are captured views, so neither can go stale; `HERO_SHOT_VIEW` changes which.
+
+  **The demo board carries a real workload now** — 26 cards across its three areas instead of seven. It had only ever needed enough cards to demonstrate the features, which left two thirds of the page empty; that reads as sparseness in a screenshot the size of the hero. The extra cards fill the frame at the captured 16:10, so the hero needs no cropping to look like a board somebody actually works on.
+
+  **Smooth scrolling and a wipe between pages.** Scrolling is [Lenis](https://lenis.darkroom.engineering/) in its root mode, wrapping the page in `SmoothScroll.vue`; the wheel now eases to a stop instead of jumping. Navigation sweeps a panel in the primary colour up over the outgoing page and off the top of the incoming one — one pseudo-element moved with `clip-path`, and `prefers-reduced-motion` skips it.
+
+  Worth knowing because it is the thing that would have broken: the scroll-driven animations still work under Lenis. It drives the real window scroll rather than transforming a container, so the clouds and the character-by-character reveal below them read their positions exactly as before — checked on the built site, not assumed.
+
+  **The legal pages share one component now**, so the next one costs a Markdown file, a line in a list and a three-line route rather than a design decision. They get the documentation's sidebar, a 68ch measure and more line-height than the docs need — legal text is read in long runs rather than scanned.
+
+  **No right-of-withdrawal page.** One was built, carrying the statutory model form as fields rather than as a paragraph to print out. It is gone again: hosting is arranged by e-mail and invoiced through sevDesk, so there is no contract concluded on the website, and the Widerrufsbutton obligation that applies from 19 June 2026 attaches to sites where there is. It was also the last placeholder on the site — the page opened with a `PLACEHOLDER` comment where the Widerrufsbelehrung belongs, because that text has a prescribed structure and should not be invented here.
+
+  The pricing block states the two options plainly: self-hosted for nothing at all, or hosted for 49 € a month. Both run the same open-source build; the paid option buys someone else running the server and applying the updates, not features withheld from the free one.
+
+### Internal
+
+- **The locale files line up again.** All ten now carry the same 322 keys in the same order, so a diff between two languages shows what actually differs. `privacyPolicyUrl` was dropped from the German file: it was in no other language and referenced nowhere in the code — the privacy link comes from `NUXT_PUBLIC_PRIVACY_URL` at runtime.
+
 ## v0.27.0
 
 ### New Features
@@ -42,7 +215,7 @@
 
   Deleted rather than trimmed: anyone building their own image is a contributor, and contributors read `CONTRIBUTING.md`. The one part worth keeping — that building on an Apple Silicon Mac and deploying to an `amd64` server gives `exec ... : Exec format error`, and why the Dockerfile pins its build stage — moved there, next to the other build instructions. The README now stops at pulling and running the published image, which is what a reader of it wants.
 
-- **Releases publish the Docker image themselves.** Pushing a `v*` tag now triggers `docker-publish.yml`, which builds and pushes to `florianstrasser/lokalboards` — replacing a `docker buildx build --push` run by hand. Adapted from the same workflow in LokalTransfer.
+- **Releases publish the Docker image themselves.** Pushing a `v*` tag now triggers `docker-publish.yml`, which builds and pushes to `florianstrasser/lokalboards` — replacing a `docker buildx build --push` run by hand.
 
   Three things change beyond saving the manual step. The image is built for **linux/arm64 as well as amd64**, so `docker run` stops failing outright on Apple Silicon and ARM servers with `no matching manifest`; every hand-published image so far was amd64 only. Each release gets the full tag ladder — `0.26.0`, `0.26`, `0` and `latest` — so an operator can pin `:0` and take fixes without a surprise upgrade. And the build is cached across runs through GitHub's cache backend.
 

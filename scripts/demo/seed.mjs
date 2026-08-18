@@ -100,13 +100,37 @@ const richDesc =
 await db.query(
   "INSERT INTO `cards` (id,area,name,sort,content,status,dueDate,assignee) VALUES ?",
   [[
+    // Board 1 carries a full workload rather than a token card or two: it is
+    // the board in the homepage hero, and a nearly empty one there would say
+    // the wrong thing about what this is for.
     [1,1,"Competitor research",0,"Analyse the top five competitors and summarise their pricing.",0,null,null],
     [2,1,"Redesign the logo",1,richDesc,0,days(5),"u-ben"],
     [3,1,"Draft the pricing page",2,"Three tiers: Free, Pro, Team.",0,days(9),null],
+    [14,1,"Write the launch announcement",3,"Blog post and the mail to existing customers.",0,null,null],
+    [15,1,"Audit the onboarding e-mails",4,"Three of them still link to the old domain.",0,null,"u-carol"],
+    [16,1,"Plan the Q4 roadmap workshop",5,"Half a day, everyone, agenda beforehand.",0,days(14),null],
+    [17,1,"Collect customer feedback",6,"Ten interviews, fifteen minutes each.",0,null,null],
+    [18,1,"Sketch the mobile navigation",7,"",0,null,null],
+    [19,1,"Review the accessibility report",8,"Contrast and focus order, mostly.",0,days(11),null],
+    [20,1,"Evaluate a status page provider",9,"",0,null,null],
+
     [4,2,"Build the public API",0,"REST endpoints for boards, cards and comments.",0,days(3),"u-alex"],
     [5,2,"New onboarding flow",1,"A three-step guided tour for first-time users.",0,null,null],
+    [21,2,"Migrate to the new mail provider",2,"Move the templates over and reverify the domain.",0,days(4),"u-ben"],
+    [22,2,"Rework the settings screen",3,"Too many sections, no order to them.",0,null,"u-carol"],
+    [23,2,"Write the API documentation",4,"Every endpoint, with an example request.",0,days(8),null],
+    [24,2,"Add board templates",5,"",0,null,null],
+    [25,2,"Speed up the dashboard query",6,"It fans out one query per board.",0,null,null],
+    [26,2,"Finish the Czech translation",7,"",0,null,null],
+
     [6,3,"Set up CI/CD",0,"Automated tests and deploys on every push.",1,null,null],
     [7,3,"Launch the landing page",1,"Ship the marketing site.",1,null,null],
+    [27,3,"Ship the dark theme",2,"",1,null,null],
+    [28,3,"Publish the Docker image",3,"Both architectures, on every tag.",1,null,null],
+    [29,3,"Add two-factor sign-in",4,"",1,null,"u-alex"],
+    [30,3,"Import boards from Trello",5,"Lists, cards, checklists, comments, attachments.",1,null,null],
+    [31,3,"Move attachments to disk",6,"",1,null,null],
+    [32,3,"Wire up the webhooks",7,"",1,null,"u-ben"],
     [8,4,"Website Relaunch: hero section",0,"Bold headline, product screenshot, one clear call to action.",0,null,null],
     [9,5,"Buy groceries",0,"Milk, bread, coffee.",0,null,null],
     [10,5,"Call the dentist",1,"",0,days(1),null],

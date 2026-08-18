@@ -228,7 +228,7 @@
   "newPassword": "Nieuw wachtwoord",
   "generatePassword": "Wachtwoord genereren",
   "newPasswordMessage": "Hier kun je het wachtwoord kopiëren om op te slaan of te versturen naar de persoon die dit account gebruikt:",
-  "deleteCardHeadline": "Wil je deze kaart verwijderen?",
+  "deleteCardTitle": "Wil je deze kaart verwijderen?",
   "deleteCardBtn": "Kaart verwijderen",
   "cardDeleted": "Kaart verwijderd",
   "areas": "Gebieden",
@@ -317,5 +317,8 @@
   "activityAssigned": "wees dit toe aan {name}",
   "activityUnassigned": "verwijderde de toewijzing",
   "activityDueSet": "stelde de vervaldatum in op {date}",
-  "activityDueCleared": "verwijderde de vervaldatum"
+  "activityDueCleared": "verwijderde de vervaldatum",
+  "invitationInvalid": "Deze uitnodigingslink is niet meer geldig.",
+  "inviteByEmailHint": "Nog geen account — we sturen per e-mail een uitnodiging voor dit bord.",
+  "signupDisabled": "Registratie is uitgeschakeld op deze instantie."
 }

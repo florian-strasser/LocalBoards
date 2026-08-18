@@ -14,7 +14,7 @@
       stroke-linejoin: round;
       stroke-miterlimit: 2;
     "
-    class="w-12 sm:w-15"
+    class="w-12 sm:w-16"
   >
     <g transform="matrix(1.003878,0,0,0.876822,668.314961,638.65748)">
       <path

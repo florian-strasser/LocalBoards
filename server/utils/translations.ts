@@ -32,6 +32,9 @@ export function translate(key: string, language: string = "en"): string {
         'Hi {name},\n\n{inviterName} has invited you to the board "{boardName}" on {appName}.\n\nYour access: {permission}\n\nOpen the board here:\n{boardURL}',
       board_invite_permission_read: "read-only",
       board_invite_permission_edit: "read & write",
+      board_invite_signup_cta: "Create your account",
+      board_invite_signup_message:
+        'Hi,\n\n{inviterName} has invited you to the board "{boardName}" on {appName}.\n\nYour access: {permission}\n\nCreate your account with this link to join. It works once and expires in 14 days:\n{signupURL}',
       account_deleted_subject: "Your account has been deleted",
       account_deleted_message:
         "Hi {name},\n\nyour account on {appName} has been deleted by an administrator.\n\nReason:\n{reason}\n\nIf you think this was a mistake, please contact the administrator.",
@@ -56,6 +59,9 @@ export function translate(key: string, language: string = "en"): string {
         'Hallo {name},\n\n{inviterName} hat dich zum Board "{boardName}" auf {appName} eingeladen.\n\nDeine Berechtigung: {permission}\n\nÖffne das Board hier:\n{boardURL}',
       board_invite_permission_read: "nur lesen",
       board_invite_permission_edit: "Lesen & Schreiben",
+      board_invite_signup_cta: "Konto erstellen",
+      board_invite_signup_message:
+        'Hallo,\n\n{inviterName} hat dich zum Board "{boardName}" auf {appName} eingeladen.\n\nDein Zugriff: {permission}\n\nErstelle dein Konto über diesen Link, um beizutreten. Er funktioniert einmal und läuft in 14 Tagen ab:\n{signupURL}',
       account_deleted_subject: "Dein Konto wurde gelöscht",
       account_deleted_message:
         "Hallo {name},\n\ndein Konto bei {appName} wurde von einem Administrator gelöscht.\n\nGrund:\n{reason}\n\nWenn du denkst, dass dies ein Fehler war, wende dich bitte an den Administrator.",
@@ -80,6 +86,9 @@ export function translate(key: string, language: string = "en"): string {
         'Hola {name},\n\n{inviterName} te ha invitado al tablero "{boardName}" en {appName}.\n\nTu acceso: {permission}\n\nAbre el tablero aquí:\n{boardURL}',
       board_invite_permission_read: "solo lectura",
       board_invite_permission_edit: "lectura y escritura",
+      board_invite_signup_cta: "Crear tu cuenta",
+      board_invite_signup_message:
+        'Hola:\n\n{inviterName} te ha invitado al tablero "{boardName}" en {appName}.\n\nTu acceso: {permission}\n\nCrea tu cuenta con este enlace para unirte. Funciona una sola vez y caduca en 14 días:\n{signupURL}',
       account_deleted_subject: "Tu cuenta ha sido eliminada",
       account_deleted_message:
         "Hola {name},\n\ntu cuenta en {appName} ha sido eliminada por un administrador.\n\nMotivo:\n{reason}\n\nSi crees que se trata de un error, ponte en contacto con el administrador.",
@@ -104,6 +113,9 @@ export function translate(key: string, language: string = "en"): string {
         'Bonjour {name},\n\n{inviterName} vous a invité au tableau « {boardName} » sur {appName}.\n\nVotre accès : {permission}\n\nOuvrez le tableau ici :\n{boardURL}',
       board_invite_permission_read: "lecture seule",
       board_invite_permission_edit: "lecture et écriture",
+      board_invite_signup_cta: "Créer votre compte",
+      board_invite_signup_message:
+        'Bonjour,\n\n{inviterName} vous a invité au tableau "{boardName}" sur {appName}.\n\nVotre accès : {permission}\n\nCréez votre compte avec ce lien pour rejoindre le tableau. Il fonctionne une seule fois et expire dans 14 jours :\n{signupURL}',
       account_deleted_subject: "Votre compte a été supprimé",
       account_deleted_message:
         "Bonjour {name},\n\nvotre compte sur {appName} a été supprimé par un administrateur.\n\nMotif :\n{reason}\n\nSi vous pensez qu'il s'agit d'une erreur, veuillez contacter l'administrateur.",
@@ -128,6 +140,9 @@ export function translate(key: string, language: string = "en"): string {
         'Ciao {name},\n\n{inviterName} ti ha invitato alla board "{boardName}" su {appName}.\n\nIl tuo accesso: {permission}\n\nApri la board qui:\n{boardURL}',
       board_invite_permission_read: "sola lettura",
       board_invite_permission_edit: "lettura e scrittura",
+      board_invite_signup_cta: "Crea il tuo account",
+      board_invite_signup_message:
+        'Ciao,\n\n{inviterName} ti ha invitato alla bacheca "{boardName}" su {appName}.\n\nIl tuo accesso: {permission}\n\nCrea il tuo account con questo link per partecipare. Funziona una sola volta e scade tra 14 giorni:\n{signupURL}',
       account_deleted_subject: "Il tuo account è stato eliminato",
       account_deleted_message:
         "Ciao {name},\n\nil tuo account su {appName} è stato eliminato da un amministratore.\n\nMotivo:\n{reason}\n\nSe pensi che sia un errore, contatta l'amministratore.",
@@ -152,6 +167,9 @@ export function translate(key: string, language: string = "en"): string {
         'Hallo {name},\n\n{inviterName} heeft je uitgenodigd voor het board "{boardName}" op {appName}.\n\nJouw toegang: {permission}\n\nOpen het board hier:\n{boardURL}',
       board_invite_permission_read: "alleen lezen",
       board_invite_permission_edit: "lezen & schrijven",
+      board_invite_signup_cta: "Account aanmaken",
+      board_invite_signup_message:
+        'Hallo,\n\n{inviterName} heeft je uitgenodigd voor het bord "{boardName}" op {appName}.\n\nJouw toegang: {permission}\n\nMaak je account aan via deze link om deel te nemen. Hij werkt één keer en verloopt over 14 dagen:\n{signupURL}',
       account_deleted_subject: "Je account is verwijderd",
       account_deleted_message:
         "Hallo {name},\n\nje account op {appName} is verwijderd door een beheerder.\n\nReden:\n{reason}\n\nAls je denkt dat dit een vergissing is, neem dan contact op met de beheerder.",
@@ -176,6 +194,9 @@ export function translate(key: string, language: string = "en"): string {
         'Cześć {name},\n\n{inviterName} zaprosił Cię do tablicy „{boardName}” w {appName}.\n\nTwój dostęp: {permission}\n\nOtwórz tablicę tutaj:\n{boardURL}',
       board_invite_permission_read: "tylko odczyt",
       board_invite_permission_edit: "odczyt i zapis",
+      board_invite_signup_cta: "Utwórz konto",
+      board_invite_signup_message:
+        'Cześć,\n\n{inviterName} zaprosił(a) Cię do tablicy "{boardName}" w {appName}.\n\nTwój dostęp: {permission}\n\nUtwórz konto za pomocą tego linku, aby dołączyć. Działa jednorazowo i wygasa za 14 dni:\n{signupURL}',
       account_deleted_subject: "Twoje konto zostało usunięte",
       account_deleted_message:
         "Cześć {name},\n\nTwoje konto w {appName} zostało usunięte przez administratora.\n\nPowód:\n{reason}\n\nJeśli uważasz, że to pomyłka, skontaktuj się z administratorem.",
@@ -200,6 +221,9 @@ export function translate(key: string, language: string = "en"): string {
         'Вітаємо, {name}!\n\n{inviterName} запросив(-ла) вас на дошку "{boardName}" у {appName}.\n\nВаш доступ: {permission}\n\nВідкрити дошку:\n{boardURL}',
       board_invite_permission_read: "лише читання",
       board_invite_permission_edit: "читання та запис",
+      board_invite_signup_cta: "Створити обліковий запис",
+      board_invite_signup_message:
+        'Привіт!\n\n{inviterName} запросив(ла) вас до дошки "{boardName}" у {appName}.\n\nВаш доступ: {permission}\n\nСтворіть обліковий запис за цим посиланням, щоб приєднатися. Воно спрацює один раз і діє 14 днів:\n{signupURL}',
       account_deleted_subject: "Ваш обліковий запис видалено",
       account_deleted_message:
         "Вітаємо, {name}!\n\nВаш обліковий запис у {appName} видалено адміністратором.\n\nПричина:\n{reason}\n\nЯкщо ви вважаєте це помилкою, зверніться до адміністратора.",
@@ -224,6 +248,9 @@ export function translate(key: string, language: string = "en"): string {
         'Olá {name},\n\n{inviterName} convidou você para o quadro "{boardName}" no {appName}.\n\nSeu acesso: {permission}\n\nAbra o quadro aqui:\n{boardURL}',
       board_invite_permission_read: "somente leitura",
       board_invite_permission_edit: "leitura e escrita",
+      board_invite_signup_cta: "Criar a sua conta",
+      board_invite_signup_message:
+        'Olá,\n\n{inviterName} convidou-o para o quadro "{boardName}" em {appName}.\n\nO seu acesso: {permission}\n\nCrie a sua conta com esta ligação para participar. Funciona uma vez e expira dentro de 14 dias:\n{signupURL}',
       account_deleted_subject: "Sua conta foi excluída",
       account_deleted_message:
         "Olá {name},\n\nsua conta no {appName} foi excluída por um administrador.\n\nMotivo:\n{reason}\n\nSe você acha que isso foi um engano, entre em contato com o administrador.",
@@ -248,6 +275,9 @@ export function translate(key: string, language: string = "en"): string {
         'Dobrý den, {name},\n\n{inviterName} vás pozval(a) na nástěnku "{boardName}" v {appName}.\n\nVáš přístup: {permission}\n\nOtevřete nástěnku zde:\n{boardURL}',
       board_invite_permission_read: "pouze čtení",
       board_invite_permission_edit: "čtení a zápis",
+      board_invite_signup_cta: "Vytvořit účet",
+      board_invite_signup_message:
+        'Dobrý den,\n\n{inviterName} vás pozval(a) na nástěnku "{boardName}" v {appName}.\n\nVáš přístup: {permission}\n\nVytvořte si účet pomocí tohoto odkazu a připojte se. Funguje jednou a vyprší za 14 dní:\n{signupURL}',
       account_deleted_subject: "Váš účet byl smazán",
       account_deleted_message:
         "Dobrý den, {name},\n\nváš účet v {appName} byl smazán administrátorem.\n\nDůvod:\n{reason}\n\nPokud si myslíte, že jde o omyl, kontaktujte prosím administrátora.",
@@ -410,6 +440,46 @@ export function getBoardInviteEmail({
         boardURL,
       },
       translate("board_invite_cta", language),
+    ),
+  };
+}
+
+// The invitation sent to somebody who has no account yet: the same facts as the
+// board invite above, but the link creates the account rather than opening the
+// board, because there is nothing yet to open.
+export function getBoardInviteSignupEmail({
+  appName,
+  inviterName,
+  boardName,
+  permission,
+  signupURL,
+  language = "en",
+}: {
+  appName: string;
+  inviterName: string;
+  boardName: string;
+  permission: string;
+  signupURL: string;
+  language?: string;
+}): { subject: string; html: string } {
+  const permissionLabel = translate(
+    permission === "edit"
+      ? "board_invite_permission_edit"
+      : "board_invite_permission_read",
+    language,
+  );
+  return {
+    subject: getEmailSubject("board_invite_subject", appName, language),
+    html: buildEmailHtml(
+      translate("board_invite_signup_message", language),
+      {
+        appName,
+        inviterName,
+        boardName,
+        permission: permissionLabel,
+        signupURL,
+      },
+      translate("board_invite_signup_cta", language),
     ),
   };
 }

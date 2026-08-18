@@ -229,8 +229,17 @@ export async function getUserSession(event: any) {
 
 export async function getApiKeyUser(event: any) {
   try {
-    // Extract API key from headers
-    const apiKey = event.headers.get("x-api-key");
+    // `x-api-key` is the documented header, and `Authorization: Bearer <key>`
+    // is accepted as the same thing — several MCP clients (Mistral's Le Chat,
+    // the OpenAI Responses API) can only send a bearer token, so a key-only
+    // server is simply unreachable from them. The bearer form is a fallback
+    // rather than a first choice: callers that send both mean the explicit
+    // header, and `Authorization` also carries session tokens elsewhere, which
+    // the callers of this function resolve before they get here.
+    const apiKey =
+      event.headers.get("x-api-key") ||
+      event.headers.get("authorization")?.replace(/^Bearer /i, "") ||
+      null;
 
     if (!apiKey) {
       return null;

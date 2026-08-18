@@ -35,6 +35,7 @@
                                 type="email"
                                 :label="$t('email')"
                                 required
+                                :readonly="!!invite"
                                 v-model="email"
                             />
                             <InputField
@@ -100,6 +101,34 @@ const privacy = ref(false);
 
 type Schema = z.output<typeof schema>;
 
+// An invitation link carries a token. The address it was issued to is fetched
+// and shown so the person can see who the invitation is for, and the field is
+// read-only because the server pins the address to the token anyway — editing it
+// here would only produce a confusing error.
+const route = useRoute();
+const invite = ref(null);
+
+onMounted(async () => {
+    const token = String(route.query.invite || "");
+    if (!token) return;
+
+    try {
+        const found = await $fetch("/api/auth/invitation", {
+            query: { token },
+        });
+        if (found?.email) {
+            invite.value = found;
+            email.value = found.email;
+        }
+    } catch {
+        // An expired, spent or unknown link just leaves the ordinary form —
+        // which will then be refused unless the instance takes public signups.
+        await nuxtApp.callHook("app:toast", {
+            message: $t("invitationInvalid"),
+        });
+    }
+});
+
 const handleSignUp = async () => {
     const formData = {
         name: name.value,
@@ -117,6 +146,7 @@ const handleSignUp = async () => {
                 name: name.value, // required
                 email: email.value, // required
                 password: password.value, // required
+                inviteToken: route.query.invite || undefined,
                 callbackURL: "/dashboard/",
             },
         });
@@ -131,6 +161,12 @@ const handleSignUp = async () => {
                 message: $t("error_" + errors[0].code),
             });
             // You can display these errors to the user
+        } else if (e?.data?.error === "DISABLED_SIGNUP") {
+            // Now that the server answers 403, `$fetch` throws instead of
+            // returning the body, so this is the branch that runs.
+            await nuxtApp.callHook("app:toast", {
+                message: $t("signupDisabled"),
+            });
         } else {
             await nuxtApp.callHook("app:toast", {
                 message: e,

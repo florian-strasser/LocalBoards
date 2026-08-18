@@ -5,6 +5,7 @@ import { getCookie } from "h3";
 import { createSession } from "../../utils/auth";
 import { sendEmail } from "../../../app/lib/sendEmail";
 import { getWelcomeSignupEmail } from "../../utils/translations";
+import { hashInviteToken } from "../../utils/inviteToken";
 
 export default defineEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig();
@@ -15,7 +16,40 @@ export default defineEventHandler(async (event) => {
         ? true
         : false;
 
-  if (allowSignup) {
+  // A board invitation carries its own permission to register, so a link that
+  // was sent to one address works even on an instance with public signup turned
+  // off. Everything else about the flow is unchanged — same validation, same
+  // password rules, same account.
+  const body = (await readBody(event).catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
+  const inviteToken =
+    typeof body.inviteToken === "string" && /^[a-f0-9]{64}$/.test(body.inviteToken)
+      ? body.inviteToken
+      : "";
+
+  let invite: {
+    id: number;
+    board: number;
+    email: string;
+    permission: string;
+  } | null = null;
+
+  if (inviteToken) {
+    try {
+      const db = await setupDatabase();
+      const [rows]: any = await db.execute(
+        "SELECT `id`, `board`, `email`, `permission` FROM `board_email_invites` WHERE `tokenHash` = ? AND `usedAt` IS NULL AND `expiresAt` > NOW()",
+        [hashInviteToken(inviteToken)],
+      );
+      invite = rows[0] ?? null;
+    } catch (error) {
+      logger.error("Invitation lookup during signup failed:", error);
+    }
+  }
+
+  if (allowSignup || invite) {
     const method = event.req.method;
     // HIGH FIX: Use 405 Method Not Allowed instead of 403
     if (method !== "POST") {
@@ -49,8 +83,11 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-      const body = await readBody(event);
-      const { name, email, password, callbackURL } = body;
+      const { name, password, callbackURL } = body as any;
+      // An invitation decides its own address. Taking it from the request would
+      // let anyone holding the link register under a different one, which is
+      // the whole thing the token is meant to prevent.
+      const email = invite ? invite.email : ((body as any).email as string);
 
       // HIGH FIX: Validate input with generic messages
       if (!name || !email || !password) {
@@ -117,6 +154,27 @@ export default defineEventHandler(async (event) => {
           [uuidv4(), email, "local", userId, hashedPassword],
         );
 
+        // The invitation is honoured and spent in the same transaction that
+        // creates the account: either the user exists with access to the board
+        // and the token is dead, or none of it happened.
+        //
+        // `usedAt IS NULL` in the UPDATE is the guard that makes it single-use.
+        // Two people racing the same link both reach this line; only one of them
+        // updates a row, and the other rolls the whole registration back.
+        if (invite) {
+          const [spent]: any = await conn.execute(
+            "UPDATE `board_email_invites` SET `usedAt` = CURRENT_TIMESTAMP WHERE `id` = ? AND `usedAt` IS NULL",
+            [invite.id],
+          );
+          if (spent.affectedRows !== 1) {
+            throw new Error("Invitation was already used");
+          }
+          await conn.execute(
+            "INSERT INTO `invitations` (`board`, `user`, `permission`) VALUES (?, ?, ?)",
+            [invite.board, userId, invite.permission],
+          );
+        }
+
         // Commit transaction
         await conn.commit();
 
@@ -170,6 +228,9 @@ export default defineEventHandler(async (event) => {
       return { error: "Internal server error" };
     }
   } else {
+    // A refusal with a 2xx is an error wearing a success code: it looks fine to
+    // anything reading the status rather than the body — proxies, logs, tests.
+    event.res.statusCode = 403;
     return { error: "DISABLED_SIGNUP" };
   }
 });

@@ -33,7 +33,7 @@ export function requireUserId(): string {
   if (!userId) {
     throw new McpError(
       "UNAUTHORIZED",
-      "Missing or invalid API key. Send it in the `x-api-key` header. Create one under Settings → API keys.",
+      "Missing or invalid API key. Send it in the `x-api-key` header, or as `Authorization: Bearer <key>`. Create one under Settings → API keys.",
     );
   }
   return userId;
