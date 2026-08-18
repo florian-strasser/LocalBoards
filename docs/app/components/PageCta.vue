@@ -24,19 +24,3 @@
     </div>
   </section>
 </template>
-
-<style scoped>
-/* Height enough for the tiles to have somewhere to travel, taken from the
-   viewport's **width**. `min-h-screen` was 100vh, and 100vh is the one length
-   on a phone that changes while you are simply scrolling: the URL bar slides
-   away, the section grows by a hundred pixels, and the whole tile field jumps
-   with it — measured at 74px of movement for a 100px change of height. A width
-   is stable through all of that.
-
-   56.25vw is 16:9, the proportion the composition was drawn against, so a
-   1920-wide screen still gets the 1080-tall stage it had before. The clamp
-   stops an ultra-wide display from turning this into a page of its own. */
-.cta {
-  min-height: min(56.25vw, 44rem);
-}
-</style>

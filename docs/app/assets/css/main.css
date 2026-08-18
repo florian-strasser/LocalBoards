@@ -620,3 +620,1859 @@ html.menu-open {
     display: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   The small-screen menu, from AppHeader.
+
+   Global rather than scoped to the component: a scoped block becomes its own
+   stylesheet chunk, and a 0.9 KiB file fetched before the first paint costs
+   more in latency than the bytes are worth — 150ms of render-blocking on a
+   phone. Every selector here is already namespaced, so nothing else can pick
+   them up by accident.
+   --------------------------------------------------------------------------- */
+/* The panel's own scrollbar, at the right edge of the screen, in a channel that
+   is always reserved.
+
+   `scrollbar-color: auto` because the property is inherited: while the menu is
+   open the root wears a transparent one so the page's bar does not sit beside
+   this, and the panel inherited it and lost its own. A declaration on the
+   element beats an inherited value whatever its specificity.
+   `scrollbar-gutter: stable` because the panel scrolls only sometimes — the
+   list fits until a submenu opens — and a bar that appears reflows everything
+   under it by its own width. Reserved once, nothing moves.
+   The channel it reserves is also what lines the entries up with the close
+   button: the panel is a window wide, one channel wider than the page, and the
+   channel is at the same edge. */
+.menu-sheet {
+  scrollbar-color: auto;
+  scrollbar-gutter: stable;
+}
+
+/* The button's box is set with utilities in the template rather than here.
+   A scoped `display: grid` has the same specificity as Tailwind's `md:hidden`
+   and lands after it in the stylesheet, so it won, and the burger stayed on
+   screen at every width. */
+.burger__bar {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transition:
+    transform 0.3s cubic-bezier(0.65, 0, 0.35, 1),
+    width 0.3s cubic-bezier(0.65, 0, 0.35, 1);
+}
+/* The lower bar is shorter at rest and grows to meet the other one as they
+   cross, so the open and closed states are the same two objects. */
+.burger__bar:last-child {
+  width: 70%;
+  justify-self: end;
+}
+/* Half the distance between the two bars, so they meet on one line rather than
+   crossing past each other: each bar is 2px and the grid gap is 6px, which puts
+   their centres 8px apart. 0.3rem was 4.8px — 0.8px too far on each, and the
+   cross came out with a visible offset where the strokes should intersect. */
+.burger--open .burger__bar:first-child {
+  transform: translateY(0.25rem) rotate(45deg);
+}
+.burger--open .burger__bar:last-child {
+  width: 100%;
+  transform: translateY(-0.25rem) rotate(-45deg);
+}
+
+/* Animating to `auto` is not a thing CSS can do; animating a grid track from
+   `0fr` to `1fr` is, and it needs no measuring. */
+.submenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.submenu--open {
+  grid-template-rows: 1fr;
+}
+.submenu > div {
+  overflow: hidden;
+}
+
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: opacity 0.3s ease;
+}
+.sheet-enter-from,
+.sheet-leave-to {
+  opacity: 0;
+}
+
+/* The rows arrive one after another rather than the whole list at once. The
+   delay is set per row in the template; leaving is immediate, because a menu
+   that takes its time closing is a menu in the way. */
+.menu-row {
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.menu-enter-from .menu-row,
+.menu-leave-to .menu-row {
+  opacity: 0;
+  transform: translateY(0.75rem);
+}
+.menu-leave-active .menu-row {
+  transition-delay: 0ms !important;
+  transition-duration: 0.15s;
+}
+.menu-leave-active,
+.menu-enter-active {
+  transition: opacity 0.3s ease;
+}
+.menu-leave-to,
+.menu-enter-from {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .burger__bar,
+  .menu-row,
+  /* Animating to `auto` is not a thing CSS can do; animating a grid track from
+   `0fr` to `1fr` is, and it needs no measuring. */
+.submenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.submenu--open {
+  grid-template-rows: 1fr;
+}
+.submenu > div {
+  overflow: hidden;
+}
+
+.sheet-enter-active,
+  .sheet-leave-active {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The legal pages, from LegalPage — global for the same reason as the menu
+   above: a scoped block is a stylesheet of its own, fetched before the page can
+   paint. `:deep()` is gone with the scoping; the selectors are already under
+   `.legal-copy`.
+   --------------------------------------------------------------------------- */
+/* Legal text is read in long runs, so it gets a measure rather than the full
+   width of the container, and more air between the paragraphs than the
+   documentation needs. The heading sizes match the rest of the site instead of
+   the docs' smaller scale — this is the top of a page, not a section of one. */
+.legal-copy {
+  max-width: 68ch;
+}
+.legal-copy h1 {
+  font-size: 2.25rem;
+  line-height: 1.1;
+  margin-bottom: 2rem;
+}
+@media (min-width: 640px) {
+  .legal-copy h1 {
+    font-size: 3rem;
+  }
+}
+.legal-copy h2 {
+  margin-top: 3rem;
+}
+.legal-copy h3,
+.legal-copy h4 {
+  margin-top: 2rem;
+}
+.legal-copy p,
+.legal-copy ul,
+.legal-copy ol {
+  line-height: 1.7;
+}
+/* Body links only. Nuxt Content wraps every heading in an anchor to itself, so
+   a bare `a` rule turns the whole outline blue and underlined. */
+.legal-copy p a,
+.legal-copy li a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.legal-copy h1 a,
+.legal-copy h2 a,
+.legal-copy h3 a,
+.legal-copy h4 a {
+  color: inherit;
+  text-decoration: none;
+}
+/* Addresses and long URLs would otherwise run past the column. */
+.legal-copy p {
+  overflow-wrap: anywhere;
+}
+
+
+/* ===========================================================================
+   Component styles.
+
+   Global rather than scoped to each component: a scoped block compiles to its
+   own stylesheet chunk, and a small file fetched before the first paint costs
+   far more in latency than its bytes are worth. Every selector below is already
+   namespaced by its component's own prefix, which is what makes this safe.
+   =========================================================================== */
+
+/* --- CtaTiles.vue -------------------------------------------------------- */
+/* `clip` rather than `hidden`: it contains the tiles without making this a
+   scroll container, so nothing here can add a scrollbar or catch a scroll.
+
+   Clipping cannot cut the animation short, because neither end of the path is
+   ever meant to be seen: a tile begins entirely off the left edge and ends
+   scaled to nothing and turned white. The edge of the section is where tiles
+   arrive from and depart to — that *is* the effect. What would break the
+   composition is not the clip but a stage that changes shape, which is what
+   the element below is for. */
+.cta-tiles {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  pointer-events: none;
+  container-type: size;
+
+  /* One stacking context for the whole field, sitting below the copy.
+     Without `isolation`, the seven tiles' own z-indexes (1 to 7) are loose in
+     the section's stacking context alongside the text's `z-10` — ten beats
+     seven on paper, but every tile is a composited layer of its own here
+     (`will-change` plus an animated `filter`), and a browser sorting those
+     layers against text that is not composited is where the flicker over the
+     button came from. Isolated, the seven sort among themselves and the field
+     as a whole is one layer at `z-index: 0` — there is no ordering left to get
+     wrong. */
+  z-index: 0;
+  isolation: isolate;
+
+  /* A quarter of the section's width, and never less. The seven tiles are
+     spaced a seventh of the path apart — 19.3% of the width — so at 25% they
+     overlap by about a quarter of a tile, and it is that overlap which makes
+     the field read as the logo's two stacked cards rather than as a row of
+     separate squares. Capping the width by the section's height, which is what
+     kept them inside a short section before, took them to 13% and the overlap
+     went with it. */
+  --tile-w: 25cqw;
+  /* The tile is 1812:1203, and it is rotated 6°, so its lowest corner sits this
+     far below its own top edge: half the height, plus half the height of the
+     rotated bounding box. Starting the path that far up from the bottom is what
+     keeps a full-size tile inside the section instead of shrinking it to fit. */
+  --tile-reach: calc(var(--tile-w) * 0.72);
+}
+
+/* The stage is the visible section, exactly. A stage larger than the section —
+   16:9 sized to cover — was the wrong idea: the path's start point then lands
+   below the visible area, and a tile there is at full size and full colour, so
+   the bottom edge sliced a solid rectangle in half in the middle of the
+   picture. The endpoints have to sit on the edges the viewer can see. */
+.cta-tiles__stage {
+  position: absolute;
+  inset: 0;
+}
+.cta-tiles__tile {
+  position: absolute;
+  /* Positioned at the top-left corner; the travel below places it. */
+  left: 0;
+  top: 0;
+  width: var(--tile-w);
+  height: auto;
+  will-change: transform, color, filter;
+  animation: cta-tile-drift 21s linear infinite;
+}
+
+/* Painted youngest on top. Each tile stays the same distance ahead of the next
+   for ever, so tile 1 is always the one that has just entered and tile 7 always
+   the one about to leave — which makes a fixed order the right order: the
+   large, blue, near tile passes in front of the small, pale, far one. */
+.cta-tiles__tile--1 {
+  z-index: 7;
+}
+.cta-tiles__tile--2 {
+  z-index: 6;
+}
+.cta-tiles__tile--3 {
+  z-index: 5;
+}
+.cta-tiles__tile--4 {
+  z-index: 4;
+}
+.cta-tiles__tile--5 {
+  z-index: 3;
+}
+.cta-tiles__tile--6 {
+  z-index: 2;
+}
+.cta-tiles__tile--7 {
+  z-index: 1;
+}
+
+/* A seventh of the cycle between each, and negative — so the section opens
+   with all seven already spread along the path rather than on an empty stage
+   that fills up over the first twenty seconds. */
+.cta-tiles__tile--1 {
+  animation-delay: 0s;
+}
+.cta-tiles__tile--2 {
+  animation-delay: -3s;
+}
+.cta-tiles__tile--3 {
+  animation-delay: -6s;
+}
+.cta-tiles__tile--4 {
+  animation-delay: -9s;
+}
+.cta-tiles__tile--5 {
+  animation-delay: -12s;
+}
+.cta-tiles__tile--6 {
+  animation-delay: -15s;
+}
+.cta-tiles__tile--7 {
+  animation-delay: -18s;
+}
+
+/* Bottom left to top right: shrinking away to nothing, turning from -6° to +4°,
+   blurring to 16px, and losing its colour to white rather than its opacity.
+
+   That last part is the difference between this reading as depth and reading as
+   cellophane: a tile that fades is transparent for most of its life, so every
+   overlap shows both tiles through each other. Going to white instead keeps
+   every tile solid — one simply passes in front of another — and since the page
+   behind them is white too, a tile that has arrived is just as gone.
+
+   The travel is in container units — a share of the section's own width and
+   height rather than of the tile — so both ends of the path land on edges the
+   viewer can see, whatever shape the section is. It starts 30% of the width to
+   the left of the left edge, so a tile is entirely outside before it enters,
+   and finishes past the right edge at the very top, by which point it has
+   scaled to nothing. Percentages of the *tile* were what tied the vertical
+   travel to the section's width: the path then spanned 73% of the height on a
+   desktop and 19% on a phone, the same animation drawn at two different
+   angles. */
+@keyframes cta-tile-drift {
+  0% {
+    transform: translate3d(-30cqw, calc(100cqh - var(--tile-reach)), 0)
+      rotate(-6deg) scale(1);
+    color: color-mix(in oklab, var(--color-primary) 16%, white);
+    filter: blur(0px);
+  }
+  100% {
+    transform: translate3d(105cqw, 0, 0) rotate(4deg) scale(0);
+    color: #ffffff;
+    filter: blur(16px);
+  }
+}
+
+/* A background that never stops moving is exactly what this preference is for. */
+@media (prefers-reduced-motion: reduce) {
+  .cta-tiles__tile {
+    animation: none;
+    transform: translate3d(30cqw, calc(50cqh - var(--tile-reach) * 0.7), 0)
+      rotate(-6deg) scale(0.7);
+    color: color-mix(in oklab, var(--color-primary) 16%, white);
+  }
+}
+
+/* --- FeatureApi.vue ------------------------------------------------------ */
+.api {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.7em;
+}
+.api__code {
+  margin: 0;
+  white-space: pre;
+  /* Clipped rather than scrollable: this is a picture of a request, not a
+     request anybody has to read to the end. */
+  overflow: hidden;
+}
+.api__code code {
+  font: inherit;
+  /* On the text, so the line fades while the panel stays solid. */
+  mask-image: linear-gradient(to right, #000 86%, transparent 99%);
+}
+.api__card {
+  background: var(--color-white);
+}
+.api__agent {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  margin-left: auto;
+  flex: none;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  font-size: 0.85em;
+  font-weight: 500;
+}
+.api__agent svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* --- FeatureChecklist.vue ------------------------------------------------ */
+.chk {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.8rem;
+}
+.chk__card {
+  background: var(--color-white);
+}
+.chk__count {
+  position: relative;
+  display: inline-grid;
+}
+.chk__count-value {
+  grid-area: 1 / 1;
+  /* Longhands, not the shorthand: `animation: 12s linear infinite` with the
+     name left for the modifier rule to supply parses as a nameless animation,
+     and the modifier then sets a name onto a zero duration. */
+  animation-duration: 12s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+/* An invisible copy of the value reserves the room, so the stacked ones have
+   something to size the grid cell to. */
+.chk__count-space {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+
+.chk__count-value--0 {
+  animation-name: chk-count-0;
+}
+.chk__count-value--1 {
+  animation-name: chk-count-1;
+}
+.chk__count-value--2 {
+  animation-name: chk-count-2;
+}
+.chk__count-value--3 {
+  animation-name: chk-count-3;
+}
+.chk__count-value--4 {
+  animation-name: chk-count-4;
+}
+.chk__count-value--5 {
+  animation-name: chk-count-5;
+}
+.chk__count-value--6 {
+  animation-name: chk-count-6;
+}
+
+.chk__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding-left: 0.2em;
+  color: var(--color-dark);
+}
+.chk__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+/* Square with a rounded corner, as the Markdown checkbox renders in the app —
+   not the circle the card status uses. */
+.chk__box {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.25em;
+  height: 1.25em;
+  border-radius: 0.3em;
+  border: 0.15em solid var(--color-gray);
+  /* `color` is what the tick inherits, so animating it here is what makes the
+     mark appear and disappear with the box rather than separately. */
+  color: transparent;
+  background: transparent;
+}
+.chk__box svg {
+  width: 0.8em;
+  height: 0.8em;
+}
+
+/* One keyframe set per item rather than a shared one with staggered delays:
+   the ticks come in one at a time, but they all have to clear together at the
+   end of the loop, and a delay would carry the reset along with it. */
+
+.chk__box--1 {
+  animation: chk-1 12s linear infinite;
+}
+.chk__box--2 {
+  animation: chk-2 12s linear infinite;
+}
+.chk__box--3 {
+  animation: chk-3 12s linear infinite;
+}
+.chk__box--4 {
+  animation: chk-4 12s linear infinite;
+}
+.chk__box--5 {
+  animation: chk-5 12s linear infinite;
+}
+.chk__box--6 {
+  animation: chk-6 12s linear infinite;
+}
+
+@keyframes chk-1 {
+  0%,
+  4% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+  6%,
+  84% {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-white);
+  }
+  86%,
+  100% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+}
+@keyframes chk-2 {
+  0%,
+  13% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+  15%,
+  84% {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-white);
+  }
+  86%,
+  100% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+}
+@keyframes chk-3 {
+  0%,
+  22% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+  24%,
+  84% {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-white);
+  }
+  86%,
+  100% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+}
+@keyframes chk-4 {
+  0%,
+  30% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+  32%,
+  84% {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-white);
+  }
+  86%,
+  100% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+}
+@keyframes chk-5 {
+  0%,
+  39% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+  41%,
+  84% {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-white);
+  }
+  86%,
+  100% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+}
+@keyframes chk-6 {
+  0%,
+  48% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+  50%,
+  84% {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-white);
+  }
+  86%,
+  100% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+  }
+}
+
+/* Each value is on screen for exactly the stretch its own count is true. */
+@keyframes chk-count-0 {
+  0%,
+  5% {
+    opacity: 1;
+  }
+  6%,
+  85% {
+    opacity: 0;
+  }
+  86%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes chk-count-1 {
+  0%,
+  5% {
+    opacity: 0;
+  }
+  6%,
+  14% {
+    opacity: 1;
+  }
+  15%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes chk-count-2 {
+  0%,
+  14% {
+    opacity: 0;
+  }
+  15%,
+  23% {
+    opacity: 1;
+  }
+  24%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes chk-count-3 {
+  0%,
+  23% {
+    opacity: 0;
+  }
+  24%,
+  31% {
+    opacity: 1;
+  }
+  32%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes chk-count-4 {
+  0%,
+  31% {
+    opacity: 0;
+  }
+  32%,
+  40% {
+    opacity: 1;
+  }
+  41%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes chk-count-5 {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  41%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes chk-count-6 {
+  0%,
+  49% {
+    opacity: 0;
+  }
+  50%,
+  85% {
+    opacity: 1;
+  }
+  86%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chk__box,
+  .chk__count-value {
+    animation: none;
+  }
+  .chk__count-value:not(.chk__count-value--0) {
+    opacity: 0;
+  }
+}
+
+/* --- FeatureColors.vue --------------------------------------------------- */
+.bc {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.bc__tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* Takes the whole tile bar the picker below it, which is what a board tile
+     does on the dashboard — it is the thing you are looking at, not a swatch. */
+  flex: 1 1 auto;
+  min-height: 7rem;
+  padding: 0.9em;
+  border-radius: 0.55rem;
+  animation: bc-tile 24s linear infinite;
+}
+.bc__row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.6em;
+}
+/* The name plate is the tile's foreground colour with the board's own colour
+   as its text, so the pair inverts together — exactly as `BoardTile` does it. */
+.bc__name {
+  padding: 0.45em 0.7em;
+  border-radius: 0.5em;
+  background: var(--color-white);
+  font-weight: 500;
+  animation: bc-plate 24s linear infinite;
+}
+.bc__people {
+  display: flex;
+}
+.bc__face {
+  box-shadow: 0 0 0 0.15em var(--color-white);
+}
+.bc__face + .bc__face {
+  margin-left: -0.35em;
+}
+.bc__swatches {
+  /* The active ring sits 3px outside its swatch, so the row needs that much
+     room or the first, the last and the bottom of it are clipped away. */
+  padding: 3px;
+  display: flex;
+  gap: 0.3rem;
+  justify-content: space-between;
+}
+.bc__swatch {
+  position: relative;
+  flex: 1 1 0;
+  height: 0.9rem;
+  border-radius: 0.25rem;
+}
+/* The ring is a pseudo-element so it can sit outside the swatch without
+   changing its size and nudging the row. */
+.bc__swatch::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 0.4rem;
+  box-shadow: 0 0 0 2px var(--color-dark);
+  opacity: 0;
+  animation: bc-ring 24s linear infinite;
+  animation-delay: inherit;
+}
+
+/* Twelve stops plus a return to the first, so the loop closes on itself. The
+   colour eases from one preset to the next rather than cutting, which is what
+   makes it worth watching. */
+@keyframes bc-tile {
+  0% {
+    background-color: #3f3f46;
+  }
+  8.33% {
+    background-color: #2563eb;
+  }
+  16.67% {
+    background-color: #4f46e5;
+  }
+  25% {
+    background-color: #7c3aed;
+  }
+  33.33% {
+    background-color: #a21caf;
+  }
+  41.67% {
+    background-color: #e11d48;
+  }
+  50% {
+    background-color: #dc2626;
+  }
+  58.33% {
+    background-color: #c2410c;
+  }
+  66.67% {
+    background-color: #b45309;
+  }
+  75% {
+    background-color: #15803d;
+  }
+  83.33% {
+    background-color: #0f766e;
+  }
+  91.67% {
+    background-color: #0e7490;
+  }
+  100% {
+    background-color: #3f3f46;
+  }
+}
+
+/* The same twelve, as text on the plate. */
+@keyframes bc-plate {
+  0% {
+    color: #3f3f46;
+  }
+  8.33% {
+    color: #2563eb;
+  }
+  16.67% {
+    color: #4f46e5;
+  }
+  25% {
+    color: #7c3aed;
+  }
+  33.33% {
+    color: #a21caf;
+  }
+  41.67% {
+    color: #e11d48;
+  }
+  50% {
+    color: #dc2626;
+  }
+  58.33% {
+    color: #c2410c;
+  }
+  66.67% {
+    color: #b45309;
+  }
+  75% {
+    color: #15803d;
+  }
+  83.33% {
+    color: #0f766e;
+  }
+  91.67% {
+    color: #0e7490;
+  }
+  100% {
+    color: #3f3f46;
+  }
+}
+
+@keyframes bc-ring {
+  0%,
+  8.33% {
+    opacity: 1;
+  }
+  8.34%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bc__tile,
+  .bc__name,
+  .bc__swatch::after {
+    animation: none;
+  }
+  .bc__tile {
+    background-color: #2563eb;
+  }
+  .bc__name {
+    color: #2563eb;
+  }
+}
+
+/* --- FeatureDarkMode.vue ------------------------------------------------- */
+.dm {
+  position: absolute;
+  inset: 0;
+}
+.dm__area {
+  height: 100%;
+  animation: dm-theme 9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.dm__toggle {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+}
+.dm__icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* The area head styles every icon in it primary; this one belongs to the
+     theme rather than to an action, so it follows the text. */
+  color: inherit;
+}
+.dm__icon--sun {
+  animation: dm-sun 9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.dm__icon--moon {
+  animation: dm-moon 9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+/* Everything inside follows the panel rather than the global tokens, so one
+   change of `color` carries the whole fragment across. */
+.dm__area .ui-area__head,
+.dm__area .ui-card__title {
+  color: inherit;
+}
+.dm__area .ui-card {
+  background: color-mix(in oklab, currentColor 12%, transparent);
+}
+.dm__area .ui-status {
+  border-color: color-mix(in oklab, currentColor 55%, transparent);
+}
+.dm__area .ui-status--done {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+/* The app's light panel, then the app's dark one. */
+@keyframes dm-theme {
+  0%,
+  40% {
+    background: #ffffff;
+    color: #1c1c1e;
+  }
+  50%,
+  90% {
+    background: #2c2c2e;
+    color: #ffffff;
+  }
+  100% {
+    background: #ffffff;
+    color: #1c1c1e;
+  }
+}
+@keyframes dm-sun {
+  0%,
+  40% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+  50%,
+  90% {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+@keyframes dm-moon {
+  0%,
+  40% {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+  }
+  50%,
+  90% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dm__area,
+  .dm__icon {
+    animation: none;
+  }
+  .dm__area {
+    background: #ffffff;
+    color: #1c1c1e;
+  }
+  .dm__icon--moon {
+    opacity: 0;
+  }
+}
+
+/* --- FeatureDocker.vue --------------------------------------------------- */
+.doc {
+  position: absolute;
+  inset: 0;
+  display: grid;
+}
+.doc__code {
+  margin: 0;
+  /* Fills the tile like the dialog panels in the same row do, rather than
+     sitting in the middle of it at whatever height the command happens to be.
+     The gutters even out at 2.5em on the sides: the command is centred, so the
+     top and bottom get half the leftover height whatever the padding says. */
+  height: 100%;
+  display: grid;
+  align-content: center;
+  padding: 1.1em 2.5em;
+  border-radius: 0.9rem;
+  white-space: pre;
+  /* Clipped, not scrollable. In the documentation a scrollbar on a code block
+     is the right answer — somebody is there to read the whole command. Here the
+     command is decoration, so a scrollbar is an invitation to read something
+     that does not need reading. */
+  overflow: hidden;
+}
+.doc__code code {
+  font: inherit;
+  /* The mask is on the text rather than on the panel, so the line fades out at
+     the edge while the panel behind it stays solid. */
+  mask-image: linear-gradient(to right, #000 86%, transparent 99%);
+}
+
+/* --- FeatureEurope.vue --------------------------------------------------- */
+.eu {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: #003399;
+  overflow: hidden;
+}
+.eu__stars {
+  /* Square, sized from the height — so the circle keeps its proportion of the
+     flag whatever width the tile ends up at. */
+  height: 60%;
+  width: auto;
+}
+/* A full turn takes a minute — slow enough that it reads as the circle of
+   stars rather than as a spinning thing, but never quite still. */
+.eu__ring {
+  transform-origin: 50px 50px;
+  animation: eu-spin 60s linear infinite;
+}
+.eu__star {
+  fill: #ffcc00;
+  transform-box: fill-box;
+  transform-origin: center;
+  /* Each star a twelfth of the cycle behind the one before it, so the pulse
+     travels round the ring instead of the whole circle blinking at once. */
+  animation: eu-pulse 6s ease-in-out infinite;
+}
+
+@keyframes eu-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes eu-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.78;
+  }
+  18% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 0.78;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eu__ring,
+  .eu__star {
+    animation: none;
+  }
+  .eu__star {
+    opacity: 1;
+  }
+}
+
+/* --- FeatureInvite.vue --------------------------------------------------- */
+.inv {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.7em;
+  /* A white panel filling the tile: this is a dialog in the app, and a dialog
+     has a surface.
+
+     Even gutters all round. The vertical gap works out at half the height the
+     content leaves over, whatever the padding here is set to, so the sides are
+     the only figure worth tuning — 1.7em is the 19px this tile's content
+     leaves. The Trello panel holds one row less and so wants 2em. */
+  padding: 1.1em 1.7em;
+  border-radius: 0.9rem;
+  background: var(--color-white);
+}
+.inv__head {
+  color: var(--color-dark);
+  font-weight: 700;
+}
+.inv__row {
+  display: flex;
+  gap: 0.4em;
+}
+.inv__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inv__people {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  margin-top: 0.2em;
+}
+.inv__person {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.inv__name {
+  color: var(--color-dark);
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inv__role {
+  margin-left: auto;
+  flex: none;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-dark) 8%, transparent);
+  color: var(--color-gray);
+  font-size: 0.85em;
+}
+
+/* --- FeatureLanguages.vue ------------------------------------------------ */
+.lang {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+}
+.lang__button {
+  /* Centred by the column, and it stays centred because only its width
+     changes — nothing about its position is being animated. */
+  align-self: center;
+  justify-content: center;
+  overflow: hidden;
+  max-width: 100%;
+  /* A little past the target and back: the overshoot is what makes the
+     relabelling feel like a thing that happened rather than a re-render. */
+  transition: width 0.55s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.lang__label {
+  white-space: nowrap;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.lang__label--out {
+  opacity: 0;
+  transform: translateY(-0.35em);
+}
+.lang__code {
+  padding: 0.15em 0.5em;
+  border-radius: 0.35em;
+  background: color-mix(in oklab, var(--color-dark) 8%, transparent);
+  color: var(--color-gray);
+  font-size: 0.85em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.lang__count {
+  color: var(--color-gray);
+  font-size: 0.85em;
+}
+.lang__ruler {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  visibility: hidden;
+  pointer-events: none;
+}
+.lang__measure {
+  transition: none;
+}
+
+/* --- FeatureLayouts.vue -------------------------------------------------- */
+.lay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.7rem;
+}
+.lay__control {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-self: center;
+  padding: 0.2em;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-dark) 8%, transparent);
+}
+.lay__option {
+  position: relative;
+  z-index: 1;
+  padding: 0.3em 1em;
+  text-align: center;
+  color: var(--color-dark);
+  font-weight: 500;
+}
+.lay__thumb {
+  position: absolute;
+  z-index: 0;
+  top: 0.2em;
+  bottom: 0.2em;
+  left: 0.2em;
+  width: calc(50% - 0.2em);
+  border-radius: 999px;
+  background: var(--color-white);
+  box-shadow: 0 1px 3px color-mix(in oklab, var(--color-dark) 15%, transparent);
+  animation: lay-thumb 9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.lay__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.lay__view {
+  position: absolute;
+  inset: 0;
+  /* Both views hold more than the stage can show, which is the honest shape of
+     a board. The bottom fades out rather than being cut off square. */
+  mask-image: linear-gradient(to bottom, #000 78%, transparent 99%);
+}
+.lay__view--kanban {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 0.5rem;
+  animation: lay-kanban 9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+/* Stacked full width, the same areas one after another — and much taller than
+   the stage, so it fades out sooner. */
+.lay__view--todo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  mask-image: linear-gradient(to bottom, #000 62%, transparent 96%);
+  animation: lay-todo 9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.lay__col {
+  min-width: 0;
+}
+
+/* The thumb and the two views are on one clock, so the layout underneath has
+   always already changed by the time the control finishes moving. */
+@keyframes lay-thumb {
+  0%,
+  40% {
+    transform: translateX(0);
+  }
+  50%,
+  90% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes lay-kanban {
+  0%,
+  38% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  48%,
+  92% {
+    opacity: 0;
+    transform: translateY(-0.4rem);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes lay-todo {
+  0%,
+  38% {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+  48%,
+  92% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lay__thumb,
+  .lay__view {
+    animation: none;
+  }
+  .lay__view--todo {
+    opacity: 0;
+  }
+}
+
+/* --- FeatureRealtime.vue ------------------------------------------------- */
+/* One frame with no animation at all, which is what makes the browser resolve
+   every `em` in the keyframes again when they come back. */
+.rt--restart *,
+.rt--restart {
+  animation: none !important;
+}
+
+/* Below `xs` the columns are narrower than "Aug 14, 10:41 PM" can be set in, so
+   the clock time goes and the date stays — the date alone fits, and it is the
+   half that says something in a picture about work moving between areas. The
+   30rem matches the breakpoint of the same name in main.css. */
+@media (width < 30rem) {
+  .rt__time {
+    display: none;
+  }
+}
+
+.rt {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: start;
+  align-content: start;
+  gap: 0.625rem;
+  /* How far an area opens to take the card: the card's own height, measured
+     from the built page at 41px against this fragment's 11.2px em. */
+  --slot: 3.7em;
+  /* Done holds one card fewer than the other two, so its slot sits that much
+     higher: a card without a meta row (0.5em padding, a 1.3em row, 0.5em
+     padding) plus the gap above it. */
+  --done-lift: -2.8em;
+}
+.rt__area {
+  min-width: 0;
+}
+.rt__slot {
+  position: relative;
+  height: 0;
+}
+.rt__slot--1 {
+  animation: rt-slot-1 15s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.rt__slot--2 {
+  animation: rt-slot-2 15s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.rt__slot--3 {
+  animation: rt-slot-3 15s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/* The card is anchored to the slot of the area it starts in, so its resting
+   position follows that area's stack of cards rather than a number written down
+   here.
+
+   One area over is the slot's own width plus the two area paddings it crosses
+   plus the grid gap — `100%` alone lands it short by the padding, which is
+   exactly the amount it was sitting off by. */
+.rt__mover {
+  position: absolute;
+  inset: 0 0 auto 0;
+  /* Above the areas it crosses — without this the later ones, being later in
+     the document, would paint over it mid-journey. */
+  z-index: 2;
+  animation: rt-travel 15s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.rt__card--live {
+  background: var(--color-white);
+  box-shadow:
+    0 10px 24px -8px color-mix(in oklab, var(--color-dark) 35%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--color-dark) 6%, transparent);
+  animation: rt-lift 15s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.rt__status {
+  animation: rt-tick 15s linear infinite;
+}
+.rt__avatar {
+  margin-left: auto;
+}
+.rt__cursor {
+  position: absolute;
+  right: -0.5em;
+  bottom: -0.9em;
+  width: 1.5em;
+  height: 1.5em;
+  opacity: 0;
+  /* A white edge, so the pointer stays legible over the card and over the
+     board alike. */
+  stroke: var(--color-white);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.rt__cursor--blue {
+  fill: var(--color-primary);
+  animation: rt-cursor-blue 15s ease-out infinite;
+}
+.rt__cursor--green {
+  /* One of the board presets rather than a new colour: it only has to read as
+     "somebody else", and it already clears contrast against white. */
+  fill: #15803d;
+  animation: rt-cursor-green 15s ease-out infinite;
+}
+
+/* One pass of the loop, in the order the work actually happens: dragged out of
+   Backlog and dropped in In Progress, ticked off a beat later where it is being
+   worked on, and only then filed in Done. Ticking it on arrival in Done would
+   have the board saying the work finished because it was filed, which is
+   backwards.
+
+   It fades out at the end and back in at Backlog rather than sliding home — a
+   card travelling backwards through the areas is not something a board does. */
+@keyframes rt-travel {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  6%,
+  18% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  30%,
+  56% {
+    transform: translateX(calc(100% + 1.4em + 0.625rem));
+    opacity: 1;
+  }
+  66%,
+  88% {
+    transform: translate(
+      calc(200% + 2.8em + 1.25rem),
+      var(--done-lift)
+    );
+    opacity: 1;
+  }
+  96%,
+  100% {
+    transform: translate(
+      calc(200% + 2.8em + 1.25rem),
+      var(--done-lift)
+    );
+    opacity: 0;
+  }
+}
+
+/* Picked up as it leaves, set down as it arrives — once for each of the two
+   moves, and flat for the whole stretch in between where it is only being
+   worked on. */
+@keyframes rt-lift {
+  0%,
+  18% {
+    transform: scale(1) rotate(0deg);
+  }
+  24% {
+    transform: scale(1.05) rotate(-1.5deg);
+  }
+  30%,
+  56% {
+    transform: scale(1) rotate(0deg);
+  }
+  61% {
+    transform: scale(1.05) rotate(-1.5deg);
+  }
+  66%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Ticked while the card is sitting in In Progress, a beat after it lands. The
+   `color` is what the check mark inherits, so animating it here is what brings
+   the mark in with the circle rather than separately; the small overshoot is
+   the click. It clears again at 96%, by which point the card has faded out and
+   nobody sees it reset. */
+@keyframes rt-tick {
+  0%,
+  40% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+    transform: scale(1);
+  }
+  43% {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-white);
+    transform: scale(1.25);
+  }
+  46%,
+  92% {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-white);
+    transform: scale(1);
+  }
+  96%,
+  100% {
+    border-color: var(--color-gray);
+    background: transparent;
+    color: transparent;
+    transform: scale(1);
+  }
+}
+
+/* The area the card is leaving closes as the drag begins; the one it is going
+   to opens before it lands, so the card drops into a gap rather than pushing
+   one open on arrival. */
+@keyframes rt-slot-1 {
+  0%,
+  18% {
+    height: var(--slot);
+  }
+  27%,
+  90% {
+    height: 0;
+  }
+  99%,
+  100% {
+    height: var(--slot);
+  }
+}
+@keyframes rt-slot-2 {
+  0%,
+  21% {
+    height: 0;
+  }
+  29%,
+  56% {
+    height: var(--slot);
+  }
+  65%,
+  100% {
+    height: 0;
+  }
+}
+@keyframes rt-slot-3 {
+  0%,
+  59% {
+    height: 0;
+  }
+  65%,
+  90% {
+    height: var(--slot);
+  }
+  97%,
+  100% {
+    height: 0;
+  }
+}
+
+/* Each cursor is only on screen for its own hand-over: it arrives just before
+   the card moves, rides with it, and lets go once the card is down. */
+@keyframes rt-cursor-blue {
+  0%,
+  14% {
+    opacity: 0;
+    transform: translate(0.4em, 0.4em);
+  }
+  17%,
+  31% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  36%,
+  100% {
+    opacity: 0;
+    transform: translate(0.4em, 0.4em);
+  }
+}
+@keyframes rt-cursor-green {
+  0%,
+  52% {
+    opacity: 0;
+    transform: translate(0.4em, 0.4em);
+  }
+  55%,
+  67% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  72%,
+  100% {
+    opacity: 0;
+    transform: translate(0.4em, 0.4em);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rt__mover,
+  .rt__card--live,
+  .rt__status,
+  .rt__slot,
+  .rt__cursor {
+    animation: none;
+  }
+  .rt__slot--1 {
+    height: var(--slot);
+  }
+}
+
+/* --- FeatureTile.vue ----------------------------------------------------- */
+.feature-tile {
+  height: 100%;
+}
+.feature-tile__inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* Grey tile on the white page — the same relationship the app has between
+     its surface and its panels. */
+  background: var(--color-slate);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+}
+.feature-tile__visual {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 12rem;
+  margin-bottom: 1.5rem;
+  /* The box the fragments inside size themselves against — see `.ui` in
+     main.css. Inline-size only, so their height stays free. */
+  container-type: inline-size;
+}
+.feature-tile__visual--tall {
+  min-height: 13.5rem;
+}
+
+/* --- FeatureTrello.vue --------------------------------------------------- */
+.trl {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6em;
+  /* A white panel filling the tile, the way the dark-mode fragment is one: this
+     is a dialog in the app, and a dialog has a surface. The padding is the
+     panel's own, not the frame around the graphic that used to be here. */
+  /* Even gutters all round. The vertical gap is not just this padding — the
+     content is centred, so it gets the leftover height as well — which is why
+     the sides need the larger figure to match what the top and bottom
+     actually measure. */
+  padding: 1.1em 2em;
+  border-radius: 0.9rem;
+  background: var(--color-white);
+}
+.trl__head {
+  color: var(--color-dark);
+  font-weight: 700;
+}
+.trl__input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trl__brings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  margin-top: 0.2em;
+}
+.trl__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  color: var(--color-gray);
+  font-size: 0.9em;
+}
+.trl__item svg {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  color: var(--color-primary);
+}
+
+/* --- HeroClouds.vue ------------------------------------------------------ */
+.clouds {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.clouds__cloud {
+  position: absolute;
+  width: clamp(28rem, 46vw, 162rem);
+  height: auto;
+  mix-blend-mode: screen;
+  will-change: transform;
+  user-select: none;
+}
+/* Anchored past the edges so neither cloud shows a straight cut where the
+   image ends, and set low enough to sit beside the screenshot rather than
+   behind the headline. */
+.clouds__cloud--left {
+  left: -16%;
+  bottom: -10%;
+}
+/* The horizontal flip is set through Motion (`scaleX: -1`) rather than here:
+   Motion composes the element's `transform` from its own style keys, so a CSS
+   transform on the same element would simply be overwritten. */
+.clouds__cloud--right {
+  right: -17%;
+  bottom: -4%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clouds__cloud {
+    transform: none;
+  }
+}
+
+/* --- PageCta.vue --------------------------------------------------------- */
+/* Height enough for the tiles to have somewhere to travel, taken from the
+   viewport's **width**. `min-h-screen` was 100vh, and 100vh is the one length
+   on a phone that changes while you are simply scrolling: the URL bar slides
+   away, the section grows by a hundred pixels, and the whole tile field jumps
+   with it — measured at 74px of movement for a 100px change of height. A width
+   is stable through all of that.
+
+   56.25vw is 16:9, the proportion the composition was drawn against, so a
+   1920-wide screen still gets the 1080-tall stage it had before. The clamp
+   stops an ultra-wide display from turning this into a page of its own. */
+.cta {
+  min-height: min(56.25vw, 44rem);
+}
+
+/* --- SplitText.vue ------------------------------------------------------- */
+/* No `display` of its own. It used to force `inline`, which is what a `span`
+   already is — and which quietly broke the component the moment it was asked to
+   be the heading rather than sit inside one: an inline `h2` drops its vertical
+   margins, so the space under every section title disappeared. Letting the tag
+   keep its own display makes `as="h2"` behave like an `h2`. */
+/* The mask. `overflow: hidden` on an inline box does nothing, so the word has
+   to be inline-block — which also stops a word breaking across lines. The
+   padding/margin pair reclaims the descender space (g, y, p) that the clip
+   would otherwise cut off. */
+.split-text__word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+.split-text__piece {
+  display: inline-block;
+  will-change: transform;
+}
+/* A real space between words, outside the mask so it never gets clipped. */
+.split-text__space {
+  display: inline-block;
+  width: 0.25em;
+}
+.split-text__word:last-child .split-text__space {
+  display: none;
+}
+
+/* Anyone who has asked for less motion gets the text, immediately, in place. */
+@media (prefers-reduced-motion: reduce) {
+  .split-text__piece {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* --- CodeExample.vue ----------------------------------------------------- */
+/* A shade darker than the code itself, so the strip reads as the panel's head
+   rather than as the first line of the snippet — and the selected tab, which
+   takes the code's own colour, looks like the sheet it belongs to. */
+.code-example__tabs {
+  background: color-mix(in oklab, var(--color-code-border) 55%, var(--color-code-bg));
+}
+.code-example__tab--active {
+  background: var(--color-code-bg);
+}
+
+/* The fenced blocks inside come from Markdown with their own margins and
+   corners; here they are the body of a panel, so both are squared off. */
+.code-example__body pre {
+  margin: 0;
+  border: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}

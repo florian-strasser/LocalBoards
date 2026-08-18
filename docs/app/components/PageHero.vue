@@ -57,12 +57,22 @@
           <picture>
             <source
               media="(width < 30rem)"
-              srcset="/images/hero-screenshot-mobile.webp"
+              srcset="
+                /images/hero-screenshot-mobile-590.webp  590w,
+                /images/hero-screenshot-mobile.webp      786w
+              "
+              sizes="100vw"
               width="786"
               height="1494"
             />
             <img
               src="/images/hero-screenshot.webp"
+              srcset="
+                /images/hero-screenshot-720.webp    720w,
+                /images/hero-screenshot-1024.webp  1024w,
+                /images/hero-screenshot.webp       1440w
+              "
+              sizes="(min-width: 72rem) 68rem, 100vw"
               alt="A LokalBoards board with three areas of cards"
               width="1440"
               height="900"

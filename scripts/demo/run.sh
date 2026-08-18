@@ -127,6 +127,12 @@ for lang in $DEMO_LANGS; do
       if [ -f "$DEMO_OUT/$lang/$HERO_SHOT_VIEW.png" ]; then
         echo "==> refreshing hero screenshot -> $HERO_SHOT"
         cwebp -quiet -q 82 -resize 1440 0 "$DEMO_OUT/$lang/$HERO_SHOT_VIEW.png" -o "$HERO_SHOT"
+        # The narrower widths the page offers through `srcset`, so a phone does
+        # not download a 1440-wide picture to paint 400 of it.
+        for _w in 720 1024; do
+          cwebp -quiet -q 82 -resize "$_w" 0 "$DEMO_OUT/$lang/$HERO_SHOT_VIEW.png" \
+            -o "${HERO_SHOT%.webp}-${_w}.webp"
+        done
       fi
       if [ -f "$DEMO_OUT/$lang/$HERO_SHOT_MOBILE_VIEW.png" ]; then
         echo "==> refreshing mobile hero screenshot -> $HERO_SHOT_MOBILE"
@@ -140,6 +146,8 @@ for lang in $DEMO_LANGS; do
         _mh=$(( _mw * 19 / 10 ))
         cwebp -quiet -q 82 -crop 0 0 "$_mw" "$_mh" -resize 786 0 \
           "$DEMO_OUT/$lang/$HERO_SHOT_MOBILE_VIEW.png" -o "$HERO_SHOT_MOBILE"
+        cwebp -quiet -q 82 -crop 0 0 "$_mw" "$_mh" -resize 590 0 \
+          "$DEMO_OUT/$lang/$HERO_SHOT_MOBILE_VIEW.png" -o "${HERO_SHOT_MOBILE%.webp}-590.webp"
       fi
       hero_done=1
     else

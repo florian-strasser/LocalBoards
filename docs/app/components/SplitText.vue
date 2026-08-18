@@ -1,9 +1,15 @@
 <template>
-  <component :is="as" ref="root" :aria-label="text" class="split-text">
+  <component :is="as" ref="root" class="split-text">
+    <!-- The real sentence, once, for anyone not reading the pieces. It used to
+         be an `aria-label` on the container, which is not permitted on an
+         element with no role — a `p` or a `span` — so the attribute was both
+         invalid and, on some assistive technology, ignored. A visually hidden
+         copy is what it should have been: read normally, never seen. -->
+    <span class="sr-only">{{ text }}</span>
     <!--
-      The text is rebuilt from pieces, so it must not be read twice. The
-      container carries the real sentence as `aria-label`; every fragment below
-      is hidden from assistive technology and exists purely to be animated.
+      The text is rebuilt from pieces, so it must not be read twice. Every
+      fragment below is hidden from assistive technology and exists purely to be
+      animated.
 
       Words are the outer unit even in `by="char"` mode, because a word that can
       break mid-way across a line looks broken. Each word is an inline-block
@@ -77,42 +83,3 @@ const words = computed(() => {
   }));
 });
 </script>
-
-<style scoped>
-/* No `display` of its own. It used to force `inline`, which is what a `span`
-   already is — and which quietly broke the component the moment it was asked to
-   be the heading rather than sit inside one: an inline `h2` drops its vertical
-   margins, so the space under every section title disappeared. Letting the tag
-   keep its own display makes `as="h2"` behave like an `h2`. */
-/* The mask. `overflow: hidden` on an inline box does nothing, so the word has
-   to be inline-block — which also stops a word breaking across lines. The
-   padding/margin pair reclaims the descender space (g, y, p) that the clip
-   would otherwise cut off. */
-.split-text__word {
-  display: inline-block;
-  overflow: hidden;
-  vertical-align: bottom;
-  padding-bottom: 0.12em;
-  margin-bottom: -0.12em;
-}
-.split-text__piece {
-  display: inline-block;
-  will-change: transform;
-}
-/* A real space between words, outside the mask so it never gets clipped. */
-.split-text__space {
-  display: inline-block;
-  width: 0.25em;
-}
-.split-text__word:last-child .split-text__space {
-  display: none;
-}
-
-/* Anyone who has asked for less motion gets the text, immediately, in place. */
-@media (prefers-reduced-motion: reduce) {
-  .split-text__piece {
-    transform: none !important;
-    opacity: 1 !important;
-  }
-}
-</style>

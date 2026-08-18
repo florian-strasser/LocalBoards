@@ -1,3 +1,21 @@
+## v0.28.1
+
+### Fixes
+
+- **Invalid ARIA on every animated heading.** `SplitText` carried the real sentence as an `aria-label` on its container — which is not permitted on an element with no role, so a `p` or a `span` wearing one is both invalid and, on some assistive technology, ignored. The sentence is a visually hidden copy now: read normally, never seen, and the animated pieces stay hidden from assistive technology as before.
+
+- **Nothing blocks the first paint any more.** Component styles were compiled into stylesheet chunks of their own, and a 0.9 KiB file fetched before the page can paint costs 150 ms on a phone — far more in latency than the bytes are worth. All seventeen blocks moved into `main.css`, which is inlined. No page on the site now loads a render-blocking stylesheet; every selector was already namespaced by its component, which is what made the move safe.
+
+- **Images come in more than one size.** The page shipped one width of each and let the browser scale it: a phone downloaded a 1686-wide cloud to paint 721 of it, 120 KiB of 148 wasted. Both heroes and the cloud now offer three widths through `srcset`, and the demo run writes every one of them, so they cannot drift apart. A phone at 2× takes the 800-wide cloud instead of the 1686.
+
+- **A stray space before the comma in the realtime tile's dates.** The meta row is a flex line with a gap, so splitting the date from the time made the time its own flex item — and the gap landed between "Aug 8" and its own comma.
+
+- **Resizing the window left the first feature tile's card in the wrong place.** Its animation is written in `em`, and v0.28.0 tied the fragment's size to the tile's width — so every distance in those keyframes, how far the card travels and how far an area opens to take it, is resolved from a number a resize changes. A running animation keeps the values it resolved with, so after the window grew the card still moved the old distance and came to rest where it belonged at the narrower width. Reloading always fixed it, which is the tell.
+
+  The loop now restarts when the fragment's box changes size, 150 ms after the dragging stops, which re-resolves all of it. Verified across an eighteen-step edge drag from 380 to 900 px in Chromium and WebKit: the font size follows to 11.2 px and the animation clock goes backwards — 2269 ms to 850 ms — which is the restart rather than a stale loop carrying on.
+
+  Only this tile moves anything far enough across itself for the drift to show, but any future fragment with travel of its own wants the same treatment.
+
 ## v0.28.0
 
 ### New Features

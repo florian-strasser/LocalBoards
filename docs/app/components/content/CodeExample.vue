@@ -50,24 +50,3 @@ watchEffect(() => {
   }
 });
 </script>
-
-<style scoped>
-/* A shade darker than the code itself, so the strip reads as the panel's head
-   rather than as the first line of the snippet — and the selected tab, which
-   takes the code's own colour, looks like the sheet it belongs to. */
-.code-example__tabs {
-  background: color-mix(in oklab, var(--color-code-border) 55%, var(--color-code-bg));
-}
-.code-example__tab--active {
-  background: var(--color-code-bg);
-}
-
-/* The fenced blocks inside come from Markdown with their own margins and
-   corners; here they are the body of a panel, so both are squared off. */
-.code-example__body :deep(pre) {
-  margin: 0;
-  border: 0;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-}
-</style>

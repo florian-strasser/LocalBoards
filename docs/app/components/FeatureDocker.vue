@@ -18,35 +18,3 @@ docker run <span class="ui-code__key">-d</span> \
   <span class="ui-code__key">-e</span> NUXT_MYSQL_HOST=db.internal</code></pre>
   </div>
 </template>
-
-<style scoped>
-.doc {
-  position: absolute;
-  inset: 0;
-  display: grid;
-}
-.doc__code {
-  margin: 0;
-  /* Fills the tile like the dialog panels in the same row do, rather than
-     sitting in the middle of it at whatever height the command happens to be.
-     The gutters even out at 2.5em on the sides: the command is centred, so the
-     top and bottom get half the leftover height whatever the padding says. */
-  height: 100%;
-  display: grid;
-  align-content: center;
-  padding: 1.1em 2.5em;
-  border-radius: 0.9rem;
-  white-space: pre;
-  /* Clipped, not scrollable. In the documentation a scrollbar on a code block
-     is the right answer — somebody is there to read the whole command. Here the
-     command is decoration, so a scrollbar is an invitation to read something
-     that does not need reading. */
-  overflow: hidden;
-}
-.doc__code code {
-  font: inherit;
-  /* The mask is on the text rather than on the panel, so the line fades out at
-     the edge while the panel behind it stays solid. */
-  mask-image: linear-gradient(to right, #000 86%, transparent 99%);
-}
-</style>

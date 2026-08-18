@@ -26,31 +26,3 @@ defineProps({
   tall: { type: Boolean, default: false },
 });
 </script>
-
-<style scoped>
-.feature-tile {
-  height: 100%;
-}
-.feature-tile__inner {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  /* Grey tile on the white page — the same relationship the app has between
-     its surface and its panels. */
-  background: var(--color-slate);
-  border-radius: 1.5rem;
-  padding: 1.5rem;
-}
-.feature-tile__visual {
-  position: relative;
-  flex: 1 1 auto;
-  min-height: 12rem;
-  margin-bottom: 1.5rem;
-  /* The box the fragments inside size themselves against — see `.ui` in
-     main.css. Inline-size only, so their height stays free. */
-  container-type: inline-size;
-}
-.feature-tile__visual--tall {
-  min-height: 13.5rem;
-}
-</style>

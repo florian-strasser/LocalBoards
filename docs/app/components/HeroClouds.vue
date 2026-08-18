@@ -14,6 +14,8 @@
     <Motion
       as="img"
       :src="src"
+      :srcset="srcset"
+      sizes="(min-width: 64rem) 50vw, 80vw"
       alt=""
       class="clouds__cloud clouds__cloud--left"
       :style="{ y: leftY, rotate: leftRotate }"
@@ -21,6 +23,8 @@
     <Motion
       as="img"
       :src="src"
+      :srcset="srcset"
+      sizes="(min-width: 64rem) 50vw, 80vw"
       alt=""
       class="clouds__cloud clouds__cloud--right"
       :style="{ y: rightY, rotate: rightRotate, scaleX: -1 }"
@@ -30,6 +34,15 @@
 
 <script setup lang="ts">
 import { useScroll, useTransform } from "motion-v";
+
+// Three widths of the same cloud. It is drawn at about half the viewport, so a
+// phone was downloading a 1686-wide picture to paint 721 of it — 120 KiB of the
+// 148 wasted. The browser picks from these against its own pixel ratio.
+const srcset = [
+  "/images/cloud-800.webp 800w",
+  "/images/cloud-1200.webp 1200w",
+  "/images/cloud.webp 1686w",
+].join(", ");
 
 defineProps({
   src: { type: String, default: "/images/cloud.webp" },
@@ -52,40 +65,3 @@ const rightY = useTransform(scrollYProgress, [0, 1], [0, 240]);
 const leftRotate = useTransform(scrollYProgress, [0, 1], [0, -4]);
 const rightRotate = useTransform(scrollYProgress, [0, 1], [0, 3]);
 </script>
-
-<style scoped>
-.clouds {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-.clouds__cloud {
-  position: absolute;
-  width: clamp(28rem, 46vw, 162rem);
-  height: auto;
-  mix-blend-mode: screen;
-  will-change: transform;
-  user-select: none;
-}
-/* Anchored past the edges so neither cloud shows a straight cut where the
-   image ends, and set low enough to sit beside the screenshot rather than
-   behind the headline. */
-.clouds__cloud--left {
-  left: -16%;
-  bottom: -10%;
-}
-/* The horizontal flip is set through Motion (`scaleX: -1`) rather than here:
-   Motion composes the element's `transform` from its own style keys, so a CSS
-   transform on the same element would simply be overwritten. */
-.clouds__cloud--right {
-  right: -17%;
-  bottom: -4%;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .clouds__cloud {
-    transform: none;
-  }
-}
-</style>
