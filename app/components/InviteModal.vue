@@ -27,12 +27,12 @@
                                     v-else
                                     class="absolute top-0 left-0 w-full h-full bg-primary text-white flex justify-center items-center"
                                 >
-                                    {{ invitation.userName.substring(0, 1) }}
+                                    {{ initial(invitation) }}
                                 </div>
                             </div>
                         </div>
                         <span class="text-sm grow shrink">{{
-                            invitation.userName
+                            invitation.userName || $t("deletedUser")
                         }}</span>
                     </div>
                     <div class="flex gap-x-2">
@@ -190,6 +190,14 @@ const props = defineProps({
 
 // Convert the invitations prop to a ref
 const invitations = ref(props.invitations || []);
+
+// An invitation can outlive the account it names — a deleted user leaves the
+// row behind, and the join then returns no name. Reading `.substring` off that
+// threw during render, which on a server-rendered page is not a blank avatar
+// but a 500 for the whole board. The row is still shown, so the owner can see
+// it and take it away.
+const initial = (invitation: any) =>
+    (invitation.userName || "?").substring(0, 1);
 
 const nuxtApp = useNuxtApp();
 

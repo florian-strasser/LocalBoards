@@ -1,6 +1,20 @@
-## v0.28.1
+## v0.28.2
 
 ### Fixes
+
+- **A board with an invitation from a deleted account answered `500`.** Deleting a user removed their sessions, keys and account, but left every invitation pointing at them on other people's boards. The board then rendered a member with no name, and reading the first letter off that name threw during render — which on a server-rendered page is not a blank avatar but the whole page failing. Opening the permissions dialog hit it first, and a reload could not recover, because the same render runs on the server.
+
+  Three things, so it cannot come back: deleting a user now clears their invitations, their notifications and any unused e-mail invitations they sent; a migration removes the rows already orphaned; and the dialog no longer assumes a name is there — an invitation whose account has gone reads "Deleted account" and can be removed from the board like any other.
+
+  Reproduced against a real database before and after: with an orphaned invitation the board answered `500`, and now answers `200` with the row shown as deleted.
+
+### Documentation
+
+- **The social card carries the real logo and the hero's own words.** It was drawn with two plain rounded rectangles standing in for the mark, under a headline written for the card alone. It uses the logo component's own paths now and says what the page says — "Open-Source Kanban boards for teams" over "Where Humans & Agents work together." — so a shared link and the page it opens read as the same thing. The block is centred against the full height of the card rather than hanging from the top, and the blue rule along the bottom edge is gone.
+
+## v0.28.1
+
+### Documentation
 
 - **Invalid ARIA on every animated heading.** `SplitText` carried the real sentence as an `aria-label` on its container — which is not permitted on an element with no role, so a `p` or a `span` wearing one is both invalid and, on some assistive technology, ignored. The sentence is a visually hidden copy now: read normally, never seen, and the animated pieces stay hidden from assistive technology as before.
 

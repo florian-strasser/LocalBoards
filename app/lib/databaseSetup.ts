@@ -600,6 +600,23 @@ const migrations: Migration[] = [
     },
   },
 
+  {
+    // Invitations left behind by a deleted account. Deleting a user removed
+    // their sessions, keys and account but not the rows pointing at them from
+    // other people's boards, so the board rendered a member with no name — and
+    // reading a letter off that name took the whole page down with a 500. The
+    // deletion clears them now; these are the ones already there.
+    id: "0017_orphaned_invitations",
+    up: async (db) => {
+      await db.execute(
+        "DELETE `invitations` FROM `invitations` LEFT JOIN `user` ON `invitations`.`user` = `user`.`id` WHERE `user`.`id` IS NULL",
+      );
+      await db.execute(
+        "DELETE `notifications` FROM `notifications` LEFT JOIN `user` ON `notifications`.`userId` = `user`.`id` WHERE `user`.`id` IS NULL",
+      );
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
   //   id: "0015_add_x",

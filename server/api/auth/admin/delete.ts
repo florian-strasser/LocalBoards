@@ -100,6 +100,21 @@ export default defineEventHandler(async (event) => {
         userId,
       ]);
 
+      // The rows that pointed at them from other people's boards. An invitation
+      // left behind names an account that is no longer there, and every board
+      // it belongs to then renders a member with no name — which used to take
+      // the whole page down with a 500. Their notifications and any e-mail
+      // invitations they sent go the same way: nobody can act on either.
+      await conn.execute("DELETE FROM `invitations` WHERE `user` = ?", [userId]);
+      await conn.execute(
+        "DELETE FROM `notifications` WHERE `userId` = ? OR `actorId` = ?",
+        [userId, userId],
+      );
+      await conn.execute(
+        "DELETE FROM `board_email_invites` WHERE `invitedBy` = ? AND `usedAt` IS NULL",
+        [userId],
+      );
+
       // Finally, delete the user
       await conn.execute("DELETE FROM `user` WHERE `id` = ?", [userId]);
 
