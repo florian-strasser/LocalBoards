@@ -351,6 +351,7 @@
                 v-model="cardModalOpen"
                 @card-updated="handleCardUpdated"
                 @card-deleted="handleCardDeleted"
+                @card-duplicated="handleCardDuplicated"
                 @comment-count-updated="handleCommentCountUpdated"
             />
         </ModalWindow>
@@ -882,12 +883,37 @@ const handleCardCreated = (card) => {
         };
         return;
     }
-    cards.value[card.area].push(card);
+    // Where the server put it. A new card's `sort` is larger than anything in
+    // the list, so it still lands at the end; a duplicate's sits between the
+    // card it was copied from and the one that used to follow it. The `>=`
+    // matters: the cards below the original have been shifted down by one on
+    // the server, and this list still holds their old numbers, so the card the
+    // copy has to go in front of is carrying exactly the copy's own `sort`.
+    const sort = Number(card.sort);
+    const follows = Number.isFinite(sort)
+        ? cards.value[card.area].findIndex(
+              (existing) => Number(existing.sort) >= sort,
+          )
+        : -1;
+    if (follows === -1) cards.value[card.area].push(card);
+    else cards.value[card.area].splice(follows, 0, card);
 };
 
 // A card created locally (via the new-card form) should open directly in edit
 // mode the first time it is opened. Cards arriving via socket from other users
 // go through handleCardCreated and do not get this treatment.
+// The copy goes directly under the card it was made from, which is where the
+// server put it too. Falls back to the ordinary append if the original is not
+// in the list for some reason.
+const handleCardDuplicated = ({ card, after }) => {
+    const list = cards.value[card.area];
+    if (!list) return handleCardCreated(card);
+    const index = list.findIndex((item) => item.id === after?.id);
+    if (index === -1) return handleCardCreated(card);
+    if (list.some((item) => item.id === card.id)) return;
+    list.splice(index + 1, 0, card);
+};
+
 const handleLocalCardCreated = (card) => {
     editCardId.value = card.id;
     handleCardCreated(card);

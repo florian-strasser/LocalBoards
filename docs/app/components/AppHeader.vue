@@ -103,10 +103,12 @@
             :style="{ transitionDelay: `${60 + links.length * 45}ms` }"
           >
             <a
-              :href="contact"
-              class="bg-primary hover:bg-primary-hover block rounded-full px-6 py-3 text-center font-medium text-white"
+              :href="repository"
+              target="_blank"
+              rel="noopener"
+              class="bg-primary hover:bg-primary-hover flex items-center justify-center gap-2 rounded-full px-6 py-3 text-center font-medium text-white"
               @click="open = false"
-              >Contact us</a
+              ><Github class="size-[1.15em]" :stroke-width="2" />GitHub</a
             >
           </li>
         </ul>
@@ -156,14 +158,16 @@
       </nav>
 
       <a
-        :href="contact"
+        :href="repository"
+        target="_blank"
+        rel="noopener"
         :class="
           onLight
             ? 'bg-white text-primary hover:bg-white/90'
             : 'bg-primary hover:bg-primary-hover text-white'
         "
-        class="hidden rounded-full px-6 py-3 transition-colors md:block md:justify-self-end"
-        >Contact us</a
+        class="hidden items-center gap-2 rounded-full px-6 py-3 transition-colors md:inline-flex md:justify-self-end"
+        ><Github class="size-[1.15em]" :stroke-width="2" />GitHub</a
       >
 
       <!-- Two bars that cross into a close mark, so the control never changes
@@ -189,7 +193,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown } from "lucide-vue-next";
+import { ChevronDown, Github } from "lucide-vue-next";
 // The four homepage sections plus the documentation. They are absolute paths
 // rather than bare fragments so they work from the docs and API pages too —
 // Lenis is set up with `anchors: true`, so the scroll to them is the smooth
@@ -208,7 +212,12 @@ const links = [
   { label: "API", to: "/api", section: "API reference" },
 ];
 
-const contact = "mailto:info@lokalboards.com?subject=LokalBoards";
+// The repository rather than a mailbox. Nothing is sold here any more, so the
+// most prominent thing on the page should answer the question this audience
+// actually arrives with — is it real, and is it maintained — which the repo
+// answers and an e-mail address does not. The address is still in the site
+// notice, where the law wants it.
+const repository = "https://github.com/florian-strasser/LokalBoards";
 
 // The documentation menus, so the small-screen sheet can carry them where there
 // is no room for the sidebar.

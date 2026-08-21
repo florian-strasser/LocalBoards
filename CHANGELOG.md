@@ -1,3 +1,37 @@
+## v0.29.0
+
+### New Features
+
+- **A card can be duplicated.** The card dialog's delete icon is a three-dot menu now, the same one the board and the dashboard headers carry, holding *Duplicate card* and *Delete card*. A single irreversible action sitting one press away at the top right of a dialog people open to read a card was the wrong weight for it; delete still asks before it acts, and now it has to be asked for first.
+
+  The copy takes the title, the description and whatever checklist it holds, the due date, its reminders, the assignee and the done state, and lands directly under the original rather than at the foot of a list long enough to hide it. Everything below it moves down one, on the server and on every screen watching the board.
+
+  Comments are not copied. They are a conversation about one card, in the order it happened, and they belong to the card they were written on.
+
+  Attachments are, and each kind on its own terms. A stored file is copied on disk under a new generated name, so the two cards hold two files: pointing both rows at one file would have looked right until the day somebody deleted either card's attachment, because the delete handler unlinks the file and would have left the other card with a row pointing at nothing. A base64 attachment lives in the row, so copying the row copies the bytes. An external URL is not ours to copy, so the copy points where the original points. Verified: deleting the copy's attachment removes the copy's file and leaves the original's exactly where it was.
+
+### Improvements
+
+- **Search on a phone is a button in the nav, not a row of its own.** The field could not fit beside the logo and the nav, so it wrapped to a full-width line underneath — a permanent strip of every phone screen, above the fold, spent on something used occasionally. The nav pill has a search button below `sm` now, and it opens the same search in a dialog: the field, focused, with the results under it and the whole width of the screen to show them in.
+
+  One component either way. `GlobalSearch` takes a `variant`, and the only thing that changes is where the results go — the desktop field teleports them into `<body>` and positions them against itself, because inside the header they would be clipped; in the dialog neither applies, so the Teleport is switched off and they render where they are written. The results markup, the debounce, the request sequencing and the highlighting are one copy, shared.
+
+  The field is focused in the click that opens the dialog rather than in a watcher afterwards: the dialog is always mounted, so the focus still belongs to the original gesture, which is what iOS wants before it will raise the keyboard. Closing clears the query, and following a result closes the dialog — the header is not remounted between pages, so nothing else would.
+
+  Following a result no longer empties the panel on the click. It used to close on the click itself, so the results vanished and left the reader looking at an empty dialog for as long as the page took to arrive. They stay up now, dimmed and no longer clickable, and the arrival closes them — the list is the last thing worth looking at while the board loads, and the thing that was clicked is still on screen. A result pointing at the page you are already on finishes immediately, since the router discards that navigation and no arrival would ever come.
+
+  Verified against a real instance at 390×844: the header is one row, the dialog opens focused, typing returns boards and cards, a result navigates and takes the dialog with it, Escape closes it and reopening starts empty. Desktop is untouched — inline field, no button, results still teleported. Click to board is 183-210 ms on a production build; in dev the first one costs about half a second more while the page chunk is compiled.
+
+### Documentation
+
+- **The cards guide covers the menu and duplication, and its screenshots were retaken.** "The bin icon at the top of an open card deletes it" described a control that is no longer there. Moving and deleting are separate sections now, with the menu shot open beside them, and the API reference documents `POST /api/data/card-duplicate` alongside the other four card endpoints — an endpoint reachable with an API key should not be the one that is missing from the page.
+
+  Three images were stale rather than merely old: the card screenshot in the guide and the README's screenshot both show the card dialog, which had a bin icon in them, and the homepage's phone hero showed the search field wrapped onto its own row under the header. All are retaken from the demo run, which now captures the card menu as a view of its own.
+
+- **The header's button goes to the repository.** It was a mail link, which existed to catch hosting enquiries; with nothing for sale there is nothing to enquire about, and for someone weighing up a self-hosted tool the useful question is whether it is real and maintained — which the repository answers and an address does not. It carries the GitHub mark beside the word, so it reads as a link to the code at a glance rather than as another nav item. No `mailto:` is left anywhere on the site outside the legal pages, where the law wants one.
+
+- **The hosted plan is off the site.** Nothing is sold from lokalboards.com any more: the second pricing card is gone. Pricing keeps its place, but not its shape: with nothing left to compare against, a card with a list of lines under it was arguing a case that no longer had two sides. It is one block now, saying the thing a reader came to the section for: 0 €, forever, for any number of people, open source under the MIT licence, and where to start.
+
 ## v0.28.2
 
 ### Fixes

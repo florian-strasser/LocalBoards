@@ -96,6 +96,14 @@ await shot(auth, "26-modal-card", "/board/1", async (p) => {
   await p.click("text=Redesign the logo");
   await p.waitForTimeout(900);
 });
+// The card's own three-dots menu, holding duplicate and delete. Shot open, so
+// the guide can point at the two entries rather than describe where they hide.
+await shot(auth, "31-menu-card", "/board/1", async (p) => {
+  await p.click("text=Redesign the logo");
+  await p.waitForTimeout(900);
+  await p.click('.card-modal button[aria-haspopup="menu"]');
+  await p.waitForTimeout(400);
+});
 await shot(auth, "27-modal-image-lightbox", "/board/1", async (p) => {
   await p.click("text=Redesign the logo");
   await p.waitForTimeout(900);

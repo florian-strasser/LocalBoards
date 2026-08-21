@@ -30,7 +30,7 @@ const faq = [
   {
     frage: "Is LokalBoards really free?",
     antwort:
-      "<p>Yes. It is open source under the MIT licence, with no paid tier, no seat limit and no feature held back — a team of five and a team of five hundred run the same build. It costs you what the server it runs on costs. A hosted option exists for organisations that would rather not run a server of their own.</p>",
+      "<p>Yes. It is open source under the MIT licence, with no paid tier, no seat limit and no feature held back — a team of five and a team of five hundred run the same build. It costs you what the server it runs on costs.</p>",
   },
   {
     frage: "Where is my data stored?",
@@ -50,7 +50,7 @@ const faq = [
   {
     frage: "What happens if we delete something by accident?",
     antwort:
-      "<p>On the hosted plan every instance is backed up daily and the last 14 days are kept. Name the day you want back and we restore it — 60 € per restore, whatever the reason for it.</p><p>Self-hosted, backups are yours to arrange. There is nothing special to it: the data is an ordinary MySQL database and the attachments are ordinary files, so whatever you already back up with will do.</p>",
+      "<p>Backups are yours to arrange, and there is nothing special to it: the data is an ordinary MySQL database and the attachments are ordinary files, so whatever you already back up with will do.</p><p>Restoring is the same in reverse — put the database back and the attachments with it. Nothing about LokalBoards has to be told that it happened.</p>",
   },
   {
     frage: "Can I import my Trello boards?",

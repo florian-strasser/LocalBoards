@@ -6,7 +6,12 @@
              pixel short of the nav's to pay for the border, so both stay the
              same height. -->
         <label
-            class="relative block rounded-full border border-white bg-white focus-within:border-primary dark:border-slate dark:bg-slate"
+            class="relative block rounded-full border focus-within:border-primary"
+            :class="
+                inModal
+                    ? 'border-gray/20 bg-dark/5 dark:border-white/15 dark:bg-white/10'
+                    : 'border-white bg-white dark:border-slate dark:bg-slate'
+            "
         >
             <Search
                 class="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-gray"
@@ -28,15 +33,36 @@
 
         <!-- Rendered into <body> and positioned against the field, the same way
              the notification panel is: inside the header it would be clipped by
-             the layout, and `100vw` would ignore a classic scrollbar. -->
-        <Teleport to="body">
+             the layout, and `100vw` would ignore a classic scrollbar.
+
+             Inside the modal none of that applies: the dialog is already the
+             top layer and already the right width, so the Teleport is switched
+             off and the results render where they are written, under the field,
+             scrolling with the dialog rather than in a box of their own. Same
+             markup either way — the results are the part worth not having two
+             copies of. -->
+        <Teleport to="body" :disabled="inModal">
             <div
                 v-if="showPanel"
                 ref="panel"
-                :style="panelStyle"
-                class="fixed z-50 overflow-clip rounded-lg bg-white shadow-lg dark:bg-slate"
+                :style="inModal ? undefined : panelStyle"
+                :class="
+                    inModal
+                        ? 'mt-4 text-left'
+                        : 'fixed z-50 overflow-clip rounded-lg bg-white shadow-lg dark:bg-slate'
+                "
             >
-                <div class="max-h-[70vh] space-y-5 overflow-y-auto p-3">
+                <div
+                    class="space-y-5 transition-opacity"
+                    :class="[
+                        inModal ? '' : 'max-h-[70vh] overflow-y-auto p-3',
+                        // Waiting for the page the click asked for. The results
+                        // stay exactly where they are — dimmed, and no longer
+                        // clickable, so a second click cannot queue a second
+                        // navigation behind the first.
+                        following ? 'pointer-events-none opacity-50' : '',
+                    ]"
+                >
                     <p
                         v-if="needle.length > 0 && needle.length < 2"
                         class="px-1 text-sm text-gray"
@@ -71,7 +97,7 @@
                                 v-for="board in results.boards"
                                 :key="`b${board.id}`"
                                 :to="`/board/${board.id}`"
-                                @click="close"
+                                @click="follow"
                                 class="flex items-center gap-3 rounded-md bg-dark/10 p-2 text-dark hover:bg-dark/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
                             >
                                 <span class="min-w-0 shrink grow truncate font-bold"
@@ -126,7 +152,7 @@
                                 v-for="card in results.cards"
                                 :key="`c${card.id}`"
                                 :to="`/board/${card.boardId}?card=${card.id}`"
-                                @click="close"
+                                @click="follow"
                                 class="block rounded-md bg-dark/10 p-2 text-left text-dark hover:bg-dark/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
                             >
                                 <span class="flex gap-x-2">
@@ -253,7 +279,7 @@
                                 v-for="comment in results.comments"
                                 :key="`co${comment.id}`"
                                 :to="`/board/${comment.boardId}?card=${comment.cardId}&comment=${comment.id}`"
-                                @click="close"
+                                @click="follow"
                                 class="group block"
                             >
                                 <span
@@ -302,7 +328,7 @@
                                 v-for="file in results.attachments"
                                 :key="`a${file.id}`"
                                 :to="`/board/${file.boardId}?card=${file.cardId}`"
-                                @click="close"
+                                @click="follow"
                                 class="block rounded-lg p-1 hover:bg-primary/10"
                             >
                                 <!-- The attachment row from the card modal. -->
@@ -363,12 +389,29 @@ const dueDateLabel = (dueDate: string) =>
         minute: "2-digit",
     });
 
+const props = defineProps({
+    // "inline" is the header field. "modal" is the same search inside a dialog,
+    // which is how a phone gets at it: there is no room in the header for a
+    // field that can be typed into, and a full-width row underneath the nav
+    // pushed the boards down the page on every screen.
+    variant: { type: String, default: "inline" },
+    // Whether the dialog holding it is open. Only read in the modal variant,
+    // where it clears the last search on the way out — reopening the dialog to
+    // find the previous query and its results still sitting there reads as a
+    // dialog that failed to close.
+    active: { type: Boolean, default: false },
+});
+
+const inModal = computed(() => props.variant === "modal");
+
 const root = ref(null);
 const input = ref(null);
 const panel = ref(null);
 const panelStyle = ref({});
 
 const term = ref("");
+// A result has been clicked and its page is on its way.
+const following = ref(false);
 // Whether the placeholder is too long for the field. The fade is only applied
 // then — a gradient wide enough to look smooth also eats the tail of a
 // placeholder that fits perfectly well, which is what happened on desktop.
@@ -441,6 +484,39 @@ const positionPanel = () => {
 const close = () => {
     dismissed.value = true;
 };
+
+// Following a result used to close the panel on the click itself, which emptied
+// it the moment it was pressed and then left the reader looking at nothing —
+// an empty dialog, or a blank strip under the field — for as long as the page
+// took to arrive. The results stay up instead, and the arrival closes them: the
+// list is the last thing worth looking at while the board loads, and it also
+// makes the wait legible, because the thing that was clicked is still there.
+const route = useRoute();
+const router = useRouter();
+const emit = defineEmits(["navigate"]);
+
+const follow = (event: MouseEvent) => {
+    const href = (event.currentTarget as HTMLAnchorElement)?.getAttribute("href");
+    // Already on the page the result points at: nothing will change, and no
+    // route watcher will fire, so finish here rather than waiting for a
+    // navigation that the router will discard as a duplicate.
+    if (href && router.resolve(href).fullPath === route.fullPath) {
+        close();
+        emit("navigate");
+        return;
+    }
+    following.value = true;
+};
+
+watch(
+    () => route.fullPath,
+    () => {
+        following.value = false;
+        close();
+        // The dialog closes with the page it opened, in the modal variant.
+        emit("navigate");
+    },
+);
 // Coming back to the field after dismissing should bring the results back
 // rather than requiring another keystroke. Click as well as focus: pressing
 // Escape doesn't blur the field, so a later click fires no focus event.
@@ -452,6 +528,27 @@ const clear = () => {
     results.value = { boards: [], cards: [], comments: [], attachments: [] };
     query.value = "";
 };
+
+watch(
+    () => props.active,
+    (open) => {
+        if (!inModal.value) return;
+        if (open) {
+            dismissed.value = false;
+        } else {
+            term.value = "";
+            clear();
+        }
+    },
+);
+
+// The header focuses the field itself, in the click that opens the dialog. The
+// dialog is always in the DOM (it animates in and out rather than mounting), so
+// this runs inside the original gesture — which is what iOS requires before it
+// will raise the keyboard. A focus deferred to a watcher or a `nextTick` is no
+// longer that gesture, and the field would come up with no keyboard.
+const focus = () => (input.value as HTMLInputElement | null)?.focus();
+defineExpose({ focus });
 
 // Typing searches as you go: debounced so a fast typist causes one request
 // rather than one per keystroke, and sequenced so a slow earlier response can
@@ -491,6 +588,9 @@ watch(term, (value) => {
     }, 200);
 });
 
+// Dismissing on a click outside is the inline field's job: it hangs over the
+// page and has to get out of the way. In the dialog the backdrop already does
+// that, and this would close the results on any click inside the card.
 const handleOutsideClick = (event: MouseEvent) => {
     const target = event.target as Node;
     if (
@@ -502,6 +602,7 @@ const handleOutsideClick = (event: MouseEvent) => {
 };
 
 watch(showPanel, async (open) => {
+    if (inModal.value) return;
     if (open) {
         await nextTick();
         positionPanel();

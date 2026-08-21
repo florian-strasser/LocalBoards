@@ -6,7 +6,12 @@
             :aria-expanded="open"
             aria-haspopup="menu"
             v-tooltip="props.tooltip"
-            class="flex size-12 cursor-pointer items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white dark:bg-white/10 dark:text-white"
+            class="flex cursor-pointer items-center justify-center"
+            :class="
+                plain
+                    ? 'hover:text-primary-hover'
+                    : 'size-12 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white dark:bg-white/10 dark:text-white'
+            "
         >
             <MoreVertical class="size-5" />
         </button>
@@ -33,6 +38,11 @@ import { MoreVertical } from "lucide-vue-next";
 
 const props = defineProps({
     tooltip: String,
+    // The button without its filled circle, for places that cannot carry a
+    // 48-pixel control: beside a card's title, where it stands in for what used
+    // to be a bare delete icon and has to keep that weight. The menu it opens
+    // is the same one the board and dashboard headers open.
+    plain: Boolean,
 });
 
 const open = ref(false);

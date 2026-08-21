@@ -1,11 +1,22 @@
 <script setup lang="ts">
-import { UsersRound, LogOut, UserRoundPen } from "lucide-vue-next";
+import { UsersRound, LogOut, UserRoundPen, Search } from "lucide-vue-next";
 
 const { data: session } = await useFetch("/api/auth/get-session");
 const handleLogout = async () => {
     await useFetch("/api/auth/sign-out", { method: "POST" });
     await navigateTo("/");
 };
+
+// The phone's search: a button in the nav pill, and the same search in a
+// dialog. Focus is taken here rather than inside the dialog, in the click
+// itself — see GlobalSearch's `focus`.
+const searchOpen = ref(false);
+const searchModal = ref(null);
+const openSearch = () => {
+    searchOpen.value = true;
+    searchModal.value?.focus();
+};
+
 </script>
 <template>
     <ImpersonationBanner />
@@ -22,14 +33,31 @@ const handleLogout = async () => {
             <!-- Search sits between the logo and the nav: a field you can type
                  in straight away, not another icon competing with the actions
                  in the pill. It takes the leftover width up to a readable
-                 maximum; on a phone there isn't enough room beside the nav, so
-                 it wraps to its own full-width line underneath. -->
+                 maximum.
+
+                 Below `sm` it is gone, and the button in the pill opens it in a
+                 dialog instead. It used to wrap to a full-width line under the
+                 logo and the nav, which cost a phone a whole row of the screen
+                 before the first board — a permanent price for something used
+                 occasionally. As an icon it costs nothing until it is wanted,
+                 and the dialog then gives the field and its results more room
+                 than the header ever had. -->
             <GlobalSearch
-                class="order-last w-full sm:order-none sm:mx-8 sm:w-auto sm:min-w-0 sm:max-w-md sm:flex-1"
+                class="hidden sm:mx-8 sm:block sm:w-auto sm:min-w-0 sm:max-w-md sm:flex-1"
             />
             <ul
                 class="relative flex gap-x-4 menu app-nav px-6 py-4 rounded-full bg-white dark:bg-slate"
             >
+                <li class="sm:hidden">
+                    <button
+                        type="button"
+                        @click="openSearch"
+                        class="text-gray hover:text-primary-hover cursor-pointer block"
+                        :aria-label="$t('headerSearch')"
+                    >
+                        <Search class="size-5" />
+                    </button>
+                </li>
                 <li>
                     <NotificationBell :userID="session.data.user.id" />
                 </li>
@@ -63,4 +91,23 @@ const handleLogout = async () => {
             </ul>
         </div>
     </header>
+
+    <!-- Only ever opened below `sm`, but mounted at every width: the dialog
+         animates in and out rather than mounting on demand, and the field has
+         to exist already for the opening click to be able to focus it. -->
+    <ModalWindow v-if="session" v-model="searchOpen">
+        <h2 class="text-dark mb-4 text-2xl text-left dark:text-white">
+            {{ $t("searchTitle") }}
+        </h2>
+        <!-- The dialog closes when the search says the navigation has landed,
+             not on the click: the results stay up while the board loads. The
+             header is not remounted between pages, so nothing else would close
+             it. -->
+        <GlobalSearch
+            ref="searchModal"
+            variant="modal"
+            :active="searchOpen"
+            @navigate="searchOpen = false"
+        />
+    </ModalWindow>
 </template>

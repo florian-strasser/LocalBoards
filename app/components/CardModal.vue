@@ -79,15 +79,34 @@
                             {{ name }}
                         </div>
                     </div>
+                    <!-- What used to be a bare delete icon. A single
+                         irreversible action, one press away, at the top right
+                         of a dialog people open to read a card — the same place
+                         the board and the dashboard put a menu. It is that menu
+                         now, and delete still asks before it acts. -->
                     <div class="grow-0 shrink-0 pt-1.5">
-                        <button
+                        <ActionMenu
                             v-if="writeAccess"
-                            type="button"
-                            class="block hover:text-primary-hover"
-                            @click="deleteModal = true"
+                            plain
+                            :tooltip="$t('moreOptions')"
                         >
-                            <Trash2 class="size-5" />
-                        </button>
+                            <button
+                                type="button"
+                                @click="duplicateCard"
+                                :class="menuItemClass"
+                            >
+                                <CopyPlus class="size-4 shrink-0" />
+                                {{ $t("duplicateCard") }}
+                            </button>
+                            <button
+                                type="button"
+                                @click="deleteModal = true"
+                                :class="menuItemDestructiveClass"
+                            >
+                                <Trash2 class="size-4 shrink-0" />
+                                {{ $t("deleteCardBtn") }}
+                            </button>
+                        </ActionMenu>
                     </div>
                 </div>
                 <!-- Card metadata: due date, reminders and assignee live behind
@@ -404,6 +423,7 @@
 import { socket } from "~/lib/socket";
 import {
     Check,
+    CopyPlus,
     Trash2,
     Paperclip,
     Download,
@@ -438,8 +458,16 @@ const nuxtApp = useNuxtApp();
 const emits = defineEmits([
     "card-updated",
     "card-deleted",
+    "card-duplicated",
     "comment-count-updated",
 ]);
+
+// The board's and the dashboard's menu items, to the letter — the menu is the
+// same one, so it should not be a different menu here.
+const menuItemClass =
+    "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-primary/10 hover:text-primary dark:text-white";
+const menuItemDestructiveClass =
+    "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-primary-hover/10 hover:text-primary-hover dark:text-white";
 
 const boxOpen = defineModel();
 
@@ -956,6 +984,49 @@ const saveCard = async () => {
         activityVersion.value += 1;
     } catch (err) {
         console.error("Failed to save card:", err);
+    }
+};
+
+// A second card with the same title, description, checklist, due date,
+// reminders, assignee and attachments — and none of the comments, which are a
+// conversation about one card rather than part of what the card is.
+//
+// The dialog closes on success: the copy is a different card, and leaving this
+// one open over a board that now has two would say nothing about which is
+// which. The board puts the new one directly under the original.
+const duplicating = ref(false);
+
+const duplicateCard = async () => {
+    if (duplicating.value) return;
+    duplicating.value = true;
+    try {
+        const data = await $fetch("/api/data/card-duplicate", {
+            method: "POST",
+            body: { cardID: props.cardID },
+        });
+
+        if (data.error) {
+            await nuxtApp.callHook("app:toast", { message: data.error });
+            return;
+        }
+
+        emits("card-duplicated", { card: data.card, after: props.card });
+        socket.emit("cardCreated", {
+            boardId: props.boardID,
+            card: data.card,
+        });
+        await nuxtApp.callHook("app:toast", {
+            message: $t("cardDuplicated"),
+        });
+        boxOpen.value = false;
+        setBodyScrollLock(false);
+    } catch (err) {
+        console.error("Failed to duplicate card:", err);
+        await nuxtApp.callHook("app:toast", {
+            message: $t("cardDuplicateFailed"),
+        });
+    } finally {
+        duplicating.value = false;
     }
 };
 
