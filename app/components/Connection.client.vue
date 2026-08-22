@@ -8,6 +8,7 @@ const props = defineProps({
 
 const emits = defineEmits([
     "board-updated",
+    "board-members-updated",
     "board-deleted",
     "areas-updated",
     "area-created",
@@ -35,9 +36,28 @@ const joinBoard = () => {
     }
 };
 
-const onUpdateBoard = ({ boardID, boardName, boardStatus, boardStyle }) => {
+const onUpdateBoard = ({
+    boardID,
+    boardName,
+    boardStatus,
+    boardStyle,
+    boardImage,
+    boardColor,
+}) => {
     if (isThisBoard(boardID))
-        emits("board-updated", { boardID, boardName, boardStatus, boardStyle });
+        emits("board-updated", {
+            boardID,
+            boardName,
+            boardStatus,
+            boardStyle,
+            boardImage,
+            boardColor,
+        });
+};
+
+// Somebody was invited to this board or taken off it.
+const onBoardMembers = ({ boardID }) => {
+    if (isThisBoard(boardID)) emits("board-members-updated");
 };
 
 const onDeletedBoard = ({ boardID }) => {
@@ -104,6 +124,7 @@ const onCommentCountUpdated = ({ cardId, commentCount, boardId }) => {
 socket.on("connect", joinBoard);
 socket.on("updateBoard", onUpdateBoard);
 socket.on("deletedBoard", onDeletedBoard);
+socket.on("boardMembersUpdated", onBoardMembers);
 socket.on("updateAreas", onUpdateAreas);
 socket.on("addCard", onAddCard);
 socket.on("updateCard", onUpdateCard);
@@ -126,6 +147,7 @@ onBeforeUnmount(() => {
     socket.off("connect", joinBoard);
     socket.off("updateBoard", onUpdateBoard);
     socket.off("deletedBoard", onDeletedBoard);
+    socket.off("boardMembersUpdated", onBoardMembers);
     socket.off("updateAreas", onUpdateAreas);
     socket.off("addCard", onAddCard);
     socket.off("updateCard", onUpdateCard);

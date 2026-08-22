@@ -8,27 +8,21 @@
         class="relative rounded-lg overflow-clip group"
         :class="color ? 'board-tile-colored' : 'bg-primary'"
     >
-        <!-- Drag handle for arranging the dashboard. Kept separate from the tile
-             body so a normal click still opens the board; the handle appears on
-             hover and never navigates. -->
-        <button
-            v-if="props.draggable"
-            type="button"
-            class="board-drag-handle absolute top-2 left-2 z-30 flex size-7 items-center justify-center rounded-md bg-black/25 text-white opacity-0 transition-opacity group-hover:opacity-100 cursor-grab active:cursor-grabbing"
-            :aria-label="$t('dragToArrange')"
-            @click.prevent.stop
-        >
-            <GripVertical class="size-4" />
-        </button>
         <div
             class="relative z-20 flex flex-col gap-y-6 justify-between items-start min-h-48 px-6 py-5"
             :class="color ? 'board-tile-body' : 'group-hover:bg-primary-hover'"
         >
-            <!-- Right-aligned so the top-left corner stays free for the drag
-                 handle. The board-style icon used to live here too and made the
-                 corner busy; the board's layout is obvious once it's open. -->
+            <!-- What the board is — unread, shared — reads from the left, where
+                 a tile is read from; the menu, which is something to do rather
+                 than something to know, sits opposite it. The board-style icon
+                 used to be in this row too and made it busy; the board's layout
+                 is obvious once it's open.
+
+                 No `justify-between`: with neither a dot nor a badge, the menu
+                 would be the only thing in the row and would end up on the left.
+                 It takes the free space itself instead. -->
             <div
-                class="w-full flex items-center justify-end gap-2"
+                class="w-full flex items-center gap-2"
                 :class="color ? 'board-tile-fg' : 'text-white'"
             >
                 <!-- Pulsing dot when the board has unread notifications. -->
@@ -52,6 +46,68 @@
                     :class="color ? 'board-tile-badge' : 'bg-white/20'"
                     >{{ $t("sharedBadge") }}</span
                 >
+                <!-- The board's own menu, the same entries its page carries, so
+                     the two routine jobs — renaming it, inviting somebody — do
+                     not need the board to be opened first. Rights decide what is
+                     in it: the owner settles the board's settings, who is on it
+                     and whether it exists; everybody else can only take
+                     themselves off it, which is exactly what the page offers
+                     them.
+
+                     In this row rather than pinned to the corner: the unread
+                     dot and the "shared" badge live here too, and an absolute
+                     menu on top of them would have covered whichever of them
+                     the board happened to have.
+
+                     `@click.prevent.stop`, because the whole tile is a link:
+                     without it, opening the menu would navigate to the board and
+                     picking an entry would do both. -->
+                <div
+                    v-if="props.showMenu"
+                    class="ml-auto shrink-0"
+                    @click.prevent.stop
+                >
+                    <!-- Always there, not on hover: a phone has no hover, and a control
+                         that only appears when the pointer is over it is not an easier
+                         way to reach anything. -->
+                    <ActionMenu plain floating :tooltip="$t('moreOptions')">
+                        <template v-if="props.owned">
+                            <button
+                                type="button"
+                                :class="menuItemClass"
+                                @click="emit('settings', props.id)"
+                            >
+                                <Pencil class="size-4 shrink-0" />
+                                {{ $t("boardSettings") }}
+                            </button>
+                            <button
+                                type="button"
+                                :class="menuItemClass"
+                                @click="emit('invite', props.id)"
+                            >
+                                <UserRoundPlus class="size-4 shrink-0" />
+                                {{ $t("inviteUsers") }}
+                            </button>
+                            <button
+                                type="button"
+                                :class="menuItemDestructiveClass"
+                                @click="emit('delete', props.id)"
+                            >
+                                <Trash2 class="size-4 shrink-0" />
+                                {{ $t("deleteBoard") }}
+                            </button>
+                        </template>
+                        <button
+                            v-else
+                            type="button"
+                            :class="menuItemDestructiveClass"
+                            @click="emit('leave', props.id)"
+                        >
+                            <Ban class="size-4 shrink-0" />
+                            {{ $t("leaveBoard") }}
+                        </button>
+                    </ActionMenu>
+                </div>
             </div>
             <div class="flex items-end justify-between gap-3 w-full">
                 <!-- The name plate is the tile's foreground colour with the
@@ -113,7 +169,12 @@
     </NuxtLinkLocale>
 </template>
 <script setup lang="ts">
-import { GripVertical } from "lucide-vue-next";
+import {
+    Pencil,
+    UserRoundPlus,
+    Trash2,
+    Ban,
+} from "lucide-vue-next";
 import { boardTextColor, normalizeBoardColor } from "@/utils/boardColor";
 const props = defineProps({
     id: Number,
@@ -124,8 +185,6 @@ const props = defineProps({
     color: { type: String, default: null },
     // Whether the current user owns this board; false shows a "shared" badge.
     owned: { type: Boolean, default: true },
-    // Whether to show the drag handle (dashboard arrangement view).
-    draggable: { type: Boolean, default: false },
     // Up to four board members ({ id, name, image }) for the avatar stack.
     members: { type: Array as () => { id: string; name: string; image?: string }[], default: () => [] },
     // Total member count, so the tile can show a "+N" bubble beyond four avatars.
@@ -133,7 +192,19 @@ const props = defineProps({
     // Number of unread notifications for this user on this board; > 0 shows the
     // pulsing dot.
     unreadCount: { type: Number, default: 0 },
+    // Whether to offer the board's own menu. On the dashboard, yes; anywhere a
+    // tile is only a link to a board, no.
+    showMenu: { type: Boolean, default: false },
 });
+
+// The board id, so whoever holds the dialogs knows which board was asked about.
+const emit = defineEmits(["settings", "invite", "delete", "leave"]);
+
+// The board page's and the dashboard's menu items, to the letter.
+const menuItemClass =
+    "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-primary/10 hover:text-primary dark:text-white";
+const menuItemDestructiveClass =
+    "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-dark hover:bg-primary-hover/10 hover:text-primary-hover dark:text-white";
 
 // Re-validated here rather than trusted: the value is written into a CSS custom
 // property, and a stored colour predating validation (or one an API client

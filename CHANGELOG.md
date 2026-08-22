@@ -1,3 +1,107 @@
+## v0.30.0
+
+### New Features
+
+- **Single sign-on, against any OpenID Connect provider.** Entra ID, Google Workspace, Okta, Keycloak, Authentik, Auth0 — one button on the sign-in page, four environment variables, and no separate password to look after. It is the feature most self-hosted tools keep behind an enterprise tier; here it is the same MIT licence as everything else.
+
+  Accounts are made on first sign-in, from the name and address the provider supplies. Somebody who already has an account here is linked to it by e-mail address rather than given a second one, so a team that has been using the instance for a year keeps its boards — safe because the address comes from the configured provider over a channel authenticated with the client secret, not from a form. An instance can also refuse to create accounts at all (`NUXT_SSO_PROVISION=existing`), restrict sign-in to its own e-mail domains, and read the administrator role from a group claim, which is then applied on every sign-in in both directions.
+
+  The authorization code flow with PKCE, a nonce and CSRF state, exchanged server-side: no token ever reaches the browser. The ID token's issuer, audience, expiry and nonce are all checked. Its signature is not, which OpenID Connect Core §3.1.3.7 permits when the token comes straight from the token endpoint over TLS to a client that authenticated itself — and that is written down beside the code rather than left to be discovered.
+
+  Verified end to end against a provider that insists on PKCE, a nonce and client authentication, standing up per case: a first sign-in creating the account, a second reusing it, an existing account being linked rather than duplicated, an unknown person turned away under `existing`, a foreign domain refused, a sparse ID token filled in from userinfo, an admin group granting and then removing the role, a forged callback rejected for want of this browser's state, and — with SSO off — no button and `404` from both endpoints. Thirty checks, and the fixture is committed with them.
+
+- **Several identity providers on one instance, and routing by e-mail domain.** One provider stays as simple as it was; an instance that needs more names them — `NUXT_SSO_PROVIDERS=acme,partner` — and every setting that exists on its own exists per provider under that name, falling back to the instance-wide value where it is not set. OpenID Connect and SAML providers are named independently and can run side by side. Each SAML provider gets its own reply URL and metadata document.
+
+  With several configured, a row of buttons would ask everybody to know which of their organisation's names is on theirs. Tell each provider which e-mail domains it signs in, and typing an address brings the right one forward — subdomains count, and the most specific match wins, so a subsidiary's provider beats the parent's catch-all. It refuses nobody, and it says nothing about whether an account exists, so it cannot be used to find out who uses an instance.
+
+- **SAML 2.0, for the providers that speak it.** Entra ID, Okta, Keycloak, ADFS, Shibboleth — a second button beside the OpenID Connect one, and both can be on at once. An account is the same account whichever way somebody arrives: the linking, the provisioning policy, the domain restriction and the administrator claim are shared, and a person can hold a password, an OpenID Connect identity and a SAML identity at the same time without any of them displacing the others.
+
+  The service provider's metadata is served at `/api/auth/saml/metadata`, so most providers can be pointed at a URL rather than configured by hand. Attribute names are recognised in their common spellings — `email`, `mail`, the `urn:oid:` forms, Microsoft's schema URLs — and anything else can be mapped.
+
+  The XML signature checking is `@node-saml/node-saml` rather than something written here. Everything dangerous about SAML lives in the XML — canonicalisation, which element a signature actually covers, and the signature-wrapping family that has produced authentication bypasses in library after library for fifteen years — and that is not a thing to hand-roll to save a dependency.
+
+  What is written here is checked by a provider that signs real assertions with a real key, and then signs them wrongly on purpose: a valid assertion signs in and creates the account; one signed with an untrusted key, one altered after signing, one addressed to a different audience, one whose window has expired, and one from an unexpected issuer are each refused with no account and no session; attributes fill in the name and an administrator group; an existing account is linked rather than duplicated; `RelayState` cannot be used as an open redirect; and with SAML off there is no button and `404` from all three endpoints.
+
+  Two things that test found and changed the implementation. Requiring the response document to be signed as well as the assertion — which is what the first version did — would have failed against nearly every real provider, since Entra ID and Okta both sign the assertion alone; it is now off by default and available as a setting. And node-saml compares the configured `idpIssuer` only for logout messages, never for assertions, so a comment here claimed a check that was not happening: the issuer is now pinned in the endpoint itself.
+
+  **Not implemented:** single logout. It is written down in the guide rather than left to be discovered.
+
+- **SAML: encrypted assertions, and sign-in started at the provider.** Some providers encrypt assertions by policy — give LokalBoards a key pair and the certificate is published in its metadata, so a provider pointed at the metadata URL finds it by itself. Assertions are decrypted before anything else is read, and an unencrypted one still works, so the setting can be turned on mid-change.
+
+  Somebody clicking the application's tile in Entra's My Apps or Okta's dashboard arrives with an assertion nobody asked for. That is now accepted where an instance allows it, and refused by default — an unrequested assertion is a bearer token with nothing tying it to the browser presenting it. Where it is allowed, each assertion may be used exactly once: the identifier is recorded as it is consumed, keyed on a primary key so two requests racing with the same assertion cannot both win, and `RelayState` that is not a path on this instance is ignored rather than followed.
+
+  Both are covered by the test provider, which now encrypts on request and answers with or without an `InResponseTo`: an encrypted assertion signs in and the metadata offers the certificate; an unsolicited one is refused while the setting is off, accepted once when it is on, and refused the second time it is presented.
+
+  Writing the provider-initiated path exposed a hole in the existing tests: every SAML case had been posting assertions straight to the endpoint rather than starting at the button, so none of them had ever exercised a *solicited* sign-in — the new refusal is what surfaced it. The test provider now answers real AuthnRequests, and the cases go through the sign-in page as a person would.
+
+- **Plain OAuth 2.0 providers, through claim mapping.** Not everything is OpenID Connect, and a provider that is not answers its profile endpoint with whatever field names it likes — GitHub sends `id` and `login`, not `sub` and `name`. Three settings say where to look, each taking several candidates in order (`email,primary_email`) and dotted paths into nested objects (`data.attributes.display_name`).
+
+  A provider that sends none of the standard names and has no mapping is refused rather than guessed at: better a clear "no e-mail address" than an account keyed to the wrong field. The token request also asks for JSON and parses a form-encoded answer anyway, which is what GitHub's token endpoint returns unless asked.
+
+  Verified with a provider that has no discovery document, issues no ID token, answers form-encoded and uses GitHub's field names: it signs in with a mapping, is refused without one, and falls through to a second candidate address and a nested name where those are configured.
+
+- **A board's tile carries the board's own menu.** Renaming a board or inviting somebody to it meant opening the board first, going to its **⋮**, doing the thing and coming back. The tile on the dashboard now has the same **⋮**, with the same entries the board's page offers — settings, invite, delete — or, for a board somebody shared with you, leaving it, which is the only one of the four that was ever yours to do. Rights decide what is in the menu, exactly as they decide what is in the board's own.
+
+  The settings form is now one component rather than two copies. The board page has always had it; a second, drifting copy on the dashboard was the obvious way for the two to stop matching.
+
+  Hovering it puts a target behind the mark instead of recolouring it. It used to take the hover blue, which on a blue tile is the tile: the button disappeared at the moment it was being aimed at. The tint is mixed from `currentColor`, so it is white on a dark tile, near-black on a pale one and grey in a dialog, without anything having to say where the button is.
+
+  It sits at the end of the tile's top row, after the unread dot and the "shared" badge, rather than pinned to the corner on top of whichever of them the board happens to have. The menu it opens is rendered into `<body>` and positioned against its button: a tile clips what overflows it, which is what keeps a cover image inside its rounded corners, and it would have taken the bottom off the menu with it.
+
+### Improvements
+
+- **A board tile is dragged by the tile.** Arranging the dashboard meant finding a small grip in a tile's corner first. A card on a board has never asked for that — you pick the card up — and neither does a tile now. Its own menu is the one thing excluded, so pressing the three dots opens the menu instead of picking the board up.
+
+- **The dashboard keeps up with everyone else.** A tile is a board's name, its colour or image, and the faces of the people on it — all of which somebody else can change, and none of which used to arrive without a reload. The board itself had realtime updates; its tile on four other dashboards did not.
+
+  Each dashboard now listens on a room of its own, and the endpoints that change a board tell every dashboard showing it: renaming or recolouring it, inviting somebody, taking them off, leaving it, deleting it. The notification is sent from the endpoint rather than from the browser that asked, so it happens whichever way the change arrived — including from an API key, and including a delete, where the members have to be read before the board is gone.
+
+  The board's own signal carries its colour and image now as well. They were left out, so a board that changed colour stayed the old colour on every other screen — and the tiles, which are mostly colour and image, would have shown nothing at all.
+
+  Verified with three accounts in three browsers: renaming from a tile reaches the other members' dashboards and the board itself; inviting a fourth person adds their avatar to the tile on every dashboard, and gives them the tile; removing them takes it away again from all three; deleting the board clears it everywhere.
+
+- **An empty section offers a "new board" tile.** A group could be filled only by dragging something into it, which is a poor way to find out that a group is a place boards can be made. An empty one now says so, with the same tile the ungrouped area has, and a board created from it is filed into that group straight away rather than landing in the ungrouped area to be dragged back.
+
+  Only while it is empty, and that goes for the area above the groups too, which had carried the tile permanently: in a section that already has boards the tile is one more cell in the grid, and a full row of four plus a tile is a second row holding nothing else. The blue **+** in the page header still makes a board at any time, and it is unchanged — it makes an ungrouped one.
+
+  It also comes and goes as you drag rather than at the drop. SortableJS moves the tiles as the pointer travels and only reports at the end, so the group being dragged into kept its tile and the board came to rest beside it, and the group being emptied stayed blank until the mouse came up. While a drag is running the tiles are counted from the page — including the placeholder that shows where the board will land, excluding the clone that follows the cursor, which SortableJS parks in the list the drag started from and which had the emptied group still counting one.
+
+  The tile is the whole of the empty state. A group used to show a dashed box captioned "drag boards here", from when dragging was the only way to fill one; beside a tile that makes a board, it was two answers to the same question and a lot of furniture for a group with nothing in it. Dropping a board into the group still works — the grid was always the drop target, the dashed border only drew attention to it.
+
+### Fixes
+
+- **Deleting a card left its attachments behind, and their files for ever.** Deleting a card removed its comments and its notifications and stopped there: the attachment rows stayed, the uploaded files stayed on disk, and the reminders and the activity trail stayed with them. Deleting an area or a whole board left the same debris for every card in it. Nothing visible pointed at any of it, which is why it went unnoticed — and why the uploads directory only ever grew.
+
+  Card duplication made it worse rather than causing it: a duplicate's attachments are copies on disk, so from that release every deleted duplicate leaked its own file.
+
+  All three deletions now go through one helper that takes the attachments and their files, the comments, the reminders, the activity and the notifications. A file is only unlinked once nothing else names it — before duplication copied files, nothing stopped two rows pointing at one path, and unlinking a file another attachment still refers to would turn a tidy-up into a broken download. A migration clears what earlier versions left: rows whose card no longer exists, and the uploads only those rows named.
+
+  Verified against a real instance, on disk as well as in the database: deleting a card, an area and a board each leaves no rows and no files; a file shared by two attachments survives the first card's deletion; and the migration, re-run against seeded debris, clears the rows and the file and records itself.
+
+- **The search placeholder was cut off mid-letter.** It is a full sentence and the field is often narrower than it, so the tail has to fade rather than be chopped — and fading it means knowing whether it is too long, which is where this kept going wrong.
+
+  Every way of working that out from the font was a guess, and each guess was wrong somewhere: `measureText` does not know that Safari renders 14px text at whatever minimum font size is set, so it came out under and the fade was withheld from exactly the field that needed it; a cloned input counts a cancel button that a placeholder never has, so it came out over and dimmed text with room to spare.
+
+  The placeholder is an element of our own now rather than the input's attribute — sitting where the input's placeholder sat, from the icon's edge to the padding — and an element can simply be asked: `scrollWidth` against `clientWidth` is what the browser did, not a model of it. It is right whatever the font turns out to be, and it is per placeholder rather than per language: measured again whenever the box resizes and whenever the text changes, so the locale being applied after mount is caught too.
+
+  The field is sized to that same measurement rather than to a fixed maximum, and the figure for each language is in the stylesheet as well as measured. A measurement can only land after the first paint, so a field that arrives at one width and settles at another jumps on every load; the baked value is what the measurement comes to, so it lands on the same number and nothing moves. Regenerating them after changing a placeholder is a line in the stylesheet's own comment. A fixed one has to be the longest language's, which left English sitting in a field half again as wide as its sentence; the header caps it at the width its own placeholder needs, so every language gets its own — 391px for English, 439px for German, 517px for French, each exactly the text plus the icon and the padding. It is still `flex-1` below that, so a narrow window shrinks it and the fade comes back.
+
+  Verified in both engines by reading the rendered pixels: all ten languages sized to the pixel with nothing faded; German crisp from 800px up, fading below, and coming back unchanged on the way out; with the font forced three sizes larger — the case that was broken — it fades at every width instead of chopping; the phone's dialog fades and keeps its own width; the field does not move while a long query is typed; a typed query is never dimmed.
+
+- **Dialogs did not line up with the page behind them.** On a narrow window a dialog was capped at `max-w-lg` and centred, which left it a few pixels wider than the column of board tiles on each side — too close to read as a margin, too far off to read as alignment. And because a dialog is `position: fixed`, its box is the whole window, including the strip the scrollbar occupied that the locked page no longer covers; on any machine where scrollbars take up space (a mouse connected to a Mac, or Windows and Linux always) it also sat half a scrollbar to the right of everything behind it.
+
+  Below `sm` the card is now the width of the window, edge to edge, and its own `p-8` — `.container`'s `2rem`, to the pixel — is what lines its contents up with the page. Inset to the container it would have been aligned and 64 px narrower, and on a phone that width is the whole point: it is where the title, the attachment names and the comments have to fit. From `sm` up there is room for a real dialog, so it becomes one — `max-w-lg`, centred on the page's axis rather than the window's, using the width the lock reserved, which it now publishes as `--scrollbar-gap`.
+
+  Verified at 320, 393, 557, 639, 640, 768 and 1280 px across the board options, invite, delete and card dialogs: below `sm` the card touches both window edges and its content sits on the container's lines to the pixel; above it, a centred 512 px dialog. Close button never clipped, no page overflow, and with a 15 px scrollbar reserved the card's centre follows the page's centre instead of staying at the window's.
+
+### Documentation
+
+- **A guide for setting it up, provider by provider.** Covers both protocols: What the redirect URI has to be and why it has to match exactly, every setting and what it does, then step-by-step registration for Entra ID, Google Workspace, Okta, Keycloak, Authentik and Auth0, plus what to do with a provider that publishes no discovery document or names its fields its own way. Who gets in and how that differs from who the provider lets through, how existing accounts are joined, how to turn it off again without locking anybody out, how the sign-in works for anyone reviewing it before deploying, and a table matching each failure message to what usually causes it.
+
+- **Every screenshot retaken.** All fifteen in the guide, the README's, and the homepage's heroes in each of their widths — one demo run, so they are all the same build on the same day rather than a patchwork of whenever each was last touched. What changed in them: the tile menus, the tiles being dragged by the tile rather than a grip, the unread dot and the shared badge reading from the left, the card dialog's own menu, and a search field sized to its placeholder.
+
+- **The boards guide covers the tile menu.** "Open a board and click the ⋮ at the top right" was the only way described to reach a board's options, and it is no longer the shortest one. The dashboard screenshot was retaken with the menus on the tiles, and the tile menu is shot open beside the text.
+
 ## v0.29.0
 
 ### New Features

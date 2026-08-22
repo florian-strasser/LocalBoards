@@ -95,6 +95,90 @@ export default defineNuxtConfig({
     emailSecure: process.env.NUXT_EMAIL_SECURE || true,
     emailUser: process.env.NUXT_EMAIL_USER || "contact@yourdomain.com",
     emailPass: process.env.NUXT_EMAIL_PASS || "password1234",
+
+    // --- Single sign-on (OpenID Connect) ---------------------------------
+    // Off unless an issuer and a client are configured. See docs/sso.
+    ssoEnabled: process.env.NUXT_SSO_ENABLED || false,
+    ssoLabel: process.env.NUXT_SSO_LABEL || "Single sign-on",
+    // The provider's issuer URL. Everything else is read from its discovery
+    // document at `<issuer>/.well-known/openid-configuration`.
+    ssoIssuer: process.env.NUXT_SSO_ISSUER || "",
+    ssoClientId: process.env.NUXT_SSO_CLIENT_ID || "",
+    ssoClientSecret: process.env.NUXT_SSO_CLIENT_SECRET || "",
+    ssoScopes: process.env.NUXT_SSO_SCOPES || "openid profile email",
+    // "auto" creates an account on first sign-in; "existing" only lets in
+    // people who already have one here.
+    ssoProvision: process.env.NUXT_SSO_PROVISION || "auto",
+    // Restrict sign-in to these e-mail domains, comma separated.
+    ssoAllowedDomains: process.env.NUXT_SSO_ALLOWED_DOMAINS || "",
+    // Read the administrator role from a claim — a group or a role the provider
+    // sends — instead of managing it here.
+    ssoAdminClaim: process.env.NUXT_SSO_ADMIN_CLAIM || "",
+    ssoAdminValue: process.env.NUXT_SSO_ADMIN_VALUE || "",
+    // Where the identity lives in the provider's response. The defaults are the
+    // OpenID Connect claim names; a plain OAuth 2.0 provider often uses its own
+    // (GitHub answers with `id` and `login`, for instance). Several names can be
+    // given, comma separated and tried in order, and dots step into nested
+    // objects.
+    ssoClaimSubject: process.env.NUXT_SSO_CLAIM_SUBJECT || "",
+    ssoClaimEmail: process.env.NUXT_SSO_CLAIM_EMAIL || "",
+    ssoClaimName: process.env.NUXT_SSO_CLAIM_NAME || "",
+    // Only for providers that publish no discovery document, or to pin the
+    // endpoints by hand. Set the first two together.
+    ssoAuthorizationUrl: process.env.NUXT_SSO_AUTHORIZATION_URL || "",
+    ssoTokenUrl: process.env.NUXT_SSO_TOKEN_URL || "",
+    ssoUserinfoUrl: process.env.NUXT_SSO_USERINFO_URL || "",
+    // E-mail domains this provider signs in, for routing somebody to the right
+    // one when several are configured. Unlike the allow-list, this refuses
+    // nobody by itself.
+    ssoDomains: process.env.NUXT_SSO_DOMAINS || "",
+    // Extra providers, by name: NUXT_SSO_PROVIDERS=entra,partner then
+    // NUXT_SSO_ENTRA_ISSUER=… and so on. See docs/single-sign-on.
+    ssoProviders: process.env.NUXT_SSO_PROVIDERS || "",
+
+    // --- Single sign-on (SAML 2.0) ---------------------------------------
+    // For providers that speak SAML rather than OpenID Connect. Both can be on
+    // at once; each gets its own button. See docs/single-sign-on.
+    samlEnabled: process.env.NUXT_SAML_ENABLED || false,
+    samlLabel: process.env.NUXT_SAML_LABEL || "SAML single sign-on",
+    // Where to send people to sign in (the provider's SSO URL), and the
+    // certificate its assertions are signed with. Several certificates may be
+    // given, comma separated, which is how a rollover is survived.
+    samlEntryPoint: process.env.NUXT_SAML_ENTRY_POINT || "",
+    samlIdpCert: process.env.NUXT_SAML_IDP_CERT || "",
+    // The provider's entity id, checked against the assertion's issuer.
+    samlIdpIssuer: process.env.NUXT_SAML_IDP_ISSUER || "",
+    // Our own entity id. Defaults to NUXT_BOARDS_URL.
+    samlEntityId: process.env.NUXT_SAML_ENTITY_ID || "",
+    samlIdentifierFormat: process.env.NUXT_SAML_IDENTIFIER_FORMAT || "",
+    samlSignatureAlgorithm: process.env.NUXT_SAML_SIGNATURE_ALGORITHM || "",
+    samlClockSkewSeconds: process.env.NUXT_SAML_CLOCK_SKEW_SECONDS || "60",
+    samlDisableRequestedAuthnContext:
+      process.env.NUXT_SAML_DISABLE_REQUESTED_AUTHN_CONTEXT || "",
+    // Require the response document to be signed as well as the assertion.
+    // Off by default: most providers sign the assertion alone.
+    samlWantResponseSigned: process.env.NUXT_SAML_WANT_RESPONSE_SIGNED || "",
+    // Where the identity lives in the assertion. SAML attribute names are
+    // rarely friendly, so these matter more than their OpenID Connect
+    // counterparts; the defaults cover the common spellings.
+    samlAttributeSubject: process.env.NUXT_SAML_ATTRIBUTE_SUBJECT || "",
+    samlAttributeEmail: process.env.NUXT_SAML_ATTRIBUTE_EMAIL || "",
+    samlAttributeName: process.env.NUXT_SAML_ATTRIBUTE_NAME || "",
+    samlAdminAttribute: process.env.NUXT_SAML_ADMIN_ATTRIBUTE || "",
+    samlAdminValue: process.env.NUXT_SAML_ADMIN_VALUE || "",
+    // Fall back to the OpenID Connect policy when not set separately.
+    samlProvision: process.env.NUXT_SAML_PROVISION || "",
+    samlAllowedDomains: process.env.NUXT_SAML_ALLOWED_DOMAINS || "",
+    samlDomains: process.env.NUXT_SAML_DOMAINS || "",
+    samlProviders: process.env.NUXT_SAML_PROVIDERS || "",
+    // Decrypting assertions, for providers that require encryption. The private
+    // key stays here; the certificate goes in our metadata for the provider to
+    // encrypt with.
+    samlDecryptionKey: process.env.NUXT_SAML_DECRYPTION_KEY || "",
+    samlDecryptionCert: process.env.NUXT_SAML_DECRYPTION_CERT || "",
+    // Accept assertions that arrive without our having asked — somebody
+    // clicking the application's tile in their provider's portal.
+    samlAllowIdpInitiated: process.env.NUXT_SAML_ALLOW_IDP_INITIATED || "",
   },
   css: ["~/assets/css/main.css"],
   i18n: {

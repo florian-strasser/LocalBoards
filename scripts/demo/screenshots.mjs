@@ -76,6 +76,16 @@ await shot(auth, "21-menu-actions", "/dashboard", async (p) => {
   await p.click('button[aria-haspopup="menu"]');
   await p.waitForTimeout(400);
 });
+// A board tile's own menu, on a board this user owns: a shared one offers only
+// "leave board", which is the shorter half of the story.
+await shot(auth, "32-menu-board-tile", "/dashboard", async (p) => {
+  const owned = p
+    .locator("[data-board-id]")
+    .filter({ hasNot: p.locator("text=Shared") })
+    .first();
+  await owned.locator('button[aria-haspopup="menu"]').click();
+  await p.waitForTimeout(400);
+});
 await shot(auth, "22-modal-trello-import", "/dashboard", async (p) => {
   await p.click('button[aria-haspopup="menu"]');
   await p.waitForTimeout(300);

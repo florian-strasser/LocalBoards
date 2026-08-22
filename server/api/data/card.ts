@@ -513,13 +513,11 @@ export default defineEventHandler(async (event) => {
         return { error: writeDecision.error };
       }
       {
-        // Delete notifications
-        await db.execute("DELETE FROM comments WHERE card = ?", [cardID]);
-
-        // Delete notifications related to cards in the area
-        await db.execute("DELETE FROM notifications WHERE cardId = ?", [
-          cardID,
-        ]);
+        // Everything that hung off the card — its comments, its attachments and
+        // the files behind them, its reminders, its activity and its
+        // notifications. See `removeCardData`: this used to take the comments
+        // and the notifications only, and leave the rest behind for ever.
+        await removeCardData(db, [Number(cardID)]);
 
         // Delete Card
         const [result] = await db.execute("DELETE FROM cards WHERE id = ?", [

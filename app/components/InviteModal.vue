@@ -201,6 +201,11 @@ const initial = (invitation: any) =>
 
 const nuxtApp = useNuxtApp();
 
+// Someone was added or taken off the board. Whoever opened this dialog decides
+// what that means for them — the board page reloads its own member list, the
+// dashboard refetches the tile the avatars are on.
+const emit = defineEmits(["invitations-changed"]);
+
 const invitePermission = ref("read");
 
 // --- Searchable user picker -------------------------------------------------
@@ -308,6 +313,7 @@ const createInvitation = async () => {
             if (data.invitation) {
                 invitations.value.push(data.invitation);
             }
+            emit("invitations-changed");
         }
     } catch (err) {
         await nuxtApp.callHook("app:toast", {
@@ -333,6 +339,7 @@ const removeInvitation = async (userId) => {
             invitations.value = invitations.value.filter(
                 (invitation) => invitation.user !== userId,
             );
+            emit("invitations-changed");
         }
     } catch (err) {
         console.error("Error removing invitation:", err);

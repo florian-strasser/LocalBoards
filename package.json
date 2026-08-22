@@ -17,6 +17,7 @@
     "demo:screenshots": "bash scripts/demo/run.sh"
   },
   "dependencies": {
+    "@node-saml/node-saml": "^5.1.0",
     "@nuxtjs/i18n": "^10.5.0",
     "@nuxtjs/mcp-toolkit": "^0.18.0",
     "@tailwindcss/vite": "^4.3.3",

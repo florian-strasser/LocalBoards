@@ -52,6 +52,13 @@ export default defineEventHandler(async (event) => {
       return { error: "Resource not found" };
     }
 
+    // The people still on the board lose a face from its tile, and the leaver
+    // loses the tile — so they are notified explicitly, being no longer a
+    // member by the time the membership is read.
+    await notifyDashboards(db, board.id, [userId]);
+    await notifyBoardMembersChanged(board.id);
+    await notifyDashboards(db, board.id);
+
     return { message: "Left board successfully" };
   } catch (error) {
     logger.error("Leave board error:", error);

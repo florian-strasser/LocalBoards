@@ -15,7 +15,7 @@ const views = [
   ["01-sign-in", "Sign in", "page"], ["02-sign-up", "Sign up", "page"], ["03-lost-password", "Lost password", "page"],
   ["10-dashboard", "Dashboard", "page"], ["11-board-kanban", "Board — Kanban", "page"], ["12-board-todo", "Board — To-do list", "page"],
   ["13-settings", "Settings", "page"], ["14-users", "Users (admin)", "page"], ["15-new-user", "New user", "page"], ["16-edit-user", "Edit user", "page"],
-  ["20-modal-create-board", "Create board", "modal"], ["21-menu-actions", "Actions menu (⋮)", "modal"], ["22-modal-trello-import", "Import from Trello", "modal"],
+  ["20-modal-create-board", "Create board", "modal"], ["21-menu-actions", "Actions menu (⋮)", "modal"], ["32-menu-board-tile", "Board tile menu", "modal"], ["22-modal-trello-import", "Import from Trello", "modal"],
   ["23-modal-board-options", "Board options", "modal"], ["24-modal-invite", "Invite user", "modal"], ["25-modal-delete-board", "Delete board", "modal"],
   ["26-modal-card", "Card", "modal"], ["31-menu-card", "Card menu", "modal"], ["27-modal-image-lightbox", "Image lightbox", "modal"], ["28-modal-delete-area", "Delete area", "modal"], ["29-modal-delete-user", "Delete user", "modal"],
   ["30-search", "Search", "modal"],

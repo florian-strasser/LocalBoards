@@ -162,6 +162,17 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
   io.on("connection", (socket) => {
     logger.debug("A user connected:", socket.id);
 
+    // The caller's own dashboard room. Unlike a board room this is not gated on
+    // a board — it is the user's own — so the session decides the name and a
+    // client cannot ask to listen to somebody else's.
+    socket.on("joinDashboard", async () => {
+      const user = await sessionUser(socket);
+      if (!user) return;
+      socket.join(`dashboard-${user.id}`);
+      socket.join(`user-${socket.id}`);
+      logger.debug(`User ${socket.id} joined dashboard ${user.id}`);
+    });
+
     // Handle joining a board
     socket.on("joinBoard", async ({ boardId }) => {
       // Room membership is what decides who receives a board's realtime events
@@ -266,7 +277,14 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
     // BoardUpdated
     socket.on(
       "boardUpdated",
-      async ({ boardID, boardName, boardStatus, boardStyle }) => {
+      async ({
+        boardID,
+        boardName,
+        boardStatus,
+        boardStyle,
+        boardImage,
+        boardColor,
+      }) => {
         if (!(await canAccessBoard(socket, boardID))) return;
         logger.debug(`Board ${boardID} wurde aktualisiert (user-${socket.id})`);
         io.except(`user-${socket.id}`)
@@ -276,6 +294,8 @@ export default defineNitroPlugin((nitroApp: NitroApp) => {
             boardName,
             boardStatus,
             boardStyle,
+            boardImage,
+            boardColor,
           });
       },
     );

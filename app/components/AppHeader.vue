@@ -32,8 +32,14 @@ const openSearch = () => {
             </NuxtLinkLocale>
             <!-- Search sits between the logo and the nav: a field you can type
                  in straight away, not another icon competing with the actions
-                 in the pill. It takes the leftover width up to a readable
-                 maximum.
+                 in the pill.
+
+                 It takes the leftover width up to the width its own placeholder
+                 needs — `--search-max`, which the field measures from the text
+                 actually in it. A fixed cap had to be the longest language's,
+                 which left English sitting in a field half again as wide as its
+                 sentence. The `28rem` is only the fallback for the moment before
+                 the measurement lands.
 
                  Below `sm` it is gone, and the button in the pill opens it in a
                  dialog instead. It used to wrap to a full-width line under the
@@ -43,7 +49,7 @@ const openSearch = () => {
                  and the dialog then gives the field and its results more room
                  than the header ever had. -->
             <GlobalSearch
-                class="hidden sm:mx-8 sm:block sm:w-auto sm:min-w-0 sm:max-w-md sm:flex-1"
+                class="hidden sm:mx-8 sm:block sm:w-auto sm:min-w-0 sm:max-w-[var(--search-max,28rem)] sm:flex-1"
             />
             <ul
                 class="relative flex gap-x-4 menu app-nav px-6 py-4 rounded-full bg-white dark:bg-slate"

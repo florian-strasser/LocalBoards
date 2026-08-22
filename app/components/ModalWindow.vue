@@ -13,12 +13,32 @@
              the scroll container, so its padding edge is the clip boundary, and
              a card animating past it would simply be cut off. Moving the
              container instead carries its contents along untouched. -->
+        <!-- Below `sm` the card is the width of the window, edge to edge, and
+             it is its own `p-8` — `.container`'s `2rem`, to the pixel — that
+             lines its contents up with the page behind it. A card inset to the
+             container instead would have been aligned and 64 px narrower, and
+             on a phone that width is the whole point: it is where the title,
+             the attachment names and the comments have to fit.
+             
+             What it must never be is the third thing, which is what it was: a
+             card capped at `max-w-lg` and centred, sitting a few pixels wider
+             than the column on each side — too close to the tiles to read as a
+             margin, too far off to read as alignment.
+
+             From `sm` up there is room for a real dialog, so it becomes one:
+             `max-w-lg`, centred, with the container's padding around it. That
+             centring is on the page's axis, not the window's — the dialog is
+             fixed, so its box is the whole window including the strip the
+             scrollbar occupied, which the locked page no longer covers, and
+             half that width is how far the card used to sit to the right of
+             everything behind it. `--scrollbar-gap` is what the lock reserved
+             (see `bodyScrollLock`), added to the padding on that side. -->
         <motion.div
-            class="relative w-full max-h-full py-8 overflow-y-auto overflow-x-hidden"
+            class="relative w-full max-h-full py-8 overflow-y-auto overflow-x-hidden sm:pl-8 sm:pr-[calc(2rem+var(--scrollbar-gap,0px))]"
             :style="{ y, opacity: cardOpacity }"
             @click.self="closeModal"
         >
-            <div class="relative w-full max-w-lg mx-auto">
+            <div class="relative w-full sm:max-w-lg mx-auto">
                 <div
                     class="absolute top-0 right-0 w-12 transform sm:translate-x-1/2 -translate-y-1/2 z-30"
                 >

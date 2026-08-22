@@ -6,6 +6,7 @@
                 :userID="userID"
                 :boardID="boardID"
                 @board-updated="handleBoardUpdated"
+                @board-members-updated="handleBoardMembersUpdated"
                 @board-deleted="handleBoardDeleted"
                 @areas-updated="handleAreasUpdated"
                 @card-created="handleCardCreated"
@@ -218,82 +219,19 @@
                 </div>
         </div>
         <ModalWindow v-model="optionsActive">
-            <div>
-                <form @submit.prevent="saveBoard" class="text-left space-y-5">
-                    <div>
-                        <InputField
-                            type="text"
-                            name="boardName"
-                            :label="$t('boardName')"
-                            required
-                            v-model="newBoardName"
-                        />
-                    </div>
-                    <div>
-                        <InputImage
-                            :label="$t('boardThumbnail')"
-                            :images="[
-                                '/images/board_placeholder_01.png',
-                                '/images/board_placeholder_02.png',
-                                '/images/board_placeholder_03.png',
-                                '/images/board_placeholder_04.png',
-                                '/images/board_placeholder_05.png',
-                                '/images/board_placeholder_06.png',
-                                '/images/board_placeholder_07.png',
-                                '/images/board_placeholder_08.png',
-                            ]"
-                            v-model="newBoardImage"
-                        />
-                    </div>
-                    <div>
-                        <InputColor
-                            :label="$t('boardColor')"
-                            v-model="newBoardColor"
-                        />
-                    </div>
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <label
-                                class="mb-1 block text-sm/6 font-medium text-gray"
-                                >{{ $t("boardStyle") }}</label
-                            >
-                            <SegmentedControl
-                                :values="[
-                                    { value: 'kanban', label: $t('kanBan') },
-                                    { value: 'todo', label: $t('toDo') },
-                                ]"
-                                name="style"
-                                v-model="newBoardStyle"
-                            />
-                        </div>
-                        <div>
-                            <label
-                                class="mb-1 block text-sm/6 font-medium text-gray"
-                                >{{ $t("boardStatus") }}</label
-                            >
-                            <SegmentedControl
-                                :values="[
-                                    {
-                                        value: 'private',
-                                        label: $t('statusPrivate'),
-                                    },
-                                    {
-                                        value: 'public',
-                                        label: $t('statusPublic'),
-                                    },
-                                ]"
-                                name="status"
-                                v-model="newBoardStatus"
-                            />
-                        </div>
-                    </div>
-                    <input
-                        type="submit"
-                        class="button bg-primary hover:bg-primary-hover w-full text-center px-6 py-3 rounded-lg text-white"
-                        :value="$t('saveBoard')"
-                    />
-                </form>
-            </div>
+            <!-- The same form the dashboard's tile menu opens. -->
+            <BoardSettingsForm
+                :board="{
+                    id: boardID * 1,
+                    name: boardName,
+                    style: boardStyle,
+                    status: boardStatus,
+                    image: boardImage,
+                    color: boardColor,
+                }"
+                :userID="userID"
+                @saved="onBoardSaved"
+            />
         </ModalWindow>
         <ModalWindow v-if="userID === boardUser" v-model="deleteModal">
             <h2 class="text-4xl text-dark dark:text-white mb-3">
@@ -377,23 +315,6 @@ const boardStyle = ref("kanban");
 const boardStatus = ref("private");
 const boardImage = ref(null);
 const boardColor = ref(null);
-
-const newBoardName = ref(boardName.value);
-const newBoardStyle = ref(boardStyle.value);
-const newBoardStatus = ref(boardStatus.value);
-const newBoardImage = ref(boardImage.value);
-const newBoardColor = ref(boardColor.value);
-
-// A cover image covers the whole tile, so a colour behind one would never be
-// seen. Rather than let the two silently fight, picking either clears the
-// other: a board wears a picture or a colour, and the dialog always shows which
-// one it is.
-watch(newBoardImage, (image) => {
-    if (image) newBoardColor.value = null;
-});
-watch(newBoardColor, (color) => {
-    if (color) newBoardImage.value = null;
-});
 
 const accessError = ref("");
 const optionsActive = ref(false);
@@ -798,12 +719,9 @@ const deleteArea = async (areaId) => {
     }
 };
 
+// The form seeds itself from the board it is given, so there is nothing to copy
+// across here any more.
 const openModal = () => {
-    newBoardName.value = boardName.value;
-    newBoardStyle.value = boardStyle.value;
-    newBoardStatus.value = boardStatus.value;
-    newBoardImage.value = boardImage.value;
-    newBoardColor.value = boardColor.value;
     optionsActive.value = true;
     setBodyScrollLock(true);
 };
@@ -818,48 +736,30 @@ const openInviteModal = () => {
     onboarding.advance("invite");
 };
 
-// Save board name with debounce
-const saveBoard = async () => {
-    const newName = newBoardName.value.trim();
-    if (!newName) return;
+// What the settings form reports, applied to the board on screen and passed on
+// to everyone else looking at it. The colour and the image travel with it now:
+// they were left out of the signal, so a board that changed colour stayed the
+// old one on every other screen until a reload — and the dashboard tiles, which
+// are mostly colour and image, would have shown nothing at all.
+const onBoardSaved = async (board) => {
+    boardName.value = board.name;
+    boardStyle.value = board.style;
+    boardStatus.value = board.status;
+    boardImage.value = board.image;
+    boardColor.value = board.color;
+    optionsActive.value = false;
+    setBodyScrollLock(false);
 
-    try {
-        const data = await $fetch("/api/data/board", {
-            method: "POST",
-            body: {
-                id: boardID.value ? boardID.value : null,
-                userId: userID,
-                name: newName,
-                style: newBoardStyle.value,
-                image: newBoardImage.value ? newBoardImage.value : null,
-                color: newBoardColor.value || null,
-                status: newBoardStatus.value,
-            },
-        });
-        if (!data) {
-            console.error("Error updating board");
-        } else {
-            boardName.value = newBoardName.value;
-            boardStyle.value = newBoardStyle.value;
-            boardStatus.value = newBoardStatus.value;
-            boardImage.value = newBoardImage.value;
-            boardColor.value = newBoardColor.value;
-            optionsActive.value = false;
-            setBodyScrollLock(false);
-            socket.emit("boardUpdated", {
-                boardID: boardID.value,
-                boardName: boardName.value,
-                boardStyle: boardStyle.value,
-                boardStatus: boardStatus.value,
-            });
+    socket.emit("boardUpdated", {
+        boardID: boardID.value,
+        boardName: board.name,
+        boardStyle: board.style,
+        boardStatus: board.status,
+        boardImage: board.image,
+        boardColor: board.color,
+    });
 
-            await nuxtApp.callHook("app:toast", {
-                message: $t("boardSaved"),
-            });
-        }
-    } catch (err) {
-        console.error("Error:", err);
-    }
+    await nuxtApp.callHook("app:toast", { message: $t("boardSaved") });
 };
 
 const handleCardCreated = (card) => {
@@ -919,10 +819,18 @@ const handleLocalCardCreated = (card) => {
     handleCardCreated(card);
 };
 
+// Somebody changed who is on this board. The permissions dialog reads from
+// `invitations`, so it is re-read rather than guessed at from the signal.
+const handleBoardMembersUpdated = async () => {
+    if (boardUser.value === userID) await fetchInvitations();
+};
+
 const handleBoardUpdated = (board) => {
     boardName.value = board.boardName;
     boardStyle.value = board.boardStyle;
     boardStatus.value = board.boardStatus;
+    if (board.boardImage !== undefined) boardImage.value = board.boardImage;
+    if (board.boardColor !== undefined) boardColor.value = board.boardColor;
 };
 
 const handleAreasUpdated = (updatedAreas) => {
@@ -1182,11 +1090,6 @@ try {
         boardStatus.value = data.value.board.status || "private";
         boardImage.value = data.value.board.image || null;
         boardColor.value = data.value.board.color || null;
-        newBoardName.value = boardName.value;
-        newBoardStyle.value = boardStyle.value;
-        newBoardStatus.value = boardStatus.value;
-        newBoardImage.value = boardImage.value;
-        newBoardColor.value = boardColor.value;
         writeAccess.value = data.value.writeAccess;
         if (data.value.board.user === userID) await fetchInvitations();
     }

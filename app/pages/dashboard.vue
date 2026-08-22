@@ -156,7 +156,17 @@ const newBoardStyle = ref("kanban");
 const newBoardStatus = ref("private");
 const newBoardImage = ref(null);
 
-const openCreateBoard = () => {
+// Where a board made from a "+" tile should be filed. The tile in a group sends
+// its own id and the position at the end of it; the one above the groups sends
+// null, which is the ungrouped area and needs no filing at all. Cleared on every
+// open so a board created from the header button never inherits the last group
+// a tile was pressed in.
+const newBoardPlacement = ref<{ groupId: number | null; sort: number } | null>(
+    null,
+);
+
+const openCreateBoard = (placement?: { groupId: number | null; sort: number }) => {
+    newBoardPlacement.value = placement?.groupId != null ? placement : null;
     createBoard.value = true;
     setBodyScrollLock(true);
 };
@@ -236,6 +246,33 @@ const saveBoard = async () => {
             await nuxtApp.callHook("app:toast", {
                 message: $t("boardCreated"),
             });
+            // File it into the group whose tile was pressed, before leaving the
+            // dashboard. A board with no placement row is ungrouped, which is
+            // already the right answer for the tile above the groups — so this
+            // only runs when a group asked for it. It is also not worth failing
+            // the creation over: the board exists either way, and an unfiled one
+            // is sitting in the ungrouped area rather than lost.
+            const placement = newBoardPlacement.value;
+            if (placement) {
+                try {
+                    await $fetch("/api/data/board-arrangement", {
+                        method: "POST",
+                        body: {
+                            placements: [
+                                {
+                                    boardId: data.board.id,
+                                    groupId: placement.groupId,
+                                    sort: placement.sort,
+                                },
+                            ],
+                        },
+                    });
+                } catch (err) {
+                    console.error("Could not file the new board:", err);
+                }
+            }
+            newBoardPlacement.value = null;
+
             // Advance the tour from "create a board" before moving on.
             onboarding.advance("create-board");
             await navigateTo(`/board/${data.board.id}`);

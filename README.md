@@ -25,6 +25,24 @@ Agents and people can share a board safely:
 
 See **[AGENTS.md](AGENTS.md)** for connection details, the agent work loop, the full tool list, and examples.
 
+## Single sign-on
+
+Sign people in against the identity provider your organisation already runs —
+**Entra ID, Google Workspace, Okta, Keycloak, Authentik, Auth0, ADFS,
+Shibboleth**, or anything else that speaks **OpenID Connect** or **SAML 2.0**.
+A handful of environment variables, one button on the sign-in page, and no
+separate password to look after.
+
+Accounts are created on first sign-in, and anyone already using the instance is
+linked to their existing account by e-mail address, so a team adopting SSO keeps
+its boards. Optionally restrict it to your own e-mail domains, refuse anyone
+without an account here, or read the administrator role from a group claim in
+your directory.
+
+It is MIT-licensed like the rest of it — there is no edition to buy. See the
+**[single sign-on guide](https://www.lokalboards.com/docs/single-sign-on)** for
+provider-by-provider setup.
+
 ## Install
 
 To install LokalBoards, follow these steps:
@@ -68,6 +86,24 @@ NUXT_EMAIL_PORT=465
 NUXT_EMAIL_SECURE=true
 NUXT_EMAIL_USER=contact@yourdomain.com
 NUXT_EMAIL_PASS=password1234
+
+# Single sign-on (optional) — any OpenID Connect provider: Entra ID, Google
+# Workspace, Okta, Keycloak, Authentik, Auth0. Register
+# <NUXT_BOARDS_URL>/api/auth/sso/callback as the redirect URI with your
+# provider. See the guide: https://www.lokalboards.com/docs/single-sign-on
+NUXT_SSO_ENABLED=false
+NUXT_SSO_ISSUER=https://login.example.com/realms/company
+NUXT_SSO_CLIENT_ID=lokalboards
+NUXT_SSO_CLIENT_SECRET=change-me
+NUXT_SSO_LABEL=Single sign-on
+
+# …or SAML 2.0, for providers that speak that instead. Give your provider
+# <NUXT_BOARDS_URL>/api/auth/saml/metadata, or the entity id and ACS URL by
+# hand. Both protocols can be on at once.
+NUXT_SAML_ENABLED=false
+NUXT_SAML_ENTRY_POINT=https://idp.example.com/sso
+NUXT_SAML_IDP_CERT=MIIDdzCCAl+gAwIBAgIEb...
+NUXT_SAML_LABEL=SAML single sign-on
 ```
 
 ### Build the Application

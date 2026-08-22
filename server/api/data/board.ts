@@ -120,9 +120,16 @@ export default defineEventHandler(async (event) => {
                 boardName: board.name,
                 boardStatus: board.status,
                 boardStyle: board.style,
+                boardImage: board.image,
+                boardColor: board.color,
               });
             }
           }
+
+          // The tile on every dashboard showing this board is its name and its
+          // colour or image, so a change here is a change there — whichever
+          // client made it, including one holding an API key.
+          await notifyDashboards(db, id);
         }
       } else {
         // Create new board
@@ -179,6 +186,11 @@ export default defineEventHandler(async (event) => {
         return { error: "Unauthorized access" };
       }
 
+      // Who to tell, read before anything is deleted: once the board and its
+      // invitations are gone there is no way to work out whose dashboards were
+      // showing it.
+      const memberIds = await getBoardMemberIds(db, id);
+
       // Delete all invitations associated with the board
       await db.execute("DELETE FROM invitations WHERE board = ?", [id]);
       await db.execute("DELETE FROM `webhooks` WHERE board = ?", [id]);
@@ -186,6 +198,11 @@ export default defineEventHandler(async (event) => {
 
       // Delete all notifications associated with the cards in the board's areas
       await db.execute(`DELETE FROM notifications WHERE boardId = ?`, [id]);
+
+      // Everything belonging to every card on the board — comments,
+      // attachments and their files, reminders, activity. Read the ids before
+      // the cards go, or there is no way to find what was theirs.
+      await removeCardData(db, await cardIdsInBoard(db, id));
 
       // Delete all cards associated with the board's areas
       await db.execute(
@@ -215,6 +232,9 @@ export default defineEventHandler(async (event) => {
           });
         }
       }
+
+      // Every dashboard that carried a tile for it drops the tile.
+      await notifyDashboards(db, id, memberIds);
 
       return { message: "Board deleted successfully" };
     } else if (method === "PATCH") {

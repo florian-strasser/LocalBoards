@@ -18,10 +18,18 @@ export function setBodyScrollLock(locked: boolean) {
     if (body.style.overflowY !== "hidden") {
       const gap = window.innerWidth - document.documentElement.clientWidth;
       body.style.paddingRight = gap > 0 ? `${gap}px` : "";
+      // The same width, published for anything that has to line up with the
+      // page while the lock is on. A dialog is `position: fixed`, so its box is
+      // the whole window — including the strip the scrollbar used to occupy,
+      // which the page itself no longer covers. Centring in the window and
+      // centring in the page are half a scrollbar apart, and that is exactly
+      // how far a dialog sat to the right of the content behind it.
+      document.documentElement.style.setProperty("--scrollbar-gap", `${gap}px`);
     }
     body.style.overflowY = "hidden";
   } else {
     body.style.overflowY = "auto";
     body.style.paddingRight = "";
+    document.documentElement.style.removeProperty("--scrollbar-gap");
   }
 }

@@ -1,5 +1,15 @@
 <template>
-    <div ref="root" class="relative">
+    <!-- `search-shell` is what carries `--search-max`, the width this field's
+         placeholder needs. The stylesheet sets it per language so the field is
+         the right size on the first paint; the measurement below lands on the
+         same number, so nothing moves when it does. -->
+    <div
+        ref="root"
+        class="search-shell relative"
+        :style="
+            !inModal && natural ? { '--search-max': `${natural}px` } : undefined
+        "
+    >
         <!-- The border is the field's own background colour, so it is invisible at
              rest and can turn primary on focus — the same affordance the card
              description and comment editors have. The vertical padding is one
@@ -21,14 +31,36 @@
                 v-model="term"
                 type="search"
                 autocomplete="off"
-                :placeholder="$t('searchPlaceholder')"
                 :aria-label="$t('headerSearch')"
-                :class="{ 'search-field': placeholderOverflows }"
-                class="w-full rounded-full bg-transparent py-[15px] pr-4 pl-10 text-sm text-dark placeholder:text-gray focus:outline-none dark:text-white"
+                class="w-full rounded-full bg-transparent py-[15px] pr-4 pl-10 text-sm text-dark focus:outline-none dark:text-white"
                 @focus="reopen"
                 @click="reopen"
                 @keydown.esc="close"
             />
+            <!-- The placeholder, as an element rather than the input's own
+                 attribute.
+
+                 It is a full sentence and the field is often narrower than it,
+                 so the tail has to fade rather than be chopped mid-letter — and
+                 fading it means knowing whether it is too long, which is the
+                 part that kept going wrong. Every attempt to work that out from
+                 the font was a guess: `measureText` does not know that Safari
+                 renders 14px text at whatever minimum font size is set, and a
+                 cloned input counts a cancel button a placeholder never has.
+                 A element of our own can simply be asked — `scrollWidth`
+                 against `clientWidth` is what the browser did, not a model of
+                 it, and it is right whatever the font turns out to be.
+
+                 It sits exactly where the input's own placeholder would: from
+                 the icon's edge to the padding, vertically centred. -->
+            <span
+                v-if="!term"
+                ref="hint"
+                aria-hidden="true"
+                class="text-gray pointer-events-none absolute inset-y-0 right-4 left-10 flex items-center overflow-hidden text-sm whitespace-nowrap"
+                :class="{ 'fade-clip': hintOverflows }"
+                >{{ $t("searchPlaceholder") }}</span
+            >
         </label>
 
         <!-- Rendered into <body> and positioned against the field, the same way
@@ -406,16 +438,50 @@ const inModal = computed(() => props.variant === "modal");
 
 const root = ref(null);
 const input = ref(null);
+// The placeholder element, and whether the text in it is longer than the box it
+// has to fit in. `scrollWidth > clientWidth` on a `nowrap`/`overflow-hidden`
+// element is a fact the browser reports about what it drew, so no font, no
+// language and no browser font setting can make it wrong.
+const hint = ref<HTMLElement | null>(null);
+const hintOverflows = ref(false);
+
+// How wide the field would have to be for this placeholder to fit exactly: the
+// text as it is actually laid out, plus the room the icon and the padding take.
+// The header caps the field at this, so English does not get German's width and
+// French is not cut short of its own — see `--search-max` in AppHeader.
+const natural = ref(0);
+
+const measureHint = () => {
+    const el = hint.value;
+    if (!el) return;
+    hintOverflows.value = el.scrollWidth > el.clientWidth;
+
+    // A range over the text rather than the element's own width: the element is
+    // the size of the box it has to fit in, and once the text is longer than
+    // that the box stops telling us anything about the text. A range measures
+    // what was laid out, clipped or not.
+    const field = input.value as HTMLInputElement | null;
+    if (!field) return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const text = range.getBoundingClientRect().width;
+    range.detach();
+    if (!text) return;
+
+    const style = getComputedStyle(field);
+    natural.value = Math.ceil(
+        text +
+            parseFloat(style.paddingLeft) +
+            parseFloat(style.paddingRight) +
+            2, // the label's border, one pixel each side
+    );
+};
 const panel = ref(null);
 const panelStyle = ref({});
 
 const term = ref("");
 // A result has been clicked and its page is on its way.
 const following = ref(false);
-// Whether the placeholder is too long for the field. The fade is only applied
-// then — a gradient wide enough to look smooth also eats the tail of a
-// placeholder that fits perfectly well, which is what happened on desktop.
-const placeholderOverflows = ref(false);
 const loading = ref(false);
 const results = ref({ boards: [], cards: [], comments: [], attachments: [] });
 // The term the results belong to, so the highlight never lags behind or runs
@@ -433,27 +499,6 @@ const total = computed(
 );
 // Anything worth showing: results, a message, or the "keep typing" hint.
 const showPanel = computed(() => !dismissed.value && needle.value.length > 0);
-
-// Measured with canvas rather than a probe element: no DOM insertion, no
-// layout thrash, and it can run on every resize.
-let measureCanvas: HTMLCanvasElement | undefined;
-
-const measurePlaceholder = () => {
-    const el = input.value as HTMLInputElement | null;
-    if (!el) return;
-    const style = getComputedStyle(el);
-    measureCanvas ||= document.createElement("canvas");
-    const ctx = measureCanvas.getContext("2d");
-    if (!ctx) return;
-    ctx.font =
-        style.font ||
-        `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-    const room =
-        el.clientWidth -
-        parseFloat(style.paddingLeft) -
-        parseFloat(style.paddingRight);
-    placeholderOverflows.value = ctx.measureText(el.placeholder).width > room;
-};
 
 const MARGIN = 16;
 const MAX_WIDTH = 520;
@@ -619,21 +664,41 @@ watch(showPanel, async (open) => {
     }
 });
 
-onMounted(() => {
-    measurePlaceholder();
-    window.addEventListener("resize", measurePlaceholder, { passive: true });
-    // Metrics change once webfonts settle, and the placeholder itself changes
-    // with the active language.
-    document.fonts?.ready?.then(measurePlaceholder).catch(() => {});
+// Re-checked whenever the box or the text can have changed: the field resizes
+// with the window, the webfont settles after first paint, the placeholder
+// arrives with the locale, and the element itself comes and goes as the field
+// is typed into and cleared.
+let hintResize: ResizeObserver | undefined;
+let hintText: MutationObserver | undefined;
+
+const stopWatchingHint = () => {
+    hintResize?.disconnect();
+    hintText?.disconnect();
+};
+
+watch(hint, async (el) => {
+    stopWatchingHint();
+    if (!el) return;
+    await nextTick();
+    measureHint();
+    // The box: the field is `flex-1`, so it changes with the window.
+    hintResize = new ResizeObserver(measureHint);
+    hintResize.observe(el);
+    // And the text: the placeholder arrives with the locale, which is applied
+    // by a plugin after this has mounted. Watching the box alone missed that —
+    // the box does not change when the sentence inside it does, so a language
+    // whose placeholder does not fit kept the one before it had decided.
+    hintText = new MutationObserver(measureHint);
+    hintText.observe(el, { childList: true, characterData: true, subtree: true });
 });
 
-watch(
-    () => (input.value as HTMLInputElement | null)?.placeholder,
-    () => measurePlaceholder(),
-);
+onMounted(() => {
+    measureHint();
+    document.fonts?.ready?.then(measureHint).catch(() => {});
+});
 
 onBeforeUnmount(() => {
-    window.removeEventListener("resize", measurePlaceholder);
+    stopWatchingHint();
     clearTimeout(debounce);
     window.removeEventListener("scroll", positionPanel, true);
     window.removeEventListener("resize", positionPanel);

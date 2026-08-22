@@ -199,6 +199,11 @@ export default defineEventHandler(async (event) => {
         [result.insertId],
       );
 
+      // A new face on the board: every dashboard showing it has an avatar to
+      // add, and anyone with the board open has a member list to refresh.
+      await notifyBoardMembersChanged(boardId);
+      await notifyDashboards(db, boardId);
+
       return {
         message: "Invitation created successfully",
         invitation: invitationRows[0],
@@ -260,6 +265,12 @@ export default defineEventHandler(async (event) => {
         event.res.statusCode = 404;
         return { error: "Resource not found" };
       }
+
+      // The removed user's own dashboard has a tile to lose, and they are no
+      // longer a member — so they are told before the membership is re-read.
+      await notifyDashboards(db, boardId, [invitedUserId as string]);
+      await notifyBoardMembersChanged(boardId);
+      await notifyDashboards(db, boardId);
 
       return { message: "Invitation removed successfully" };
     } else {

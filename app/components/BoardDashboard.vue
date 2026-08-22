@@ -1,7 +1,7 @@
 <template>
     <div>
-        <!-- Ungrouped boards: shown first, no header, with the "new board" tile.
-             New and newly-shared boards land here until the user files them. -->
+        <!-- Ungrouped boards: shown first, no header. New and newly-shared
+             boards land here until the user files them. -->
         <div
             ref="ungroupedGrid"
             data-group-id=""
@@ -18,12 +18,22 @@
                 :members="board.members"
                 :member-count="board.memberCount"
                 :unread-count="board.unreadCount"
-                draggable
+                show-menu
+                @settings="openSettings"
+                @invite="openInvite"
+                @delete="askDeleteBoard"
+                @leave="askLeaveBoard"
             />
+            <!-- The same rule the groups follow: only while there is nothing
+                 here. With boards in it the tile is one more cell, and a full
+                 row plus a tile is a second row holding nothing else. The blue
+                 "+" in the page header makes a board at any time. -->
             <button
+                v-if="tilesInGroup(null) === 0"
                 type="button"
-                class="bg-white dark:bg-slate cursor-pointer text-primary hover:bg-primary-hover hover:text-white min-h-48 flex flex-col justify-center items-center rounded-lg"
-                @click="$emit('new-board')"
+                :class="newBoardTileClass"
+                :aria-label="$t('createNewBoard')"
+                @click="$emit('new-board', { groupId: null, sort: 0 })"
             >
                 <Plus class="size-10" />
             </button>
@@ -64,7 +74,7 @@
                         @keydown.enter="($event.target as HTMLInputElement).blur()"
                     />
                     <span class="shrink-0 text-sm text-gray">{{
-                        boardsInGroup(group.id).length
+                        tilesInGroup(group.id)
                     }}</span>
                     <button
                         type="button"
@@ -80,31 +90,55 @@
                     :ref="(el) => registerGroupGrid(group.id, el)"
                     :data-group-id="group.id"
                     class="grid min-h-24 grid-cols-1 gap-8 rounded-lg sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
-                    :class="
-                        boardsInGroup(group.id).length === 0
-                            ? 'border-2 border-dashed border-gray/25 p-4'
-                            : ''
-                    "
                 >
                     <BoardTile
                         v-for="board in boardsInGroup(group.id)"
                         :key="board.id"
                         :id="board.id"
                         :name="board.name"
-                                :image="board.image"
+                        :image="board.image"
                         :color="board.color"
                         :owned="board.owned"
                         :members="board.members"
                         :member-count="board.memberCount"
                         :unread-count="board.unreadCount"
-                        draggable
+                        show-menu
+                        @settings="openSettings"
+                        @invite="openInvite"
+                        @delete="askDeleteBoard"
+                        @leave="askLeaveBoard"
                     />
-                    <p
-                        v-if="boardsInGroup(group.id).length === 0"
-                        class="col-span-full self-center text-center text-sm text-gray"
+                    <!-- Only while the group is empty. A group that has to be
+                         filled by dragging alone is a poor way to find out that
+                         a group is a place boards can be made, so an empty one
+                         says so — but once there are boards in it the tile is
+                         one more cell in the grid, and a full row of four plus
+                         a tile is a second row holding nothing else. The blue
+                         "+" in the page header makes a board at any time, and
+                         so does the tile above the groups.
+
+                         Creating from here files the board into this group.
+
+                         It is also the whole of the empty state now. There used
+                         to be a dashed box captioned "drag boards here", from
+                         when dragging was the only way to fill a group; beside a
+                         tile that makes one, it was two answers to the same
+                         question and a lot of furniture for an empty group. The
+                         grid is still the drop target either way. -->
+                    <button
+                        v-if="tilesInGroup(group.id) === 0"
+                        type="button"
+                        :class="newBoardTileClass"
+                        :aria-label="$t('createNewBoard')"
+                        @click="
+                            $emit('new-board', {
+                                groupId: group.id,
+                                sort: tilesInGroup(group.id),
+                            })
+                        "
                     >
-                        {{ $t("emptyGroupHint") }}
-                    </p>
+                        <Plus class="size-10" />
+                    </button>
                 </div>
             </section>
         </div>
@@ -118,6 +152,51 @@
             <FolderPlus class="size-5" />
             {{ $t("newGroup") }}
         </button>
+
+        <!-- The board dialogs, one set for the whole dashboard rather than one
+             per tile: a tile is a summary, and forty of them should not each be
+             carrying a settings form. `activeBoard` says which board they are
+             about. -->
+        <ModalWindow v-if="activeBoard" v-model="settingsModal">
+            <BoardSettingsForm
+                :board="activeBoard"
+                :userID="userID"
+                @saved="onBoardSaved"
+            />
+        </ModalWindow>
+        <ModalWindow v-if="activeBoard" v-model="inviteModal">
+            <InviteModal
+                :boardID="String(activeBoard.id)"
+                :invitations="invitations"
+                @invitations-changed="onInvitationsChanged"
+            />
+        </ModalWindow>
+        <ModalWindow v-model="deleteBoardModal">
+            <h2 class="text-4xl text-dark dark:text-white mb-3">
+                {{ $t("deleteBoardTitle") }}
+            </h2>
+            <p class="mb-6">{{ $t("deleteBoardText") }}</p>
+            <button
+                type="button"
+                class="button bg-primary hover:bg-primary-hover w-full rounded-lg px-6 py-3 text-center text-white"
+                @click="confirmDeleteBoard"
+            >
+                {{ $t("deleteBoardBtn") }}
+            </button>
+        </ModalWindow>
+        <ModalWindow v-model="leaveBoardModal">
+            <h2 class="text-4xl text-dark dark:text-white mb-3">
+                {{ $t("leaveBoardTitle") }}
+            </h2>
+            <p class="mb-6">{{ $t("leaveBoardText") }}</p>
+            <button
+                type="button"
+                class="button bg-primary hover:bg-primary-hover w-full rounded-lg px-6 py-3 text-center text-white"
+                @click="confirmLeaveBoard"
+            >
+                {{ $t("leaveBoardBtn") }}
+            </button>
+        </ModalWindow>
 
         <ModalWindow v-model="deleteGroupModal">
             <h2 class="text-4xl text-dark dark:text-white mb-3">
@@ -188,6 +267,46 @@ const registerGroupGrid = (gid: number, el: any) => {
     else groupGrids.delete(gid);
 };
 
+// --- what is in a group right now ------------------------------------------
+// SortableJS moves the DOM as you drag and only tells us at the drop, so the
+// model is a drag behind: a board dragged into an empty group sat next to that
+// group's "new board" tile instead of taking its place, and a group whose last
+// board was dragged out kept an empty grid until the mouse came up.
+//
+// While a drag is running the tiles are counted from the DOM, which is where
+// the truth is at that moment. The rest of the time the model answers.
+const dragging = ref(false);
+const liveCounts = ref<Record<string, number>>({});
+
+// `.sortable-fallback` is the clone that follows the cursor, and SortableJS
+// parks it in the list the drag started from — so a group that had just been
+// emptied still counted one tile, and its "new board" tile stayed away until
+// the mouse came up. The placeholder in the target list (`.sortable-ghost`) is
+// deliberately counted: it is where the board is about to land.
+// The ungrouped area has no group id; it is keyed by the empty string, which is
+// also what its grid carries in `data-group-id`.
+const UNGROUPED = "";
+
+const countTiles = () => {
+    const counts: Record<string, number> = {};
+    const tiles = (grid: HTMLElement) =>
+        grid.querySelectorAll("[data-board-id]:not(.sortable-fallback)").length;
+    if (ungroupedGrid.value) counts[UNGROUPED] = tiles(ungroupedGrid.value);
+    for (const [gid, grid] of groupGrids) counts[String(gid)] = tiles(grid);
+    liveCounts.value = counts;
+};
+
+// How many boards a section holds. `null` is the ungrouped area above the
+// groups, which follows the same rules as the rest of them.
+const tilesInGroup = (gid: number | null) => {
+    const key = gid === null ? UNGROUPED : String(gid);
+    if (dragging.value) {
+        const live = liveCounts.value[key];
+        if (live !== undefined) return live;
+    }
+    return gid === null ? ungrouped.value.length : boardsInGroup(gid).length;
+};
+
 const readArrangementFromDom = () => {
     const placements: { boardId: number; groupId: number | null; sort: number }[] =
         [];
@@ -240,11 +359,32 @@ const wireBoardGrids = () => {
         sortables.push(
             Sortable.create(grid, {
                 group: "dashboard-boards",
-                handle: ".board-drag-handle",
+                // The tile itself, the way a card on a board is the thing you
+                // pick up. It used to take a grip in the corner, which is one
+                // more thing to find and nothing the rest of the app asks for.
                 draggable: "[data-board-id]", // never the "new board" button
+                // …except its menu. Without this, pressing the three dots and
+                // moving a pixel starts dragging the board instead of opening
+                // the menu. `preventOnFilter: false` leaves the button's own
+                // click alone, which is the whole point of excluding it.
+                filter: "button[aria-haspopup='menu']",
+                preventOnFilter: false,
                 animation: 150,
                 forceFallback: true,
-                onEnd: () => persistArrangement(),
+                onStart: () => {
+                    dragging.value = true;
+                    countTiles();
+                },
+                // Fires whenever the dragged board changes place, in this list
+                // or another — which is exactly when a group may have just
+                // gained its first tile or lost its last.
+                onChange: () => countTiles(),
+                onAdd: () => countTiles(),
+                onRemove: () => countTiles(),
+                onEnd: () => {
+                    persistArrangement();
+                    dragging.value = false;
+                },
             }),
         );
     }
@@ -364,5 +504,168 @@ const confirmDeleteGroup = async () => {
     }
 };
 
+// --- the board dialogs -----------------------------------------------------
+// Settings, invite, delete and leave, opened from a tile's menu. The board page
+// offers the same four; this is the same work without opening the board first.
+import { socket } from "~/lib/socket";
+
+const { data: session } = await useFetch("/api/auth/get-session");
+const userID = session.value?.data?.user?.id ?? "";
+
+const activeBoardId = ref<number | null>(null);
+const activeBoard = computed(
+    () => boards.value.find((b) => b.id === activeBoardId.value) ?? null,
+);
+const settingsModal = ref(false);
+const inviteModal = ref(false);
+const deleteBoardModal = ref(false);
+const leaveBoardModal = ref(false);
+const invitations = ref<any[]>([]);
+
+const openSettings = (id: number) => {
+    activeBoardId.value = id;
+    settingsModal.value = true;
+};
+
+// The invite dialog is given the board's current invitations, the same list the
+// board page hands it, so it opens showing who is already on the board.
+const openInvite = async (id: number) => {
+    activeBoardId.value = id;
+    invitations.value = [];
+    try {
+        const data: any = await $fetch(
+            `/api/data/invite?boardId=${id}&userId=${userID}`,
+        );
+        invitations.value = data?.invitations ?? [];
+    } catch (err) {
+        console.error("Could not load the board's members:", err);
+    }
+    inviteModal.value = true;
+};
+
+const askDeleteBoard = (id: number) => {
+    activeBoardId.value = id;
+    deleteBoardModal.value = true;
+};
+
+const askLeaveBoard = (id: number) => {
+    activeBoardId.value = id;
+    leaveBoardModal.value = true;
+};
+
+// A board's own row, updated in place. The tile re-renders from it, so a rename
+// or a new colour shows without a round trip.
+const patchBoard = (id: number, patch: Record<string, any>) => {
+    const board = boards.value.find((b) => b.id === id);
+    if (board) Object.assign(board, patch);
+};
+
+const onBoardSaved = async (board: any) => {
+    patchBoard(board.id, {
+        name: board.name,
+        style: board.style,
+        status: board.status,
+        image: board.image,
+        color: board.color,
+    });
+    settingsModal.value = false;
+    // Everyone else: the people looking at the board itself, and the people
+    // looking at a dashboard with a tile for it.
+    socket.emit("boardUpdated", {
+        boardID: board.id,
+        boardName: board.name,
+        boardStyle: board.style,
+        boardStatus: board.status,
+        boardImage: board.image,
+        boardColor: board.color,
+    });
+    await nuxtApp.callHook("app:toast", { message: $t("boardSaved") });
+};
+
+// Who is on the board decides what the tile's avatar stack shows, and that is a
+// server-side count and cut of four, so the dashboard is refetched rather than
+// patched by hand from a list of invitations. Everyone else is told by the
+// invite endpoint itself.
+const onInvitationsChanged = async () => {
+    await reload();
+};
+
+const confirmDeleteBoard = async () => {
+    const id = activeBoardId.value;
+    if (!id) return;
+    try {
+        await $fetch(`/api/data/board?id=${id}&userId=${userID}`, {
+            method: "DELETE",
+        });
+        boards.value = boards.value.filter((b) => b.id !== id);
+        deleteBoardModal.value = false;
+        socket.emit("boardDeleted", { boardID: id });
+        await nuxtApp.callHook("app:toast", { message: $t("boardDeleted") });
+    } catch (err) {
+        console.error("Error deleting board:", err);
+        await nuxtApp.callHook("app:toast", { message: $t("error") });
+    }
+};
+
+const confirmLeaveBoard = async () => {
+    const id = activeBoardId.value;
+    if (!id) return;
+    try {
+        await $fetch("/api/data/leaveBoard", {
+            method: "POST",
+            body: { boardId: id },
+        });
+        boards.value = boards.value.filter((b) => b.id !== id);
+        leaveBoardModal.value = false;
+        await nuxtApp.callHook("app:toast", { message: $t("boardLeft") });
+    } catch (err) {
+        console.error("Error leaving board:", err);
+        await nuxtApp.callHook("app:toast", { message: $t("leaveBoardFailed") });
+    }
+};
+
+// --- staying current -------------------------------------------------------
+// Everything the tiles show — names, colours, images, who is on a board — can be
+// changed by somebody else, from their dashboard or from the board itself. The
+// server tells this dashboard which board changed; the whole thing is refetched
+// rather than patched from the signal, because a tile also shows a member count
+// and a cut of four avatars that only the server can work out.
+const reload = async () => {
+    try {
+        const fresh: any = await $fetch("/api/data/dashboard");
+        boards.value = (fresh?.boards ?? []).map((b: any) => ({ ...b }));
+        groups.value = (fresh?.groups ?? []).map((g: any) => ({ ...g }));
+        await nextTick();
+        // The old instances point at DOM nodes that have just been replaced.
+        destroySortables();
+        wireBoardGrids();
+    } catch (err) {
+        console.error("Could not refresh the dashboard:", err);
+    }
+};
+
+const onDashboardChanged = () => reload();
+
+// Re-joined on every reconnect, like the board room is: a socket that dropped
+// and came back would otherwise be in no room at all and hear nothing.
+const joinDashboard = () => socket.emit("joinDashboard");
+
+onMounted(() => {
+    joinDashboard();
+    socket.on("connect", joinDashboard);
+    socket.on("dashboardChanged", onDashboardChanged);
+});
+onBeforeUnmount(() => {
+    socket.off("connect", joinDashboard);
+    socket.off("dashboardChanged", onDashboardChanged);
+});
+
+// One definition for the tile, so the group ones cannot drift from the original.
+const newBoardTileClass =
+    "bg-white dark:bg-slate cursor-pointer text-primary hover:bg-primary-hover hover:text-white min-h-48 flex flex-col justify-center items-center rounded-lg";
+
+// `{ groupId, sort }`: where the board should be filed once it exists, and where
+// in that group it should sit. The dashboard does the filing — only it knows
+// when the board has been created.
 defineEmits(["new-board"]);
 </script>

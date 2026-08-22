@@ -148,19 +148,11 @@ export default defineEventHandler(async (event) => {
           event.res.statusCode = 403;
           return { error: "You don't have permission to delete this area" };
         }
-        // Delete comments related to cards in the area
-        await db.execute(
-          "DELETE FROM comments WHERE card IN (SELECT id FROM cards WHERE area = ?)",
-          [id],
-        );
+        // Everything belonging to the cards in this area goes with them — see
+        // `removeCardData`. The card ids are read first, because once the cards
+        // are gone there is no way to find what belonged to them.
+        await removeCardData(db, await cardIdsInAreas(db, [Number(id)]));
 
-        // Delete notifications related to cards in the area
-        await db.execute(
-          "DELETE FROM notifications WHERE cardId IN (SELECT id FROM cards WHERE area = ?)",
-          [id],
-        );
-
-        // Delete cards from area
         const [results] = await db.execute("DELETE FROM cards WHERE area = ?", [
           id,
         ]);

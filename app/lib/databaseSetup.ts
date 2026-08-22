@@ -617,6 +617,95 @@ const migrations: Migration[] = [
     },
   },
 
+  {
+    // Single sign-on links live in the same `account` table local passwords do,
+    // under `providerId = 'sso'` with the provider's subject as `accountId`.
+    // That lookup runs on every SSO sign-in and was a full scan, and nothing
+    // stopped two rows claiming the same subject. Both columns are TEXT, so the
+    // index takes a prefix — 190 characters is longer than any subject a
+    // provider issues, and short enough to stay inside the key length limit.
+    id: "0018_sso_account_index",
+    up: async (db) => {
+      const [rows]: any = await db.execute(
+        "SHOW INDEX FROM `account` WHERE Key_name = 'account_provider_subject'",
+      );
+      if (rows.length) return;
+      // Any duplicates from before the index would stop it being created, and a
+      // duplicate here means two accounts claiming one identity: keep the
+      // oldest, which is the one that has been in use.
+      await db.execute(
+        "DELETE a FROM `account` a JOIN `account` b ON LEFT(a.`providerId`, 32) = LEFT(b.`providerId`, 32) AND LEFT(a.`accountId`, 190) = LEFT(b.`accountId`, 190) AND a.`createdAt` > b.`createdAt`",
+      );
+      await db.execute(
+        "CREATE UNIQUE INDEX `account_provider_subject` ON `account` (`providerId`(32), `accountId`(190))",
+      );
+    },
+  },
+
+  {
+    // Assertions that have already been used.
+    //
+    // A SAML assertion is a bearer token: whoever holds it can present it. When
+    // we start the sign-in ourselves the answer is tied to our request, but an
+    // instance that accepts provider-initiated sign-in has no such tie — the
+    // response simply arrives — so the same assertion could be replayed until
+    // its window closed. Each one is recorded as it is consumed and refused if
+    // it comes back.
+    //
+    // Rows are dropped once the assertion could no longer be valid anyway, so
+    // the table stays the size of a few minutes of sign-ins rather than growing
+    // for ever.
+    id: "0019_saml_assertions_seen",
+    up: async (db) => {
+      await db.execute(`CREATE TABLE IF NOT EXISTS \`saml_assertions_seen\` (
+        \`id\` varchar(255) NOT NULL,
+        \`expiresAt\` timestamp NOT NULL,
+        PRIMARY KEY (\`id\`),
+        KEY \`saml_assertions_expiry\` (\`expiresAt\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;`);
+    },
+  },
+
+  {
+    // The debris left by every card, area and board deleted before those
+    // deletions cleared up after themselves.
+    //
+    // Only rows whose card no longer exists are touched — that is what makes
+    // them unreachable: nothing in the app can show them, and no board they
+    // belonged to still has them. The uploaded files those attachments named go
+    // with them, unless another attachment still points at the same file.
+    id: "0020_orphaned_card_data",
+    up: async (db) => {
+      const [orphans]: any = await db.execute(
+        "SELECT `filedata` FROM `attachments` WHERE `card` NOT IN (SELECT `id` FROM `cards`)",
+      );
+
+      for (const table of [
+        "attachments",
+        "comments",
+        "card_reminders",
+        "card_activity",
+      ]) {
+        await db.execute(
+          `DELETE FROM \`${table}\` WHERE \`card\` NOT IN (SELECT \`id\` FROM \`cards\`)`,
+        );
+      }
+      await db.execute(
+        "DELETE FROM `notifications` WHERE `cardId` IS NOT NULL AND `cardId` NOT IN (SELECT `id` FROM `cards`)",
+      );
+
+      if (orphans.length) {
+        const { unlinkOrphanedFiles } = await import(
+          "../../server/utils/cardCleanup"
+        );
+        const removed = await unlinkOrphanedFiles(db, orphans);
+        logger.info(
+          `Cleared ${orphans.length} orphaned attachment row(s) and ${removed} unreferenced upload(s)`,
+        );
+      }
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
   //   id: "0015_add_x",

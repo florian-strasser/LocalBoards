@@ -147,6 +147,54 @@ body {
     }
 }
 
+/* How wide the header's search field has to be for its placeholder to fit: the
+   sentence as Inter renders it at 14px, plus the icon's gutter, the padding and
+   the label's border. One per language, because a single figure would have to
+   be French's and would leave English sitting in a field half again as wide as
+   its own sentence.
+
+   Baked rather than measured on the client, though the field measures itself as
+   well: the measurement can only land after the first paint, and a field that
+   arrives at one width and settles at another is a visible jump on every load.
+   These are what the measurement comes to, so it lands on the same number and
+   nothing moves.
+
+   Regenerate after changing a `searchPlaceholder`: the widths are the text's
+   own width plus 58px, and the field reports the figure it measured through
+   `--search-max` — read it off a running instance for the language you changed.
+
+   Anything not listed falls back to the `28rem` in AppHeader. */
+html[lang="cs"] .search-shell {
+    --search-max: 345px; /* Czech */
+}
+html[lang="nl"] .search-shell {
+    --search-max: 352px; /* Dutch */
+}
+html[lang="uk"] .search-shell {
+    --search-max: 362px; /* Ukrainian */
+}
+html[lang="pt"] .search-shell {
+    --search-max: 374px; /* Portuguese */
+}
+html[lang="it"] .search-shell {
+    --search-max: 382px; /* Italian */
+}
+html[lang="en"] .search-shell {
+    --search-max: 391px; /* English */
+}
+html[lang="es"] .search-shell {
+    --search-max: 397px; /* Spanish */
+}
+html[lang="de"] .search-shell {
+    --search-max: 439px; /* German */
+}
+html[lang="pl"] .search-shell {
+    --search-max: 440px; /* Polish */
+}
+html[lang="fr"] .search-shell {
+    --search-max: 517px; /* French */
+}
+
 /* Clamp text to a single line and fade the right edge instead of showing an
  * ellipsis. Short text doesn't reach the fade zone, so it stays crisp. Pair
  * with `min-w-0` on a flex child so it can actually shrink and clip. */
@@ -488,43 +536,6 @@ select.form-control,
     border-bottom: 0.5rem var(--color-primary) solid;
 }
 
-/* The header search field's placeholder is a full sentence ("Suche nach Boards,
-   Karten, Kommentaren und Anhängen"), which is wider than the field on anything
-   narrower than a desktop. Rather than chop it off mid-word, fade the last part
-   out.
-
-   The `search-field` class is only set when the placeholder actually overflows
-   (measured in GlobalSearch.vue): a gradient wide enough to look smooth also
-   eats the tail of a placeholder that fits, which made the full sentence fade
-   on desktop for no reason.
-
-   The gradient has to finish where the text is *clipped*, not at the element's
-   edge: the input clips its content at the padding edge, so a fade running to
-   100% would still cut the last glyph while it was a third opaque — which is
-   what a hard edge looks like. Ending the fade at `100% - 1rem` (the right
-   padding) means the text has reached zero opacity by the time it is clipped.
-
-   The mask is on the input, which is why the field's background lives on the
-   wrapping label: masking an element fades its background too, and the right
-   end of the pill would dissolve with the text. The input is transparent, so
-   only the text layer fades. It applies only while the placeholder is showing:
-   once something is typed, `:placeholder-shown` stops matching and the mask is
-   gone, so a typed query and the caret are never dimmed. Where the placeholder
-   fits (desktop), the text ends before the fade zone and nothing looks
-   different. */
-.search-field:placeholder-shown {
-    -webkit-mask-image: linear-gradient(
-        to right,
-        #000 calc(100% - 5rem),
-        transparent calc(100% - 1rem)
-    );
-    mask-image: linear-gradient(
-        to right,
-        #000 calc(100% - 5rem),
-        transparent calc(100% - 1rem)
-    );
-}
-
 /* A board tile with its own colour instead of the primary one. BoardTile sets
    exactly two custom properties — `--board-color` (what the user picked) and
    `--board-fg` (white or near-black, whichever is readable on it) — and every
@@ -574,4 +585,17 @@ select.form-control,
 }
 .board-tile-ring {
     --tw-ring-color: var(--board-fg);
+}
+
+/* The three-dots button where it sits on something other than the page's own
+   background — a board tile's photo or colour, a dialog's card. It used to take
+   the hover blue, which on a blue tile is the tile: the mark disappeared at the
+   moment it was being aimed at. The mark keeps its colour now and a target
+   appears behind it instead. `currentColor` is what makes that work everywhere
+   without being told where it is: the button already carries the readable
+   foreground — white on a dark tile, near-black on a pale one, the body colour
+   in a dialog — so a tint of it is always visible against whatever put it
+   there. Same 20% mix as the "shared" badge above. */
+.action-menu-plain:hover {
+    background-color: color-mix(in oklab, currentColor 20%, transparent);
 }
