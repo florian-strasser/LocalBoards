@@ -1,3 +1,9 @@
+## v0.30.1
+
+### Fixes
+
+- **The SAML test provider escaped what it echoed.** Code scanning flagged the fake identity provider the SAML tests run against: it built its auto-submitting form by interpolating query parameters into HTML, escaping the quote in two of the three and nothing at all in the `action` attribute. It is a fixture — it listens on a loopback port for the length of a test run, and every value it echoes is one the test itself passed in — so nothing was exposed by it. It is also a fixture for a feature whose entire purpose is refusing input that is not what it claims to be, which is a poor place to leave that pattern lying around. All three values now go through one escape, `&` first so the escaping cannot escape itself.
+
 ## v0.30.0
 
 ### New Features

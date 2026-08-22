@@ -106,6 +106,14 @@ export function encryptAssertion(signedXml, certificatePem) {
   });
 }
 
+// Everything that reaches the auto-submitting form below arrives in a query
+// parameter, so it is escaped before it is interpolated — `&` first, or the
+// escapes this adds would themselves be re-escaped. A test fixture is not a
+// place to demonstrate the injection the thing under test exists to prevent.
+const attr = (value) => String(value ?? "")
+  .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+  .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 // The provider itself: a redirect endpoint that posts a signed response back.
 export function startFakeIdp({ privateKey, issuer = "https://fake-idp.test/metadata", mutate = null } = {}) {
   const server = createServer(async (req, res) => {
@@ -132,9 +140,9 @@ export function startFakeIdp({ privateKey, issuer = "https://fake-idp.test/metad
       if (mutate?.after) signed = mutate.after(signed);
       const encoded = Buffer.from(signed, "utf8").toString("base64");
       res.writeHead(200, { "content-type": "text/html" });
-      return res.end(`<html><body onload="document.forms[0].submit()"><form method="post" action="${recipient}">`
-        + `<input type="hidden" name="SAMLResponse" value="${encoded.replace(/"/g, "&quot;")}"/>`
-        + `<input type="hidden" name="RelayState" value="${relayState.replace(/"/g, "&quot;")}"/>`
+      return res.end(`<html><body onload="document.forms[0].submit()"><form method="post" action="${attr(recipient)}">`
+        + `<input type="hidden" name="SAMLResponse" value="${attr(encoded)}"/>`
+        + `<input type="hidden" name="RelayState" value="${attr(relayState)}"/>`
         + `<noscript><button type="submit">Continue</button></noscript></form></body></html>`);
     }
     res.writeHead(404, { "content-type": "application/json" });
