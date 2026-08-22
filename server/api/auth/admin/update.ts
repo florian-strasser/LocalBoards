@@ -2,9 +2,6 @@ import { setupDatabase } from "../../../../app/lib/databaseSetup";
 import { getUserSession } from "../../../utils/auth";
 import bcrypt from "bcryptjs";
 
-// UUID v4 and email validation regex
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default defineEventHandler(async (event) => {
@@ -38,7 +35,7 @@ export default defineEventHandler(async (event) => {
 
     // Validate input with length limits
     // MEDIUM FIX: Validate userId is UUID format
-    if (!userId || typeof userId !== "string" || !uuidRegex.test(userId)) {
+    if (!isStoredId(userId)) {
       event.res.statusCode = 400;
       return { error: "INVALID_USER_ID" };
     }

@@ -2,10 +2,6 @@ import { setupDatabase } from "../../../../app/lib/databaseSetup";
 import { getUserSession } from "../../../utils/auth";
 import bcrypt from "bcryptjs";
 
-// UUID v4 regex for keyId validation
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
   if (method !== "POST") {
@@ -25,7 +21,7 @@ export default defineEventHandler(async (event) => {
     const { keyId } = body;
 
     // Validate input - UUID format
-    if (!keyId || typeof keyId !== "string" || !uuidRegex.test(keyId)) {
+    if (!isStoredId(keyId)) {
       event.res.statusCode = 400;
       return { error: "INVALID_KEY_ID" };
     }

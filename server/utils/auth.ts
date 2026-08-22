@@ -5,9 +5,19 @@ import { resolveBoardAccess, type BoardAccess } from "./boardAccess";
 import { hashApiKey } from "./apiKey";
 import { logger } from "./logger";
 
-// UUID v4 regex for validation
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// The id of a stored row, as it may arrive from a client. Two generations of
+// them exist on an instance that has been running a while: the UUIDs this app
+// has minted since v0.10.0, and the 32-character alphanumeric ids better-auth
+// minted before it was replaced. Demanding a UUID — which four endpoints did
+// from v0.19.0 — locked every account older than v0.10.0 out of being
+// impersonated, edited or deleted. So this is a sanity check on the string
+// only: the column is varchar(36), the query is parameterised, and whether the
+// row exists is the lookup's answer to give, not this function's.
+export const isStoredId = (value: unknown): value is string =>
+  typeof value === "string" &&
+  value.length > 0 &&
+  value.length <= 36 &&
+  /^[A-Za-z0-9_-]+$/.test(value);
 
 export async function createSession(
   event: any,

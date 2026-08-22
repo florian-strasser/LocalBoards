@@ -1,10 +1,6 @@
 import { setupDatabase } from "../../../../app/lib/databaseSetup";
 import { getUserSession, createSession } from "../../../utils/auth";
 
-// UUID v4 regex for userId validation
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 // Start impersonating another user. An admin swaps their own session cookie for
 // a fresh session that authenticates as the target user, tagged with the
 // admin's id (`impersonatedBy`) so the app can show a banner and let them
@@ -38,7 +34,7 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
     const { userId } = body || {};
 
-    if (!userId || typeof userId !== "string" || !uuidRegex.test(userId)) {
+    if (!isStoredId(userId)) {
       event.res.statusCode = 400;
       return { error: "INVALID_USER_ID" };
     }

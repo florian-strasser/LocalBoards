@@ -1,3 +1,15 @@
+## v0.30.2
+
+### Fixes
+
+- **Accounts older than v0.10.0 could not be impersonated, edited or deleted.** Four endpoints that take the id of a stored row — impersonate, update and delete a user, and delete an API key — required that id to be a UUID. This app has minted UUIDs since v0.10.0, when better-auth was replaced; the ids better-auth minted before that are 32 alphanumeric characters with no hyphens, and they are still the ids those accounts have. From v0.19.0, when the check was added, an instance that had been running since before v0.10.0 got `INVALID_USER_ID` for its oldest accounts — the admin's own among them, on the oldest instances — and there was nothing in the message to say that the id was the objection.
+
+  The check never protected anything: the id goes into a parameterised query, the column is `varchar(36)`, and an id that matches nothing already had an answer of its own in `USER_NOT_FOUND`. It is now a sanity check on the string — printable, unpunctuated, no longer than the column — and whether the row exists is left to the lookup, which is the thing that knows.
+
+  Verified against both generations of id on a real instance: an account with a better-auth id can be impersonated, and the session that comes back is that account's and is marked as an impersonation; the same account can be renamed and deleted. And the looser check is still a check — an empty id, a path traversal, a quoted string and anything longer than the column are all refused, while a well-formed id belonging to nobody is a `404` rather than a `400`.
+
+  The password-reset endpoint keeps the strict UUID check. Its token is not a stored id but one this app generates for each request, so it has always been a UUID and there is no older shape to accommodate.
+
 ## v0.30.1
 
 ### Fixes

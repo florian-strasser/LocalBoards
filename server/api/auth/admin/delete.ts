@@ -8,10 +8,6 @@ const runtimeConfig = useRuntimeConfig();
 const appName = runtimeConfig.appName;
 const defaultLanguage = runtimeConfig.language;
 
-// UUID v4 regex for userId validation
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export default defineEventHandler(async (event) => {
   const method = event.req.method;
   if (method !== "POST") {
@@ -36,7 +32,7 @@ export default defineEventHandler(async (event) => {
     const { userId, reason } = body;
 
     // Validate input - UUID format
-    if (!userId || typeof userId !== "string" || !uuidRegex.test(userId)) {
+    if (!isStoredId(userId)) {
       event.res.statusCode = 400;
       return { error: "INVALID_USER_ID" };
     }
