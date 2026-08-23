@@ -21,6 +21,8 @@
 #   HERO_SHOT_MOBILE              phone-shaped hero for the narrow homepage
 #                                 (default docs/public/images/hero-screenshot-mobile.webp)
 #   HERO_SHOT_MOBILE_VIEW         which capture to use for it (default 40-board-kanban-mobile)
+#   DOCS_SHOTS_DIR                where the documentation guide's screenshots go
+#                                 (default docs/public/images/docs)
 #   SKIP_BUILD=1                  reuse the existing .output build
 #   KEEP_DB=1                     don't drop the demo database at the end
 set -euo pipefail
@@ -54,6 +56,28 @@ HERO_SHOT_VIEW="${HERO_SHOT_VIEW:-11-board-kanban}"
 # The same hero, shot at phone proportions, for the narrow homepage.
 HERO_SHOT_MOBILE="${HERO_SHOT_MOBILE:-docs/public/images/hero-screenshot-mobile.webp}"
 HERO_SHOT_MOBILE_VIEW="${HERO_SHOT_MOBILE_VIEW:-40-board-kanban-mobile}"
+# The guide's screenshots. These used to be exported by hand after a run, which
+# is how a guide ends up illustrated with an interface from three releases ago;
+# the mapping lives here now so every run refreshes them along with the rest.
+# Format: <captured view>:<file name under DOCS_SHOTS_DIR>.
+DOCS_SHOTS_DIR="${DOCS_SHOTS_DIR:-docs/public/images/docs}"
+DOCS_SHOTS="
+10-dashboard:dashboard
+11-board-kanban:board-kanban
+12-board-todo:board-todo
+14-users:users
+15-new-user:user-new
+20-modal-create-board:board-create
+23-modal-board-options:board-options
+24-modal-invite:board-invite
+25-modal-delete-board:board-delete
+26-modal-card:card
+27-modal-image-lightbox:card-lightbox
+28-modal-delete-area:area-delete
+30-search:search
+31-menu-card:card-menu
+32-menu-board-tile:board-tile-menu
+"
 export DEMO_DB_HOST DEMO_DB_USER DEMO_DB_PASS DEMO_DB_NAME DEMO_TOKEN
 export DEMO_BASE_URL="http://127.0.0.1:${DEMO_PORT}"
 export DEMO_LANGS
@@ -149,6 +173,19 @@ for lang in $DEMO_LANGS; do
         cwebp -quiet -q 82 -crop 0 0 "$_mw" "$_mh" -resize 590 0 \
           "$DEMO_OUT/$lang/$HERO_SHOT_MOBILE_VIEW.png" -o "${HERO_SHOT_MOBILE%.webp}-590.webp"
       fi
+      echo "==> refreshing the guide's screenshots -> $DOCS_SHOTS_DIR"
+      mkdir -p "$DOCS_SHOTS_DIR"
+      for _pair in $DOCS_SHOTS; do
+        _view="${_pair%%:*}"
+        _name="${_pair##*:}"
+        if [ -f "$DEMO_OUT/$lang/$_view.png" ]; then
+          cwebp -quiet -q 82 -resize 1440 0 "$DEMO_OUT/$lang/$_view.png" \
+            -o "$DOCS_SHOTS_DIR/$_name.webp"
+        else
+          echo "    missing capture: $_view (guide image $_name.webp left as it was)"
+        fi
+      done
+
       hero_done=1
     else
       echo "==> skipping screenshot refresh: cwebp not installed (brew install webp)"

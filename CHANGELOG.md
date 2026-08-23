@@ -1,3 +1,31 @@
+## v0.30.4
+
+### Improvements
+
+- **Toasts stack instead of replacing one another.** A toast arriving while another was still up simply overwrote it, so the first message could be gone before it had been read — and the second one inherited the first one's timer along with the screen, which is why a toast could sometimes flash past in a second. Each one is now its own toast in a column, oldest at the top, newest nearest the corner, and each carries its own countdown.
+
+  Two of the same message make two toasts: two things happened, so the stack says so twice.
+
+  The pointer stops every clock in the stack rather than only the one beneath it, so nothing expires and rearranges the column while a message is being read. The container itself ignores pointer events and only the cards accept them: it spans the full height of the stack, and as a solid element it would have swallowed clicks on whatever sits in that corner of the app.
+
+  Verified by measuring what the browser paints, with real toasts raised through the sign-in page: three distinct messages make three cards that do not overlap and sit the stack's own 8px apart with the newest nearest the corner; the pointer freezes every ring to three decimals and none expires while it is there; the same message twice adds a card rather than replacing one; each card leaves as its own ring closes; and with `prefers-reduced-motion` a toast still gets its full five seconds.
+
+- **A toast shows how long it has left, and waits while you read it.** Toasts disappeared after five seconds whether or not anyone had finished reading — and an error carrying a URL or an administrator's instruction is exactly the kind that takes longer than five seconds. Putting the pointer on a toast now stops its clock, and taking it away starts it again from where it stopped rather than from the beginning.
+
+  The five seconds are visible now too. The dot beside the message has gained a ring that draws itself clockwise from twelve o'clock as the time runs down: nothing at all at the start, a closed circle at the end. It is animated as a path — `pathLength` normalised to 0–1 so the animation is the same whatever the radius — through the `motion-v` already in the project, and the ring is not a decoration running alongside a timer but *is* the timer: the toast is dismissed when the animation reports itself finished, so the picture and the behaviour cannot disagree about how long is left. Pausing one pauses the other by construction.
+
+  The pinging dot is gone, replaced by the ring. Two things pulsing in a 20-pixel square was one more than the eye needed, and the ring says what the ping only implied.
+
+  Verified in a browser against the real component, reading what the browser paints rather than what the code intends: the ring is empty at the start and about a fifth drawn after a fifth of the time; it does not move at all while hovered and the toast outlives the five seconds it would otherwise have had; it resumes from where it paused rather than restarting; and it is dismissed exactly when the ring closes. Including the case that would have been easy to miss — with `prefers-reduced-motion` set, an animation that finished instantly would have taken the toast with it, so the suite checks that the toast still gets its full five seconds.
+
+### Documentation
+
+- **Nix no longer leads the README's install instructions.** It arrived at the top of `## Install`, above cloning the repository, which put the least common way to install LokalBoards in front of every reader — a placement the feature's own release note did not argue for and nobody would choose on purpose. The section now reads in order of how people actually install it: from source, then Docker, then Nix in a section of its own.
+
+  Being on its own rather than a paragraph above somebody else's steps, it also has room for the two things a Nix user needs and could not read off `nix run` alone: which platforms the flake covers, and that it wants a writable working directory, because uploads are resolved relative to it and the store is read-only.
+
+  The documentation site keeps its order. That page is arranged by method rather than by popularity, so Nix sits between running from source and building the image, which is where someone comparing methods would look for it.
+
 ## v0.30.3
 
 ### New Features

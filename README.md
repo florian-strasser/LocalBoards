@@ -45,18 +45,7 @@ provider-by-provider setup.
 
 ## Install
 
-On a machine with Nix, nothing needs installing first:
-
-```bash
-nix run github:florian-strasser/LokalBoards
-```
-
-It still needs a MySQL 8 and the environment variables below. There is a NixOS
-module in the same flake — see the
-[Nix guide](https://www.lokalboards.com/docs#nix-and-nixos), which also says
-which parts of it have been tested and which have not.
-
-Otherwise, follow these steps:
+To install LokalBoards, follow these steps:
 
 ### Clone the Repository
 
@@ -221,6 +210,24 @@ these ways:
 > dev server does — that is why the entrypoint loads `/app/.env` explicitly. The
 > `.env` used during development is excluded from the image (`.dockerignore`), so
 > no secrets are baked into the build.
+
+## Install with Nix
+
+On a machine with Nix, there is nothing to clone and nothing to install first:
+
+```bash
+nix run github:florian-strasser/LokalBoards
+```
+
+The repository is a flake, covering `x86_64-linux`, `aarch64-linux`,
+`x86_64-darwin` and `aarch64-darwin`. It still needs a MySQL 8 and the same
+environment variables as above — the flake packages the application, not a
+database. Run it from a writable directory: uploads are resolved relative to the
+working directory and the Nix store is read-only.
+
+The same flake carries a NixOS module for running it as a systemd service. See
+the [Nix guide](https://www.lokalboards.com/docs#nix-and-nixos) for that, and
+for which parts of it have been tested and which have not.
 
 ## Backup and Restore
 

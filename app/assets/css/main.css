@@ -599,3 +599,26 @@ select.form-control,
 .action-menu-plain:hover {
     background-color: color-mix(in oklab, currentColor 20%, transparent);
 }
+
+/* Toasts. They enter from below and fade out on the way; `-move` is what keeps
+   the rest of the stack from jumping when one in the middle expires, and
+   positioning the leaving card absolutely takes it out of the flow so the
+   others can slide up under it rather than after it. */
+.toast-enter-active,
+.toast-leave-active,
+.toast-move {
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+    opacity: 0;
+    transform: translateY(1rem);
+}
+
+.toast-leave-active {
+    position: absolute;
+    right: 0;
+}
