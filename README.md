@@ -45,7 +45,18 @@ provider-by-provider setup.
 
 ## Install
 
-To install LokalBoards, follow these steps:
+On a machine with Nix, nothing needs installing first:
+
+```bash
+nix run github:florian-strasser/LokalBoards
+```
+
+It still needs a MySQL 8 and the environment variables below. There is a NixOS
+module in the same flake — see the
+[Nix guide](https://www.lokalboards.com/docs#nix-and-nixos), which also says
+which parts of it have been tested and which have not.
+
+Otherwise, follow these steps:
 
 ### Clone the Repository
 

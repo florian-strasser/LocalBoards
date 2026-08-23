@@ -1,3 +1,15 @@
+## v0.30.3
+
+### New Features
+
+- **Installable with Nix, and runnable as a NixOS service.** Asked for in [#13](https://github.com/florian-strasser/LokalBoards/issues/13) — the first request this project has had from someone outside it. The repository is now a flake: `nix run github:florian-strasser/LokalBoards` starts the server on a machine with nothing else installed, on Linux and macOS, on x86 and ARM. A NixOS module comes with it, putting the application behind a systemd unit with a hardened sandbox and a local MySQL 8.
+
+  Two things about the build are worth writing down, because both took a wrong turn first. `importNpmLock` looked like the tidy answer — no dependency hash to keep in sync — but it caches tarballs and not registry metadata, and this lockfile needs the metadata: `archiver-utils` wants `minimatch@^9` and `readdir-glob` wants `^5` while one copy is pinned at 10.2.5, so npm asks the registry and a sandbox has no registry to ask. And the build runs on Node 24 while the result runs on Node 22, because `package-lock.json` is written by npm 11 and the npm 10 that Node 22 carries rejects it as out of sync — the same disagreement the Dockerfile settles by installing npm 11 over the image's own. Only the toolchain differs; what Nuxt emits is portable JavaScript.
+
+  The module creates the database but deliberately not the database *user*. NixOS makes users that authenticate through the unix socket without a password, and this application connects over TCP with one, so a user made that way could never log in — better to say so, with the one statement that fixes it, than to ship a default that fails at first start. `environmentFile` is required rather than optional, since a database password has no business in a world-readable store.
+
+  **Tested:** the package. It builds from the lockfile with no network, and the result was started against a real MySQL 8, seen to run its migrations, create its schema and serve the sign-in page, with uploads landing in the working directory rather than against the read-only store. **Not tested:** the NixOS module on a NixOS machine. It evaluates, `nix flake check` passes, the generated unit has been read line by line and the missing-secret assertion fires as it should — but none of that is the same as having run it. The guide says so in as many words.
+
 ## v0.30.2
 
 ### Fixes

@@ -33,3 +33,8 @@ demo-screenshots/
 
 # Personal notes that shouldn't ship with the project (e.g. RELEASING.local.md).
 *.local.md
+portfolio-screenshots/
+
+# Nix build symlink
+result
+result-*

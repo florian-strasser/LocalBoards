@@ -36,7 +36,13 @@ async function shot(ctx, name, url, action) {
   await page.close();
 }
 
-const viewport = { width: 1440, height: 900 };
+// 1440x900 is what the docs and the README ship at. A run that wants another
+// size — a portfolio mockup, say — asks for it without changing what the docs
+// get: DEMO_WIDTH=1400 DEMO_HEIGHT=900.
+const viewport = {
+  width: Number(process.env.DEMO_WIDTH || 1440),
+  height: Number(process.env.DEMO_HEIGHT || 900),
+};
 const auth = await browser.newContext({ viewport, deviceScaleFactor: 2 });
 await auth.addCookies([{ name: "session_token", value: TOKEN, url: base }]);
 const pub = await browser.newContext({ viewport, deviceScaleFactor: 2 });

@@ -138,6 +138,84 @@ environment variables in place, and start it:
 node ./server/index.mjs
 ```
 
+## Nix and NixOS
+
+The repository is a flake, so a machine with Nix needs nothing else installed —
+no Node, no npm, no clone:
+
+```bash
+nix run github:florian-strasser/LokalBoards
+```
+
+That starts the server. It still needs a MySQL 8 to talk to and the usual
+environment variables, exactly as [running from source](#running-from-source)
+does; the flake packages the application, not a database.
+
+Uploaded files are resolved relative to the working directory, and the Nix store
+is read-only, so run it from somewhere writable — the process creates
+`public/uploads` under wherever it starts.
+
+### As a NixOS service
+
+The flake also exposes a NixOS module, which puts the application behind a
+systemd unit with a hardened sandbox, points its working directory at
+`/var/lib/lokalboards` so uploads have somewhere to live, and brings up a local
+MySQL:
+
+```nix
+{
+  inputs.lokalboards.url = "github:florian-strasser/LokalBoards";
+
+  outputs = { nixpkgs, lokalboards, ... }: {
+    nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        lokalboards.nixosModules.default
+        {
+          services.lokalboards = {
+            enable = true;
+            port = 3000;
+            environmentFile = "/run/secrets/lokalboards.env";
+            settings.NUXT_APP_NAME = "Acme Boards";
+          };
+        }
+      ];
+    };
+  };
+}
+```
+
+`environmentFile` is required and is where secrets belong — `NUXT_MYSQL_PASSWORD`
+first of all, plus any SSO client secret. Anything set through `settings` is
+written into the Nix store instead, which is world-readable.
+
+One thing the module deliberately does not do is create the database *user*.
+NixOS creates database users that authenticate through the unix socket with no
+password, while this application connects over TCP with one, so an
+automatically-created user could never log in. Create it once with the same
+password `environmentFile` carries — `services.mysql.initialScript` takes a file
+that is read on first start:
+
+```sql
+CREATE USER 'lokalboards'@'localhost' IDENTIFIED BY 'the-password';
+GRANT ALL PRIVILEGES ON lokalboards.* TO 'lokalboards'@'localhost';
+```
+
+The service listens on `127.0.0.1` by default. It speaks plain HTTP and marks
+its session cookie `secure` only when it believes it is behind TLS, so put a
+reverse proxy in front rather than moving it to a public interface.
+
+### What has been tested, and what has not
+
+The package is built and run on every release: it builds from the lockfile
+without network access, and the result has been started against a MySQL 8, seen
+to run its migrations and serve the sign-in page.
+
+**The NixOS module has not been run on a NixOS machine.** It evaluates — `nix
+flake check` passes and the generated systemd unit has been inspected — but
+evaluating is not running. If you deploy it, reports are very welcome on
+[the issue tracker](https://github.com/florian-strasser/LokalBoards/issues).
+
 ## Building the image yourself
 
 The build toolchain runs on your machine's architecture while the finished image
