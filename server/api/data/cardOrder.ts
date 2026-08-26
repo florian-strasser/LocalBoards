@@ -16,20 +16,6 @@ export default defineEventHandler(async (event) => {
   try {
     const db = setupDatabase();
 
-    const renumberSortValues = async (areaId) => {
-      // Get all cards in the area ordered by their current sort value
-      const [cards] = await db.execute(
-        "SELECT id FROM cards WHERE area = ? ORDER BY sort ASC",
-        [areaId],
-      );
-      // Update each card with sequential sort values
-      for (let i = 0; i < cards.length; i++) {
-        await db.execute("UPDATE cards SET sort = ? WHERE id = ?", [
-          i,
-          cards[i].id,
-        ]);
-      }
-    };
     if (method === "POST") {
       const { cardId, areaId, newIndex } = await readBody(event);
 
@@ -70,19 +56,42 @@ export default defineEventHandler(async (event) => {
 
       {
         try {
-          // Update sort order of other cards in the destination area
-          await db.execute(
-            "UPDATE cards SET sort = sort + 1 WHERE sort >= ? AND area = ?",
-            [newIndex, areaId],
+          // `newIndex` is where the card ended up in a list it is already part
+          // of — SortableJS reports the position *after* the move. So the order
+          // being described is: take this card out of the area's list, then put
+          // it back at that index.
+          //
+          // Making room first with `sort = sort + 1 WHERE sort >= newIndex` and
+          // then writing the card's new sort was wrong in one direction. Moving
+          // a card down, its own old slot is above the shifted range and stays
+          // where it is, so everything between the old and new position moves
+          // one place too few and the card lands one short of where it was
+          // dropped — visibly correct until the page was reloaded. Moving up
+          // happened to come out right, which is why it went unnoticed.
+          const [ordered]: any = await db.execute(
+            "SELECT id FROM cards WHERE area = ? ORDER BY sort ASC, id ASC",
+            [areaId],
           );
 
-          // Update the card's sort order
-          await db.execute("UPDATE cards SET sort = ? WHERE id = ?", [
-            newIndex,
-            cardId,
-          ]);
+          const ids = ordered.map((row: any) => Number(row.id));
+          if (!ids.includes(Number(cardId))) {
+            event.res.statusCode = 404;
+            return { error: "Resource not found" };
+          }
 
-          await renumberSortValues(areaId);
+          const without = ids.filter((id: number) => id !== Number(cardId));
+          const target = Math.max(
+            0,
+            Math.min(Number(newIndex), without.length),
+          );
+          without.splice(target, 0, Number(cardId));
+
+          for (let i = 0; i < without.length; i++) {
+            await db.execute("UPDATE cards SET sort = ? WHERE id = ?", [
+              i,
+              without[i],
+            ]);
+          }
 
           // Emit socket event for card reordering (API calls only)
           if (auth.viaApiKey) {

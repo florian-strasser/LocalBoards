@@ -13,6 +13,78 @@
                     {{ $t("deleteCardBtn") }}
                 </button>
             </div>
+            <div v-else-if="moveModal" class="w-full space-y-4">
+                <h2 class="text-4xl text-dark dark:text-white text-center mb-4">
+                    {{ $t("moveCard") }}
+                </h2>
+
+                <label class="block">
+                    <span class="text-gray text-sm">{{ $t("moveCardArea") }}</span>
+                    <select v-model="moveAreaId" class="form-control mt-1 w-full">
+                        <option
+                            v-for="area in props.areas"
+                            :key="area.id"
+                            :value="area.id"
+                        >
+                            {{ area.name }}
+                        </option>
+                    </select>
+                </label>
+
+                <!-- Nothing to choose between in an empty area: there is one
+                     place the card can land, so the question is not asked. -->
+                <div v-if="moveTargets.length">
+                    <span class="text-gray text-sm">{{
+                        $t("moveCardPosition")
+                    }}</span>
+                    <div class="mt-1 flex flex-wrap gap-2">
+                        <button
+                            v-for="option in movePlacements"
+                            :key="option"
+                            type="button"
+                            @click="movePlacement = option"
+                            class="cursor-pointer rounded-lg px-4 py-2 text-sm transition-colors"
+                            :class="
+                                movePlacement === option
+                                    ? 'bg-primary text-white'
+                                    : 'bg-primary/10 text-primary hover:bg-primary/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20'
+                            "
+                        >
+                            {{ $t(placementLabels[option]) }}
+                        </button>
+                    </div>
+                    <select
+                        v-if="movePlacement === 'after'"
+                        v-model="moveAfterId"
+                        class="form-control mt-2 w-full"
+                    >
+                        <option
+                            v-for="target in moveTargets"
+                            :key="target.id"
+                            :value="target.id"
+                        >
+                            {{ target.name }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button
+                        type="button"
+                        @click="moveModal = false"
+                        class="button grow cursor-pointer rounded-lg bg-primary/10 px-6 py-3 text-center text-primary hover:bg-primary/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                    >
+                        {{ $t("cancel") }}
+                    </button>
+                    <button
+                        type="button"
+                        @click="submitMove"
+                        class="button grow cursor-pointer rounded-lg bg-primary px-6 py-3 text-center text-white hover:bg-primary-hover"
+                    >
+                        {{ $t("moveCard") }}
+                    </button>
+                </div>
+            </div>
             <div v-else-if="addAttachments" class="w-full">
                 <div class="relative space-y-4 text-center">
                     <div
@@ -90,6 +162,14 @@
                             plain
                             :tooltip="$t('moreOptions')"
                         >
+                            <button
+                                type="button"
+                                @click="openMove"
+                                :class="menuItemClass"
+                            >
+                                <MoveRight class="size-4 shrink-0" />
+                                {{ $t("moveCard") }}
+                            </button>
                             <button
                                 type="button"
                                 @click="duplicateCard"
@@ -322,6 +402,7 @@
                     <template v-else>
                         <div
                             v-if="content"
+                            ref="renderedContent"
                             class="wysiwyg-wrapper"
                             v-html="renderMarkdown(content)"
                             @click="handleDescriptionClick"
@@ -424,6 +505,7 @@ import { socket } from "~/lib/socket";
 import {
     Check,
     CopyPlus,
+    MoveRight,
     Trash2,
     Paperclip,
     Download,
@@ -452,6 +534,10 @@ const props = defineProps({
     // A comment to scroll to and mark when the card is opened from a search
     // hit on that comment.
     highlightCommentId: { type: Number, default: null },
+    // The board's areas and its cards by area, for the move dialog: it needs to
+    // offer somewhere to move to, and the cards already there to place against.
+    areas: { type: Array, default: () => [] },
+    cardsByArea: { type: Object, default: () => ({}) },
 });
 
 const nuxtApp = useNuxtApp();
@@ -459,6 +545,7 @@ const emits = defineEmits([
     "card-updated",
     "card-deleted",
     "card-duplicated",
+    "card-moved",
     "comment-count-updated",
 ]);
 
@@ -479,7 +566,80 @@ const content = ref(props.card.content);
 const currentStatus = ref(!!props.card.status);
 
 const cardTitle = ref(null);
+
+// Code blocks written with the editor's Codeblock button get a copy button.
+const renderedContent = ref<HTMLElement | null>(null);
+useCodeCopy(renderedContent, () => ({
+    copy: $t("copyCode"),
+    copied: $t("codeCopied"),
+    failed: $t("error_copyFailed"),
+}));
 const deleteModal = ref(false);
+
+// --- Moving the card without dragging it --------------------------------
+//
+// Dragging is fine with a mouse and awkward on a phone, and awkward for
+// everybody when the destination is far down a long column.
+const moveModal = ref(false);
+const moveAreaId = ref<number | null>(null);
+const movePlacement = ref<"top" | "bottom" | "after">("bottom");
+const moveAfterId = ref<number | null>(null);
+const placementLabels = {
+    top: "moveCardTop",
+    bottom: "moveCardBottom",
+    after: "moveCardAfter",
+};
+
+const openMove = () => {
+    moveAreaId.value = Number(props.card?.area) || null;
+    movePlacement.value = "bottom";
+    moveAfterId.value = null;
+    moveModal.value = true;
+};
+
+// What is already in the destination, without the card being moved — the list
+// the chosen position is an index into, whichever area it ends up in.
+const moveTargets = computed(() => {
+    const list = props.cardsByArea?.[moveAreaId.value as any] ?? [];
+    return list.filter((card: any) => Number(card.id) !== Number(props.cardID));
+});
+
+const movePlacements = ["top", "bottom", "after"] as const;
+
+// "After" needs something to be after: the first card in the destination unless
+// one has already been chosen, so the select is never sitting on nothing.
+watch(movePlacement, (placement) => {
+    if (placement === "after" && moveAfterId.value === null) {
+        moveAfterId.value = moveTargets.value[0]?.id ?? null;
+    }
+});
+
+// Picking another area invalidates a card chosen from the previous one, and an
+// empty destination has no position to choose.
+watch(moveAreaId, () => {
+    moveAfterId.value = moveTargets.value[0]?.id ?? null;
+    if (!moveTargets.value.length) movePlacement.value = "bottom";
+});
+
+const submitMove = () => {
+    const targets = moveTargets.value;
+    let newIndex = targets.length;
+    if (movePlacement.value === "top") {
+        newIndex = 0;
+    } else if (movePlacement.value === "after") {
+        const at = targets.findIndex(
+            (card: any) => Number(card.id) === Number(moveAfterId.value),
+        );
+        newIndex = at < 0 ? targets.length : at + 1;
+    }
+    emits("card-moved", {
+        cardId: Number(props.cardID),
+        fromAreaId: Number(props.card?.area),
+        toAreaId: Number(moveAreaId.value),
+        newIndex,
+    });
+    moveModal.value = false;
+};
 const addAttachments = ref(false);
 const isDragging = ref(false); // highlight the drop zone while a file is over it
 const fileInput = ref(null); // hidden <input type="file"> for click-to-select

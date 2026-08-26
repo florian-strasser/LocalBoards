@@ -359,6 +359,16 @@ const wireBoardGrids = () => {
         sortables.push(
             Sortable.create(grid, {
                 group: "dashboard-boards",
+                // A touch that starts on a card should be allowed to
+                // become a scroll. Without a delay SortableJS claims the
+                // gesture the moment a finger lands, so swiping the board
+                // on a phone picked a card up instead of scrolling. Holding
+                // still for a moment starts a drag; moving before that
+                // scrolls, and the threshold is what tells the two apart.
+                // Mouse drags are unaffected — the delay is touch-only.
+                delay: 250,
+                delayOnTouchOnly: true,
+                touchStartThreshold: 5,
                 // The tile itself, the way a card on a board is the thing you
                 // pick up. It used to take a grip in the corner, which is one
                 // more thing to find and nothing the rest of the app asks for.

@@ -1,6 +1,7 @@
 <template>
     <div class="comment-content-container">
         <div
+            ref="rendered"
             class="wysiwyg-wrapper"
             v-html="renderMarkdown(props.content)"
             @change="handleCheckboxChange"
@@ -25,6 +26,14 @@ const props = defineProps({
 });
 
 const emits = defineEmits(["updated"]);
+
+// Code blocks written with the editor's Codeblock button get a copy button.
+const rendered = ref<HTMLElement | null>(null);
+useCodeCopy(rendered, () => ({
+    copy: $t("copyCode"),
+    copied: $t("codeCopied"),
+    failed: $t("error_copyFailed"),
+}));
 
 const imageModalOpen = ref(false);
 const selectedImageSrc = ref("");

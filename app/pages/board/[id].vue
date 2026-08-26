@@ -1,5 +1,8 @@
 <template>
-    <div class="min-h-svh flex flex-col justify-between">
+    <div
+        class="flex flex-col justify-between"
+        :class="boardStyle === 'kanban' ? 'h-svh overflow-hidden' : 'min-h-svh'"
+    >
         <AppHeader />
         <div class="w-full pt-12 pb-7 grow-0 shrink-0">
             <Connection
@@ -98,7 +101,8 @@
             </div>
         </div>
         <div
-            class="@container w-full grow min-h-0 pb-10 overflow-x-auto overflow-y-hidden bg-slate dark:bg-dark"
+            class="@container w-full grow min-h-0 overflow-x-auto overflow-y-hidden bg-slate dark:bg-dark"
+            :class="{ 'pb-10': boardStyle !== 'kanban' }"
             :style="anyModalOpen ? { overflowX: 'hidden' } : undefined"
         >
             <!-- The horizontal padding lives on the areas wrapper itself (not a
@@ -112,10 +116,11 @@
                 v-if="!accessError"
                 ref="areasWrapper"
                 data-onboarding="areas"
-                class="mt-4 px-8"
+                class="px-8"
                 :class="{
-                    'flex w-max items-start gap-x-5': boardStyle === 'kanban',
-                    'space-y-5': boardStyle === 'todo',
+                    'flex h-full w-max items-start gap-x-5 pt-4 pb-8':
+                        boardStyle === 'kanban',
+                    'mt-4 space-y-5': boardStyle === 'todo',
                 }"
             >
                     <div
@@ -123,7 +128,7 @@
                         :key="area.id"
                         class="p-4 space-y-2 rounded-lg bg-white dark:bg-slate"
                         :class="{
-                            'w-92 max-w-[calc(100cqw-4rem)] shrink-0 grow-0':
+                            'flex max-h-full min-h-0 w-92 max-w-[calc(100cqw-4rem)] shrink-0 grow-0 flex-col':
                                 boardStyle == 'kanban',
                             'w-full': boardStyle == 'todo',
                         }"
@@ -148,6 +153,10 @@
                             v-if="cards[area.id]"
                             :data-area-id="area.id"
                             class="space-y-1 card-wrapper"
+                            :class="{
+                                'min-h-0 grow overflow-y-auto pr-1':
+                                    boardStyle === 'kanban',
+                            }"
                         >
                             <CardTile
                                 v-for="card in cards[area.id]"
@@ -286,10 +295,13 @@
                 :currentUser="session.data.user"
                 :openInEditMode="editCardId === cardModal"
                 :highlightCommentId="highlightComment"
+                :areas="areas"
+                :cardsByArea="cards"
                 v-model="cardModalOpen"
                 @card-updated="handleCardUpdated"
                 @card-deleted="handleCardDeleted"
                 @card-duplicated="handleCardDuplicated"
+                @card-moved="handleCardMovedByDialog"
                 @comment-count-updated="handleCommentCountUpdated"
             />
         </ModalWindow>
@@ -583,6 +595,62 @@ const handleCardDeleted = (card) => {
     );
     if (currentIndex !== -1) {
         cards.value[card.area].splice(currentIndex, 1);
+    }
+};
+
+// The move dialog decided where the card should go; this carries it out. The
+// drop handler has SortableJS to move the element for it — nothing has touched
+// the page here, so the local lists are updated through the same two handlers
+// the socket uses when somebody else moves a card.
+const handleCardMovedByDialog = async ({
+    cardId,
+    fromAreaId,
+    toAreaId,
+    newIndex,
+}) => {
+    if (!cards.value[fromAreaId]) return;
+    if (!cards.value[toAreaId]) cards.value[toAreaId] = [];
+
+    const sameArea = Number(fromAreaId) === Number(toAreaId);
+    if (sameArea) {
+        handleCardOrderd({ areaId: toAreaId, cardId, newIndex });
+    } else {
+        handleCardMoved({ cardId, fromAreaId, toAreaId, newIndex });
+        const moved = cards.value[toAreaId].find(
+            (item) => Number(item.id) === Number(cardId),
+        );
+        if (moved) moved.area = toAreaId;
+    }
+
+    try {
+        if (sameArea) {
+            await $fetch("/api/data/cardOrder", {
+                method: "POST",
+                body: { cardId, areaId: toAreaId, newIndex },
+            });
+            socket.emit("cardOrderd", {
+                boardId: boardID.value,
+                cardId,
+                areaId: toAreaId,
+                newIndex,
+            });
+        } else {
+            await $fetch("/api/data/cardMove", {
+                method: "POST",
+                body: { cardId, fromAreaId, toAreaId, newIndex },
+            });
+            socket.emit("cardMoved", {
+                boardId: boardID.value,
+                cardId,
+                fromAreaId,
+                toAreaId,
+                newIndex,
+            });
+        }
+        await nuxtApp.callHook("app:toast", { message: $t("cardMoved") });
+    } catch (error) {
+        console.error("Error moving card:", error);
+        await nuxtApp.callHook("app:toast", { message: $t("moveCardFailed") });
     }
 };
 
@@ -954,6 +1022,16 @@ const initSort = () => {
             if (el) {
                 const sortChild = Sortable.create(el, {
                     group: "cards",
+                    // A touch that starts on a card should be allowed to
+                    // become a scroll. Without a delay SortableJS claims the
+                    // gesture the moment a finger lands, so swiping the board
+                    // on a phone picked a card up instead of scrolling. Holding
+                    // still for a moment starts a drag; moving before that
+                    // scrolls, and the threshold is what tells the two apart.
+                    // Mouse drags are unaffected — the delay is touch-only.
+                    delay: 250,
+                    delayOnTouchOnly: true,
+                    touchStartThreshold: 5,
                     onEnd: async (event) => {
                         if (event.from !== event.to) {
                             // Card moved to a different area
@@ -1018,6 +1096,16 @@ const initSort = () => {
         if (writeAccess.value) {
             const sortable = Sortable.create(areasWrapper.value, {
                 group: "areas",
+                // A touch that starts on a card should be allowed to
+                // become a scroll. Without a delay SortableJS claims the
+                // gesture the moment a finger lands, so swiping the board
+                // on a phone picked a card up instead of scrolling. Holding
+                // still for a moment starts a drag; moving before that
+                // scrolls, and the threshold is what tells the two apart.
+                // Mouse drags are unaffected — the delay is touch-only.
+                delay: 250,
+                delayOnTouchOnly: true,
+                touchStartThreshold: 5,
                 // Don't start an area drag from a form field, so text can be
                 // selected in the card/area name inputs. preventOnFilter:false
                 // keeps the field's native mouse behaviour (focus/selection).

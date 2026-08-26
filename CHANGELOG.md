@@ -1,3 +1,43 @@
+## v0.31.0
+
+### New Features
+
+- **An area is as tall as there is room for, and its cards scroll inside it.** A column grew with its contents, so a board with a long list became a long page: the button that adds a card sat at the bottom of all of them, and reaching it meant scrolling past everything already there — worst exactly where it is needed most.
+
+  The board now fills the window and each area stops at the bottom of it, scrolling its own cards. "Create new card" sits below that list rather than after it, so it stays where it is however many cards the area holds. A short area is still only as tall as its cards; nothing is stretched to fill.
+
+  On a phone this is what makes the rest of it work: with the page no longer scrolling, a swipe on a card scrolls that area's cards. To-do boards are left alone — one long list is meant to be read as a page.
+
+- **A card can be moved without dragging it, and dragging no longer eats a swipe.** Two halves of the same problem on a phone. SortableJS was set up with no touch options at all, so it claimed a gesture the instant a finger landed on a card: swiping to scroll the board picked a card up instead. A drag now needs the finger to hold still for a moment before it starts, and moving before that scrolls the way it always should have. Mouse drags are untouched — the delay applies to touch only. The same was true of the dashboard's tiles, and is fixed there too.
+
+  That fixes scrolling, but not the other thing dragging is bad at: moving a card a long way down a long column, where the drop target is off screen and autoscroll is a fight. The card's ⋮ menu now has **Move card**, which asks where rather than requiring a gesture — the area to move to, and then top, bottom, or after a particular card. Trello answers the same question with a numbered position; a number means counting rows to find out which one you want, while "after this card" is the thing you already know. An area with nothing in it is not asked about at all: there is one place the card can land, so the position control is not there to be answered.
+
+  It goes through the same two endpoints a drop does, so a move made this way reaches everyone else on the board live, exactly as a dragged one would.
+
+  Verified with a real touch gesture rather than a synthetic drag: a swipe on a card scrolls the board 385px and reorders nothing — where, with the delay removed, the same swipe scrolls not at all and moves the card, which is the report. And through the dialog itself: a card sent to the top of its own area, to the bottom, and into another area after a chosen card, each checked against the database afterwards.
+
+- **Code blocks can be copied.** A snippet written with the editor's Codeblock button, and every block in the documentation, now carries a copy button in its top right corner. It stays faint until the block is hovered — and is always visible where nothing can hover, since a touch screen would otherwise have no way to reach it. Copying ticks the button and raises a toast, so the confirmation appears both where the click was and where the app says everything else that just happened.
+
+  In the API reference, where an example is offered in cURL, JavaScript, Vue, React and PHP, the button copies the language on show. That falls out of where it lives rather than being arranged: the button belongs to the code block, the tabs render every snippet and hide all but one, so the only button on the page at any moment is the selected language's.
+
+  What gets copied is the code and nothing around it — not the syntax highlighting's markup, and not the trailing newline every fenced block ends with, which is the sort of thing that shows up later as a stray blank line in a terminal.
+
+### Improvements
+
+- **The countdown ring has a track behind it.** The ring marking a toast's remaining time now runs over a faint full circle of the same colour, so the shape is legible from the first moment rather than appearing out of nothing — at the start there is a ring waiting to be filled instead of a dot and empty space.
+
+### Fixes
+
+- **A card dragged down within its own area went back to its old place on reload.** The order was right on screen and right for everyone watching it live, so nothing looked wrong until the page was loaded again — and the further down a card was dropped, the further back it appeared to jump.
+
+  `newIndex` from the drag is the position the card ended up in among cards it is already one of. The endpoint read it as a position to insert into, making room with `sort = sort + 1` for everything at or after it and then writing the card's new value. Moving a card *up* that happens to be correct: its old slot is above the shifted range and stays where it is. Moving it *down*, its old slot is inside the range that should have shifted and does not move, so everything between the two positions ends up one place short and the card lands one place above where it was dropped. Dragging to the very bottom of an area is the most visible case of it, and the one that was reported.
+
+  Rewritten to do what the drag describes: take the card out of the area's order, put it back at that index, and write the whole sequence. The endpoint also now refuses a card that is not in the area it was told about, which it previously would have reordered anyway.
+
+- **Toasts left the screen crookedly.** A toast on its way out was taken out of the layout flow so the stack could close up behind it — but a card sized by its own text then re-measured itself against the container's edge, so it appeared to slide sideways and change shape while fading. It now stays where it is and simply sinks: down by a hair, out to nothing, with the arrival decelerating into place and the departure accelerating away.
+
+- **The Polish tooltip for copying was in Dutch.** `createdKeyCopyTip` carried "Kopiëren naar klembord" in `pl.json` — the Dutch string, sitting in the Polish file, on the button that copies a freshly created API key. The rest of the Polish copy strings around it were correct, which is presumably how it went unnoticed.
+
 ## v0.30.4
 
 ### Improvements

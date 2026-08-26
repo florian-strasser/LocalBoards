@@ -2476,3 +2476,58 @@ html.menu-open {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
+
+/* The copy button on a code block. ProsePre wraps every fenced block in
+   `.prose-pre`, which is what positions this; inside a tabbed example only the
+   visible panel is in the layout, so the button reachable at any moment is the
+   one belonging to the language on show. Faint until the block is hovered or the
+   button is focused, and always visible where nothing can hover. */
+.prose-pre {
+  position: relative;
+}
+
+.prose-pre__copy {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.4rem;
+  border-radius: var(--radius-lg);
+  color: var(--color-code-text);
+  background: color-mix(in oklab, var(--color-code-bg) 80%, transparent);
+  border: 1px solid var(--color-code-border);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease;
+}
+
+.prose-pre:hover .prose-pre__copy,
+.prose-pre__copy:focus-visible {
+  opacity: 1;
+}
+
+.prose-pre__copy:hover {
+  color: var(--color-primary);
+}
+
+.prose-pre__copy--done {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.prose-pre__copy svg {
+  width: 100%;
+  height: 100%;
+}
+
+@media (hover: none) {
+  .prose-pre__copy {
+    opacity: 1;
+  }
+}

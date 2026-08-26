@@ -130,6 +130,45 @@ await reduced.waitForTimeout(4500);
 check("gone after its full time", (await reducedCards.count()) === 0);
 await reduced.close();
 
+console.log("\n7. the exit sinks straight down");
+const solo = await browser.newPage({ viewport: { width: 1000, height: 800 } });
+await solo.goto(`${BASE}/?sso_error=no_account`, { waitUntil: "load" });
+const soloCard = solo.locator("div.fixed.bottom-8.right-8 > div");
+await soloCard.first().waitFor({ timeout: 5000 });
+// Let it finish arriving first. A card enters from 1rem below, and `waitFor`
+// returns at the start of that — measuring there put "resting" 16px too low,
+// which is exactly where the exit ends, so nothing ever looked like it moved.
+await solo.waitForTimeout(600);
+const resting = await soloCard.first().boundingBox();
+// Sample the card as it leaves. It is removed when the transition ends, so this
+// polls fast and keeps whatever it caught on the way out.
+// Read the rect straight from the DOM: Playwright's boundingBox() waits for a
+// missing element, and the whole point here is to keep sampling until it is
+// gone — that wait would be thirty seconds per frame.
+const rectNow = () => solo.evaluate(() => {
+  const el = document.querySelector("div.fixed.bottom-8.right-8 > div");
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { x: r.x, y: r.y, width: r.width, height: r.height };
+});
+const frames = [];
+for (let i = 0; i < 260; i++) {
+  const box = await rectNow();
+  if (!box) { if (frames.length) break; } else if (box.y > resting.y + 0.5) frames.push(box);
+  await solo.waitForTimeout(25);
+}
+check("caught it mid-exit", frames.length > 0, `${frames.length} frames`);
+if (frames.length) {
+  const dx = Math.max(...frames.map((f) => Math.abs(f.x - resting.x)));
+  const dw = Math.max(...frames.map((f) => Math.abs(f.width - resting.width)));
+  const dh = Math.max(...frames.map((f) => Math.abs(f.height - resting.height)));
+  const dy = Math.max(...frames.map((f) => f.y - resting.y));
+  check("no sideways drift", dx < 1, `${dx.toFixed(2)}px`);
+  check("no resizing", dw < 1 && dh < 1, `w ${dw.toFixed(2)}px, h ${dh.toFixed(2)}px`);
+  check("moves down", dy > 2, `${dy.toFixed(1)}px`);
+}
+await solo.close();
+
 await browser.close();
 await new Promise((resolve) => {
   child.once("exit", resolve);

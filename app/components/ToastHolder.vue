@@ -42,6 +42,16 @@
                             pathLength="1"
                             stroke-dasharray="0 1"
                         />
+                        <circle
+                            cx="10"
+                            cy="10"
+                            r="8"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            style="opacity:0.35;"
+                        />
                     </svg>
                 </div>
                 <div class="grow shrink">{{ toast.message }}</div>

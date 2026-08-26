@@ -600,16 +600,30 @@ select.form-control,
     background-color: color-mix(in oklab, currentColor 20%, transparent);
 }
 
-/* Toasts. They enter from below and fade out on the way; `-move` is what keeps
-   the rest of the stack from jumping when one in the middle expires, and
-   positioning the leaving card absolutely takes it out of the flow so the
-   others can slide up under it rather than after it. */
-.toast-enter-active,
-.toast-leave-active,
-.toast-move {
+/* Toasts. They rise in and sink out, and do nothing else on the way: no drift
+   sideways and no scaling. The leaving card is left in the flow — taking it out
+   with `position: absolute` was what made the exit look wrong, because a card
+   that had been sized by its own text suddenly re-measured against the
+   container's edge and appeared to slide and resize as it faded. `-move` then
+   carries the rest of the stack up once it is gone.
+
+   Two curves rather than one: arriving decelerates into place, leaving
+   accelerates away and takes less time, which is the usual pairing for
+   something appearing on its own and dismissing itself. */
+.toast-enter-active {
     transition:
-        opacity 0.25s ease,
-        transform 0.25s ease;
+        opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-leave-active {
+    transition:
+        opacity 0.22s cubic-bezier(0.4, 0, 1, 1),
+        transform 0.22s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.toast-move {
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .toast-enter-from,
@@ -618,7 +632,58 @@ select.form-control,
     transform: translateY(1rem);
 }
 
-.toast-leave-active {
+/* The copy button on a rendered code block. It sits inside the <pre>, which the
+   composable that adds it relies on being positioned; it stays faint until the
+   block is hovered or the button itself is focused, so it does not compete with
+   the code for attention while still being reachable from the keyboard. */
+.wysiwyg-wrapper pre {
+    position: relative;
+}
+
+.code-copy {
     position: absolute;
-    right: 0;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0.4rem;
+    border-radius: var(--radius-lg);
+    color: var(--color-code-text);
+    background: color-mix(in oklab, var(--color-code-bg) 80%, transparent);
+    border: 1px solid var(--color-code-border);
+    cursor: pointer;
+    opacity: 0;
+    transition:
+        opacity 0.15s ease,
+        color 0.15s ease;
+}
+
+.wysiwyg-wrapper pre:hover .code-copy,
+.code-copy:focus-visible {
+    opacity: 1;
+}
+
+.code-copy:hover {
+    color: var(--color-primary);
+}
+
+.code-copy--done {
+    opacity: 1;
+    color: var(--color-primary);
+}
+
+.code-copy svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* A pointer is not the only way in. Without this the button would be
+   unreachable on a touch screen, where nothing ever hovers. */
+@media (hover: none) {
+    .code-copy {
+        opacity: 1;
+    }
 }

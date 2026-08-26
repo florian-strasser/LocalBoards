@@ -8,7 +8,7 @@
             :type="props.type"
             :required="props.required"
             :readonly="props.readonly"
-            class="form-control"
+            class="form-control w-full"
             :class="{ 'opacity-70 cursor-not-allowed': props.readonly }"
             v-model="data"
         />
