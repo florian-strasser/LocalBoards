@@ -247,6 +247,78 @@ check("the column stops inside the viewport", shape.columnBottom <= shape.viewpo
 check("and the add-a-card button is on screen", shape.addTop >= 0 && shape.addBottom <= shape.viewport + 1,
   `${shape.addTop}–${shape.addBottom} of ${shape.viewport}`);
 
+// A scrolling list clips whatever leaves it, on both axes, and the unread
+// marker is a `ring-2` drawn outside the card's own box — so the list needs at
+// least that much padding or the marker is shaved off at the edges.
+const room = await touchPage.evaluate(() => {
+  const list = document.querySelector(".card-wrapper");
+  // The swipe above left the list scrolled; measure from the top of it.
+  list.scrollTop = 0;
+  const cs = getComputedStyle(list);
+  const card = list.querySelector("[data-card-id]");
+  const lr = list.getBoundingClientRect(), cr = card.getBoundingClientRect();
+  return {
+    // The padding that gives the ring room is on the contents, not the
+    // scroller — putting it on the scroller moved the scrollbar with it.
+    padding: (() => { const p = getComputedStyle(list.firstElementChild);
+      return ["Top", "Right", "Bottom", "Left"].map((s) => parseFloat(p["padding" + s])); })(),
+    clips: cs.overflowX !== "visible",
+    left: +(cr.left - lr.left).toFixed(1),
+    right: +(lr.right - cr.right).toFixed(1),
+    top: +(cr.top - lr.top).toFixed(1),
+  };
+});
+check("the list clips, as a scroller does", room.clips);
+check("but leaves room for the unread ring on every side", room.padding.every((v) => v >= 2),
+  `padding ${room.padding.join("/")}`);
+check("so a card's ring is not shaved", room.left >= 2 && room.right >= 2 && room.top >= 2,
+  `left ${room.left}, right ${room.right}, top ${room.top}`);
+
+// Scrolled to the very end is where the last card and the button below are
+// closest.
+const bottomGap = await touchPage.evaluate(() => {
+  const list = document.querySelector(".card-wrapper");
+  list.scrollTop = list.scrollHeight;
+  const column = list.closest("[class*='rounded-lg']");
+  const add = column.lastElementChild;   // header, list, then the add control
+  const cards = [...list.querySelectorAll("[data-card-id]")];
+  const last = cards[cards.length - 1].getBoundingClientRect();
+  return +(add.getBoundingClientRect().top - last.bottom).toFixed(1);
+});
+check("the last card keeps its distance from the button", bottomGap >= 8, `${bottomGap}px`);
+
+// The list's edges fade rather than chopping a card in half, and the fade grows
+// with the travel instead of switching on. The mask is on the contents, not the
+// scroller — masking the scroller fades its scrollbar too — so its stops are in
+// the content's coordinates and every one of them is offset by the scroll.
+const fade = async (scrollTop) => touchPage.evaluate((top) => {
+  const scroller = document.querySelector(".card-wrapper");
+  scroller.scrollTop = top === "end" ? scroller.scrollHeight : top;
+  return new Promise((resolve) => setTimeout(() => {
+    const content = scroller.firstElementChild;
+    const scrollerMask = getComputedStyle(scroller).webkitMaskImage || getComputedStyle(scroller).maskImage || "none";
+    const mask = getComputedStyle(content).webkitMaskImage || getComputedStyle(content).maskImage || "none";
+    if (mask === "none") return resolve({ masked: false, scrollerMasked: scrollerMask !== "none" });
+    const stops = [...mask.matchAll(/(-?\d+(?:\.\d+)?)px/g)].map((m) => +m[1]);
+    resolve({
+      masked: true,
+      scrollerMasked: scrollerMask !== "none",
+      top: stops[1] - stops[0],
+      bottom: stops[3] - stops[2],
+    });
+  }, 400));
+}, scrollTop);
+
+const atTop = await fade(0);
+check("the scrollbar's own box is never masked", atTop.masked && !atTop.scrollerMasked);
+check("resting at the top, nothing is faded there", Math.round(atTop.top) === 0, JSON.stringify(atTop));
+check("but the bottom is, since there is more below", atTop.bottom > 0, `${atTop.bottom}px`);
+const nudged = await fade(8);
+check("the fade grows with the scroll rather than switching on", Math.round(nudged.top) === 8, `${nudged.top}px at 8px scrolled`);
+const atEnd = await fade("end");
+check("at the bottom it is the other way round", Math.round(atEnd.bottom) === 0 && atEnd.top > 0,
+  `top ${atEnd.top}, bottom ${atEnd.bottom}`);
+
 await phone.close();
 
 console.log("\n9. the position control asks nothing it cannot answer");
@@ -279,6 +351,64 @@ check("and it is the first card in the area", Number(chosen) === Number(firstTar
 await page.locator(".card-modal button", { hasText: "Move card" }).last().click();
 await page.waitForTimeout(900);
 check("moving lands it right after that card", (await areaOrder(areaId)) === "AEBCD", await areaOrder(areaId));
+
+console.log("\n11. a card can still be dragged");
+const dragBoard = board.insertId;
+const ids6 = await reseed();
+await page.goto(`${BASE}/board/${dragBoard}`, { waitUntil: "load" });
+await page.waitForSelector("[data-card-id]", { timeout: 15000 });
+await page.waitForTimeout(800);
+// SortableJS drags its own direct children, and the cards sit one level inside
+// the scroller — a drag that does nothing is what a wrong container looks like.
+const holder = await page.evaluate(() => {
+  const scroller = document.querySelector(".card-wrapper");
+  const content = scroller.firstElementChild;
+  return [...content.children].some((c) => c.hasAttribute("data-card-id"));
+});
+check("the cards are the drag container's own children", holder);
+
+const boxOf = async (name) => (await page.locator(`[data-card-id]:has-text("${name}")`).first().boundingBox());
+const from = await boxOf("A");
+const to = await boxOf("C");
+await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+await page.mouse.down();
+for (let i = 1; i <= 10; i++) {
+  await page.mouse.move(from.x + from.width / 2,
+    from.y + from.height / 2 + ((to.y + to.height) - (from.y + from.height / 2)) * i / 10);
+  await page.waitForTimeout(40);
+}
+check("a drag actually starts", (await page.locator(".sortable-ghost, .sortable-drag").count()) > 0);
+await page.mouse.up();
+await page.waitForTimeout(1400);
+check("and the new order is saved", (await areaOrder(areaId)) === "BCADE", await areaOrder(areaId));
+
+console.log("\n12. opening a dialog does not move the board behind it");
+await page.goto(`${BASE}/board/${board.insertId}`, { waitUntil: "load" });
+await page.waitForSelector("[data-card-id]", { timeout: 15000 });
+await page.waitForTimeout(800);
+// Hiding the board's horizontal scrollbar while a dialog is open gives its
+// height back to the content, and the areas are sized to the space available —
+// so they grow by exactly that much unless it is paid back as padding. Whether
+// there is anything to pay back depends on the machine: overlay scrollbars take
+// no space, so this reads zero here and bites where they do.
+const columnShape = () => page.evaluate(() => {
+  const scroller = document.querySelector(".card-wrapper");
+  const column = scroller.closest("[class*='rounded-lg']");
+  return {
+    bottom: Math.round(column.getBoundingClientRect().bottom),
+    listHeight: Math.round(scroller.getBoundingClientRect().height),
+    addTop: Math.round(column.lastElementChild.getBoundingClientRect().top),
+  };
+});
+const settled = await columnShape();
+await page.locator("[data-card-id]").first().click();
+await page.waitForSelector(".card-modal", { timeout: 15000 });
+await page.waitForTimeout(900);
+const withDialog = await columnShape();
+check("the column keeps its height", withDialog.bottom === settled.bottom && withDialog.listHeight === settled.listHeight,
+  `${settled.listHeight} → ${withDialog.listHeight}`);
+check("and the add-a-card button stays put", withDialog.addTop === settled.addTop,
+  `${settled.addTop} → ${withDialog.addTop}`);
 
 await browser.close();
 

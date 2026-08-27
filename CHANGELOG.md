@@ -1,3 +1,21 @@
+## v0.32.0
+
+### Improvements
+
+- **A scrolling area fades at its edges instead of cutting a card in half.** The same idea as Nuxt UI's `useScrollShadow` — a `mask-image` whose ends are transparent — with one difference: the fade is not a fixed height that switches on. It grows with the travel, so it is nothing at all while the list rests against an end and opens to its full 24px over the first 24px away from it. The edge softens as you pull away from it rather than appearing the moment you move.
+
+  The mask is on the cards rather than on the area that scrolls them. Masking the scrolling element fades everything it draws, its scrollbar included, which left the scrollbar dimmed at exactly the ends it was pointing at. The cost is that the gradient is then measured in the cards' own coordinates rather than the window's, so every stop is offset by how far the list has scrolled — which is why it is redrawn as you scroll rather than only when the fade's height changes. A list too short to scroll gets no mask at all.
+
+### Fixes
+
+- **Opening a dialog made the areas behind it jump taller.** The board hides its horizontal scrollbar while a dialog is open, and where scrollbars take up layout space — Windows and Linux always, macOS whenever "show scroll bars" is set to always — removing it hands that height back to the board. The areas are sized to the space available, so every one of them grew by exactly the scrollbar's height and shrank again on close, leaving the scrolling list hanging below its cards.
+
+  The same answer the page's own scroll lock already uses: the bar is measured on the way in, while it is still there, and its height is added back as padding so the box the areas are measured against never changes. The measurement takes borders off the difference rather than reading the whole of it as a scrollbar, which would have over-paid the day that element gains one.
+
+- **The unread marker on a card was shaved off at the edges of its area.** Introduced by the scrolling areas in v0.31.0. The marker is a ring drawn just outside the card's own box, and a list that scrolls clips what leaves it — on both axes, because a browser told to scroll one direction stops overflow escaping the other. So the ring lost its left and right edges against the sides of the list, and its top and bottom on the first and last card.
+
+  The list now carries a few pixels of padding for the ring to be drawn into. The sides and the top give that space back, so the cards sit exactly where they did; the bottom keeps it, because there the padding is the gap between the last card and the button that adds one — taking it back left the two touching. The marker itself is unchanged: it still sits outside the card, which is what makes it read as a highlight rather than a border.
+
 ## v0.31.0
 
 ### New Features

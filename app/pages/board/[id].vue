@@ -101,9 +101,19 @@
             </div>
         </div>
         <div
+            ref="boardScroller"
             class="@container w-full grow min-h-0 overflow-x-auto overflow-y-hidden bg-slate dark:bg-dark"
             :class="{ 'pb-10': boardStyle !== 'kanban' }"
-            :style="anyModalOpen ? { overflowX: 'hidden' } : undefined"
+            :style="
+                anyModalOpen
+                    ? {
+                          overflowX: 'hidden',
+                          paddingBottom: horizontalScrollbar
+                              ? `${horizontalScrollbar}px`
+                              : undefined,
+                      }
+                    : undefined
+            "
         >
             <!-- The horizontal padding lives on the areas wrapper itself (not a
                  wrapping .container) and, for kanban, the wrapper is sized to
@@ -152,19 +162,34 @@
                         <div
                             v-if="cards[area.id]"
                             :data-area-id="area.id"
-                            class="space-y-1 card-wrapper"
+                            class="card-wrapper -mx-1"
                             :class="{
-                                'min-h-0 grow overflow-y-auto pr-1':
+                                // A scroll container clips whatever leaves it,
+                                // on both axes — a browser told to scroll one
+                                // direction stops overflow escaping the other.
+                                // The unread marker is a `ring-2`, drawn 2px
+                                // *outside* the card's box, so it was being
+                                // shaved off at every edge of the list. This
+                                // padding is the room it is drawn into, and it
+                                // keeps the scrollbar off the cards.
+                                //
+                                // The sides and the top give that space back so
+                                // the cards stay where they were. The bottom
+                                // keeps it: there the padding is the gap
+                                // between the last card and the button below.
+                                'min-h-0 grow overflow-y-auto':
                                     boardStyle === 'kanban',
                             }"
                         >
-                            <CardTile
-                                v-for="card in cards[area.id]"
-                                :card="card"
-                                :has-unread="unreadCardIds.has(card.id)"
-                                :viewers="viewersFor(card.id)"
-                                v-model="cardModal"
-                            />
+                            <div class="space-y-1 p-1">
+                                <CardTile
+                                    v-for="card in cards[area.id]"
+                                    :card="card"
+                                    :has-unread="unreadCardIds.has(card.id)"
+                                    :viewers="viewersFor(card.id)"
+                                    v-model="cardModal"
+                                />
+                            </div>
                         </div>
                         <NewCardForm
                             v-if="writeAccess"
@@ -359,6 +384,34 @@ const fetchInvitations = async () => {
 const areasWrapper = ref(null);
 // Lock horizontal scrolling of the board while a modal is open.
 const { isOpen: anyModalOpen } = useModalOpen();
+
+// Hiding the board's horizontal scrollbar while a dialog is open gives its
+// height back to the content, and since the areas are sized to the space
+// available they grow by exactly that much — the columns jump taller as the
+// dialog opens and back as it closes. The same trick the page's scroll lock
+// uses: measure the bar and re-add its size as padding, so the box the areas
+// are measured against does not change.
+//
+// Measured on the way in, while the bar is still there — once `overflow-x` is
+// hidden it is gone and the measurement reads zero. The watcher runs before the
+// style is applied, which is what makes that possible.
+const boardScroller = ref<HTMLElement | null>(null);
+const horizontalScrollbar = ref(0);
+
+watch(anyModalOpen, (open) => {
+    const el = boardScroller.value;
+    if (!open || !el) return;
+    // `offsetHeight - clientHeight` is the scrollbar *and* the borders; this
+    // element has none today, but reading the difference as "the scrollbar"
+    // would quietly start over-compensating the day it gets one.
+    const style = getComputedStyle(el);
+    const borders =
+        parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+    horizontalScrollbar.value = Math.max(
+        0,
+        el.offsetHeight - el.clientHeight - borders,
+    );
+});
 const areas = ref([]);
 const cards = ref({});
 
@@ -1015,11 +1068,24 @@ const deleteBoard = async () => {
     }
 };
 
+// The list SortableJS drags within is nested inside the element that carries
+// `data-area-id`, so the id is read from whichever ancestor has it.
+const areaIdOf = (el) => el?.closest?.("[data-area-id]")?.dataset?.areaId;
+
 const initSort = () => {
     if (areasWrapper.value) {
         Array.from(areasWrapper.value.children).forEach((child) => {
-            const el = child.querySelector(".card-wrapper");
-            if (el) {
+            const scroller = child.querySelector(".card-wrapper");
+            if (scroller) {
+                // Only these lists. They are the ones that scroll their own
+                // contents; anything else in the app that happens to get a
+                // scrollbar is left alone.
+                if (boardStyle.value === "kanban") attachScrollFade(scroller);
+                // The cards live one level in, inside the element that carries
+                // their spacing and padding — SortableJS has to be given that
+                // one, since it drags its own direct children and the scroller
+                // has exactly one of those.
+                const el = (scroller.firstElementChild as HTMLElement) ?? scroller;
                 const sortChild = Sortable.create(el, {
                     group: "cards",
                     // A touch that starts on a card should be allowed to
@@ -1037,8 +1103,8 @@ const initSort = () => {
                             // Card moved to a different area
                             onboarding.advance("move-card");
                             const cardId = event.item.dataset.cardId;
-                            const fromAreaId = event.from.dataset.areaId;
-                            const toAreaId = event.to.dataset.areaId;
+                            const fromAreaId = areaIdOf(event.from);
+                            const toAreaId = areaIdOf(event.to);
 
                             try {
                                 await $fetch("/api/data/cardMove", {
@@ -1064,7 +1130,7 @@ const initSort = () => {
                         } else {
                             // Card moved within the same area
                             const cardId = event.item.dataset.cardId;
-                            const areaId = event.from.dataset.areaId;
+                            const areaId = areaIdOf(event.from);
 
                             try {
                                 await $fetch("/api/data/cardOrder", {
