@@ -136,7 +136,7 @@
                     <div
                         v-for="(area, areaIndex) in areas"
                         :key="area.id"
-                        class="p-4 space-y-2 rounded-lg bg-white dark:bg-slate"
+                        class="p-4 space-y-1 rounded-lg bg-white dark:bg-slate"
                         :class="{
                             'flex max-h-full min-h-0 w-92 max-w-[calc(100cqw-4rem)] shrink-0 grow-0 flex-col':
                                 boardStyle == 'kanban',

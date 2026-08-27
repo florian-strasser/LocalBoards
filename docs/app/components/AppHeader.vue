@@ -210,6 +210,7 @@ const links = [
   // "API reference" matched nothing, so the row opened onto an empty list.
   { label: "Docs", to: "/docs", section: "Documentation" },
   { label: "API", to: "/api", section: "API reference" },
+  { label: "Changelog", to: "/changelog" },
 ];
 
 // The repository rather than a mailbox. Nothing is sold here any more, so the

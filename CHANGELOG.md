@@ -1,3 +1,21 @@
+## v0.32.1
+
+### Improvements
+
+- **An area sits tighter around its contents.** The list of cards carries a few pixels of padding of its own — room for the unread marker, which is drawn just outside a card and would otherwise be clipped by the edge of a scrolling list — and that padding was adding to the spacing the column already had between its header, its cards and the button that adds one. Doubled up, it read as a gap rather than as breathing room, most obviously in an empty area, where the two were all there was between the name and the button. The column's own spacing is halved to compensate; the distance between the last card and the button is unchanged.
+
+### Documentation
+
+- **The changelog is a page on the website.** `/changelog` renders this file — the repository's own `CHANGELOG.md`, reached through a link rather than copied into the site, so the page and the file cannot drift apart. It sits in the documentation's own layout, with the same sidebar beside it and an entry of its own in that sidebar, and is linked from the header and the footer beside the documentation and the API reference.
+
+  It is linked into the site's own content directory rather than the collection being pointed up at the repository root. Pointing it up there is tidier to write and sets the file watcher walking everything above the site — `node_modules`, build output, the screenshot folders — which takes the development server down with `EMFILE: too many open files`.
+
+  Two things had to be handled to make it read properly. An entry here is several paragraphs under one bullet, and the parser flattens those into a single run of text with line breaks between them — the tree it produces holds a `br`, not two paragraphs, and no styling can undo that, because a browser ignores every box property on a `<br>`. The page splits those runs back into paragraphs before anything is rendered, so the server sends it correctly too. The entries are also given a reading measure, so a paragraph does not run the full width of the column.
+
+- **Every screenshot retaken.** The guide's fifteen, the README's, and the homepage's heroes in each of their widths — all from one demo run, so they are the same build on the same day rather than a patchwork of whenever each was last touched. What is different in them is everything the last two releases changed about a board: areas that stop at the bottom of the window and scroll their own cards, the button that adds one staying put below the list, the cards fading out at the edges instead of being cut in half, and the unread marker no longer shaved off against the side of its area.
+
+  Three came out byte-identical — creating a board, the tile menu on the dashboard, and the user list. The demo data is fixed, so a view with nothing dated in it and no layout change reproduces exactly; that they did not move is the pipeline being repeatable rather than a step being skipped.
+
 ## v0.32.0
 
 ### Improvements

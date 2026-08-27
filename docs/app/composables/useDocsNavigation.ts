@@ -27,6 +27,13 @@ export const useDocsNavigation = () => {
       to: "/api",
       items: api.data.value?.[0]?.children ?? [],
     },
+    // A page rather than a menu: it has no children, and the sidebar renders it
+    // as a heading that is its own link.
+    {
+      title: "Changelog",
+      to: "/changelog",
+      items: [],
+    },
   ]);
 
   // The content paths and the router's disagree about trailing slashes, so they
@@ -36,7 +43,9 @@ export const useDocsNavigation = () => {
 
   // Whether this page is one of the documented ones — which is what decides
   // whether the small-screen menu carries these sections at all.
-  const inDocs = computed(() => /^\/(docs|api)(\/|$)/.test(route.path));
+  const inDocs = computed(() =>
+    /^\/(docs|api|changelog)(\/|$)/.test(route.path),
+  );
 
   // Await this in the caller so the menus are in the server-rendered HTML
   // rather than appearing after hydration.

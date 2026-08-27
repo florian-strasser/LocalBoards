@@ -8,11 +8,20 @@
   >
     <div v-for="(section, index) in sections" :key="section.title">
       <p class="text-dark font-medium" :class="index ? 'mt-8' : ''">
-        <NuxtLink :to="section.to" class="hover:text-primary">{{
-          section.title
-        }}</NuxtLink>
+        <NuxtLink
+          :to="section.to"
+          class="hover:text-primary"
+          :class="{ 'text-primary': isCurrent(section.to) }"
+          >{{ section.title }}</NuxtLink
+        >
       </p>
-      <ul class="border-gray/15 mt-3 flex flex-col gap-y-2 border-l pl-4">
+      <!-- A section with nothing under it is a page, not a menu — the heading
+           is already its link, and an empty bordered list below it reads as
+           something that failed to load. -->
+      <ul
+        v-if="section.items.length"
+        class="border-gray/15 mt-3 flex flex-col gap-y-2 border-l pl-4"
+      >
         <li v-for="item in section.items" :key="item.path">
           <NuxtLink
             :to="item.path"

@@ -2531,3 +2531,24 @@ html.menu-open {
     opacity: 1;
   }
 }
+
+/* The changelog page renders the repository's CHANGELOG.md as it is. Two things
+   that file needs and the guides do not:
+
+   The page splits an entry's paragraphs back apart before rendering — the
+   parser hands them over as one run of text with `br` between them — so they
+   arrive here as real paragraphs and only need spacing between them.
+
+   And the page has no sidebar beside it, so without a measure the entries run
+   the full width of the window — these are paragraphs, not reference tables. */
+.changelog-copy li p + p {
+  margin-top: 0.75rem;
+}
+
+.changelog-copy {
+  max-width: 68ch;
+}
+
+.changelog-copy li {
+  margin-bottom: 1.5rem;
+}
