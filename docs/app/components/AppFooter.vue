@@ -92,7 +92,6 @@ const columns = [
       { label: "API reference", to: "/api" },
       { label: "Changelog", to: "/changelog" },
       { label: "Source code", href: "https://github.com/florian-strasser/LokalBoards" },
-      { label: "Releases", href: "https://github.com/florian-strasser/LokalBoards/releases" },
     ],
   },
   {

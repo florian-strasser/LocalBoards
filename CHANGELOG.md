@@ -1,3 +1,21 @@
+## v0.33.2
+
+### Fixes
+
+- **An area's cards and its "create a card" form line up with the neighbouring area again.** The list of cards sits in an inner wrapper carrying 4px of padding — room for the unread marker, which is drawn just outside a card and was otherwise clipped by the edge of the scrolling list. Nothing gave that padding back at the top, so every first card sat 4px lower than the column's own spacing intended; and in an area with no cards the wrapper was 8px of nothing but padding, pushing the form 8px below where the next area's first card started. Side by side, the columns looked misaligned.
+
+  The wrapper now gives the top back, as it already did at the sides, and an empty list carries no padding at all — there is nothing to protect from clipping when there are no cards. Both an area's first card and an empty area's form now sit 4px under the heading, which is the spacing the column uses everywhere else. The gap between the last card and the button below is unchanged.
+
+  An empty area is still somewhere to drop a card: SortableJS takes one within a few pixels of an empty list and shows its placeholder there as the card arrives, so the list needs no height of its own to be a target.
+
+  Which list is padded is decided by the stylesheet, from what the list is actually holding, rather than from the array the page renders it from. Dragging moves the card's element itself and leaves that array alone, so a card dropped into an empty area was drawn 8px wider than its column and 4px too high until the page was reloaded.
+
+### Documentation
+
+- **The pricing section names a setup service beside the free one.** Two cards now: the software, free under the MIT licence as it was, and a one-time 299 € service for installing LokalBoards on your server and handing it over. The free card keeps the filled treatment and the left-hand position — the software is what the page is about, and the service sits beside it rather than above it as a tier. The second card says so in as many words, so two prices side by side cannot read as two editions of the product: there is still only one build, it is still free, and the server is rented from a hosting provider and billed by them. The two cards are one row rather than two blocks: they take the height of the taller, and each button is held to the bottom edge, so they stay on one line however long the writing above them grows.
+
+- **The changelog uses the whole width it has.** The entries were held to a measure of about 68 characters, set when the page stood on its own and the text would otherwise have run the full width of the window. It has had the documentation's sidebar beside it since, which makes the column the measure, so the cap did nothing but leave a band of empty space down the right — on the longest page of the site. The entries now fill the column, exactly as every documentation page does.
+
 ## v0.33.1
 
 ### Fixes

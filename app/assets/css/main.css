@@ -729,3 +729,30 @@ select.form-control,
     width: 100%;
     border-radius: 0.25rem;
 }
+
+/* ---------------------------------------------------------------------------
+   The list of cards inside an area.
+   --------------------------------------------------------------------------- */
+/* The 4px of room the unread marker is drawn into. A card's marker is a ring
+   drawn just outside its box, and the list scrolls, so without this it was
+   shaved off at every edge — the wrapper takes the same 4px back with
+   `-mx-1 -mt-1` so the cards stay where the column's spacing puts them.
+
+   It is here rather than on a class bound in the template because SortableJS
+   drops a card by moving its element into this list, without touching the array
+   the template renders from. A binding on that array therefore left a
+   just-dropped card unpadded — 8px wider than its column, sitting 4px high —
+   until the page was reloaded. `:has()` asks the list what it is actually
+   holding, so a card moved in by hand is padded like any other.
+
+   An empty list gets nothing: with no cards there is no marker to protect, and
+   8px of empty padding pushed the "create a card" form out of line with the
+   first card of the area beside it. */
+.card-list:has(> *) {
+    padding: 0.25rem;
+}
+
+/* An empty list needs no height of its own to be dropped on: SortableJS takes a
+   card within `emptyInsertThreshold` of an empty list, and shows its placeholder
+   there as the card arrives. Reserving a card-sized space in every empty area
+   for the length of any drag was worse than the problem. */

@@ -2539,14 +2539,13 @@ html.menu-open {
    parser hands them over as one run of text with `br` between them — so they
    arrive here as real paragraphs and only need spacing between them.
 
-   And the page has no sidebar beside it, so without a measure the entries run
-   the full width of the window — these are paragraphs, not reference tables. */
+   The entries take the full width of the column, as every documentation page
+   does. They were held to a measure of their own back when this page stood
+   without the sidebar; with it there the column is already the measure, and the
+   cap only added empty space to the right of a page that is long enough
+   without it. */
 .changelog-copy li p + p {
   margin-top: 0.75rem;
-}
-
-.changelog-copy {
-  max-width: 68ch;
 }
 
 .changelog-copy li {

@@ -162,7 +162,7 @@
                         <div
                             v-if="cards[area.id]"
                             :data-area-id="area.id"
-                            class="card-wrapper -mx-1"
+                            class="card-wrapper -mx-1 -mt-1"
                             :class="{
                                 // A scroll container clips whatever leaves it,
                                 // on both axes — a browser told to scroll one
@@ -173,15 +173,24 @@
                                 // padding is the room it is drawn into, and it
                                 // keeps the scrollbar off the cards.
                                 //
-                                // The sides and the top give that space back so
-                                // the cards stay where they were. The bottom
-                                // keeps it: there the padding is the gap
+                                // The sides and the top give that space back
+                                // (`-mx-1 -mt-1`) so the cards stay where the
+                                // column's own `space-y-1` puts them. The
+                                // bottom keeps it: there the padding is the gap
                                 // between the last card and the button below.
                                 'min-h-0 grow overflow-y-auto':
                                     boardStyle === 'kanban',
                             }"
                         >
-                            <div class="space-y-1 p-1">
+                            <!-- `card-list` carries the padding, and does so
+                                 from CSS rather than from a binding on
+                                 `cards[area.id]`: SortableJS drops a card by
+                                 moving the element itself, so this list can hold
+                                 a card while that array still says it is empty.
+                                 A binding left the freshly dropped card
+                                 unpadded — 8px wider than the column and sitting
+                                 4px high — until the page was reloaded. -->
+                            <div class="card-list space-y-1">
                                 <CardTile
                                     v-for="card in cards[area.id]"
                                     :card="card"
@@ -1071,6 +1080,7 @@ const deleteBoard = async () => {
 // The list SortableJS drags within is nested inside the element that carries
 // `data-area-id`, so the id is read from whichever ancestor has it.
 const areaIdOf = (el) => el?.closest?.("[data-area-id]")?.dataset?.areaId;
+
 
 const initSort = () => {
     if (areasWrapper.value) {
