@@ -1,3 +1,11 @@
+## v0.33.1
+
+### Fixes
+
+- **Board covers and images already sitting in a card or a comment are converted to WebP too.** The previous release re-encoded everything arriving from then on, and went back over the profile pictures, but the images uploaded before it stayed exactly as they were everywhere else they can be named: a board's cover, and anything pasted into a card's description or a comment. Those are the largest pictures the app draws and they were still the original PNGs and JPEGs.
+
+  Each one is re-encoded on the next start and every reference to it is pointed at the new file. As with the profile pictures, the converted file gets a new name so a page still holding the old URL keeps working until it reloads, and the original is removed only once nothing names it any more — a cover, a comment and an attachment can all point at the same upload. A file that is already WebP is left alone, and so is one that WebP would only make bigger, which happens with a small screenshot of flat colour. Attachments are still untouched: those are files somebody attached to be downloaded as they were sent.
+
 ## v0.33.0
 
 ### New Features

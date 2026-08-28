@@ -830,6 +830,139 @@ const migrations: Migration[] = [
     },
   },
 
+  // The same treatment for the images 0022 did not reach: board covers, and the
+  // pictures already sitting inside card descriptions and comments. New ones
+  // have been re-encoded on upload since v0.33.0, but everything stored before
+  // that is still whatever arrived.
+  //
+  // These keep their dimensions — a cover and a screenshot in a comment are
+  // meant to be looked at, unlike an avatar drawn at 36 pixels — so only the
+  // format changes. Files that back an attachment are left alone entirely:
+  // somebody attached those to be downloaded as they were sent.
+  {
+    id: "0023_convert_remaining_images_to_webp",
+    up: async (db) => {
+      const { readFile, writeFile, unlink } = await import("node:fs/promises");
+      const { join, resolve } = await import("node:path");
+      const { randomBytes } = await import("node:crypto");
+      const { toWebp } = await import("../../server/utils/imageProcessing");
+      const sharp = (await import("sharp")).default;
+
+      const uploadDir = resolve(join(process.cwd(), "public", "uploads"));
+      const REFERENCE = /\/(?:api\/)?uploads\/([A-Za-z0-9._-]+)/g;
+
+      // Everywhere an upload can be named, and how to find it there.
+      const [covers]: any = await db.execute(
+        "SELECT `id`, `image` AS text FROM `boards` WHERE `image` LIKE '%/uploads/%'",
+      );
+      const [cards]: any = await db.execute(
+        "SELECT `id`, `content` AS text FROM `cards` WHERE `content` LIKE '%/uploads/%'",
+      );
+      const [comments]: any = await db.execute(
+        "SELECT `id`, `content` AS text FROM `comments` WHERE `content` LIKE '%/uploads/%'",
+      );
+
+      const names = new Set<string>();
+      for (const row of [...covers, ...cards, ...comments]) {
+        for (const match of String(row.text || "").matchAll(REFERENCE)) {
+          names.add(match[1]);
+        }
+      }
+      if (!names.size) return;
+
+      // old name -> new name, for the rewrite below.
+      const renamed = new Map<string, string>();
+      let saved = 0;
+
+      for (const name of names) {
+        const oldPath = resolve(uploadDir, name);
+        if (!oldPath.startsWith(uploadDir)) continue;
+
+        try {
+          const original = await readFile(oldPath);
+          const meta = await sharp(original).metadata();
+          // Already the format we want; re-encoding would only lose a little
+          // more of the picture for nothing.
+          if (meta.format === "webp") continue;
+
+          const encoded = await toWebp(original);
+          if (!encoded) continue;
+          // Never make a file bigger. A small PNG of flat colour can beat WebP,
+          // and swapping it for something larger is the opposite of the point.
+          if (encoded.data.length >= original.length) continue;
+
+          const newName = `${randomBytes(16).toString("hex")}.webp`;
+          await writeFile(resolve(uploadDir, newName), encoded.data);
+          renamed.set(name, newName);
+          saved += original.length - encoded.data.length;
+        } catch (err) {
+          // Unreadable, missing, or not an image. Leave the reference alone —
+          // a picture that still shows beats a broken one — but say so, or a
+          // migration that silently converted nothing looks like one that had
+          // nothing to convert.
+          logger.warn(`Could not convert upload ${name}: ${(err as Error)?.message}`);
+        }
+      }
+      if (!renamed.size) return;
+
+      const rewrite = (text: string) =>
+        String(text || "").replace(REFERENCE, (whole, name) =>
+          renamed.has(name) ? whole.replace(name, renamed.get(name)!) : whole,
+        );
+
+      for (const [table, column, rows] of [
+        ["boards", "image", covers],
+        ["cards", "content", cards],
+        ["comments", "content", comments],
+      ] as const) {
+        for (const row of rows) {
+          // Re-read rather than rewriting the copy taken at the top: encoding
+          // the images takes long enough that a comment could have been edited
+          // in between, and writing back the older text would undo that edit.
+          const [current]: any = await db.execute(
+            `SELECT \`${column}\` AS text FROM \`${table}\` WHERE \`id\` = ?`,
+            [row.id],
+          );
+          const text = current[0]?.text;
+          if (text == null) continue;
+          const next = rewrite(text);
+          if (next === text) continue;
+          await db.execute(
+            `UPDATE \`${table}\` SET \`${column}\` = ? WHERE \`id\` = ?`,
+            [next, row.id],
+          );
+        }
+      }
+
+      // Old files go only once nothing names them any more — including the
+      // attachments, which were never rewritten and still point at theirs.
+      let removed = 0;
+      for (const oldName of renamed.keys()) {
+        const like = `%/uploads/${oldName}%`;
+        const [used]: any = await Promise.all([
+          db.execute("SELECT 1 FROM `boards` WHERE `image` LIKE ? LIMIT 1", [like]),
+          db.execute("SELECT 1 FROM `user` WHERE `image` LIKE ? LIMIT 1", [like]),
+          db.execute("SELECT 1 FROM `cards` WHERE `content` LIKE ? LIMIT 1", [like]),
+          db.execute("SELECT 1 FROM `comments` WHERE `content` LIKE ? LIMIT 1", [like]),
+          db.execute("SELECT 1 FROM `attachments` WHERE `filedata` LIKE ? LIMIT 1", [like]),
+        ]).then((results) => [results.some(([r]: any) => r.length)]);
+        if (used) continue;
+        try {
+          await unlink(resolve(uploadDir, oldName));
+          removed += 1;
+        } catch (err) {
+          logger.warn(
+            `Converted ${oldName} but could not remove the original: ${(err as Error)?.message}`,
+          );
+        }
+      }
+
+      logger.info(
+        `Converted ${renamed.size} image(s) to WebP, ${Math.round(saved / 1024)}KB smaller, removed ${removed} original(s)`,
+      );
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
   //   id: "0015_add_x",

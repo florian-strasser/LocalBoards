@@ -30,6 +30,10 @@ try {
 
 const sweep = async () => {
   const c = await db();
+  await c.execute("DELETE FROM attachments WHERE card IN (SELECT id FROM cards WHERE area IN (SELECT id FROM areas WHERE board IN (SELECT id FROM boards WHERE name = 'image-test')))");
+  await c.execute("DELETE FROM comments WHERE card IN (SELECT id FROM cards WHERE area IN (SELECT id FROM areas WHERE board IN (SELECT id FROM boards WHERE name = 'image-test')))");
+  await c.execute("DELETE FROM cards WHERE area IN (SELECT id FROM areas WHERE board IN (SELECT id FROM boards WHERE name = 'image-test'))");
+  await c.execute("DELETE FROM areas WHERE board IN (SELECT id FROM boards WHERE name = 'image-test')");
   await c.execute("DELETE FROM boards WHERE name = 'image-test'");
   for (const t of ["session", "account"]) {
     await c.execute(`DELETE FROM \`${t}\` WHERE userId IN (SELECT id FROM \`user\` WHERE email LIKE '%@example.test')`);
@@ -39,10 +43,20 @@ const sweep = async () => {
 };
 await sweep();
 
-let child = spawn("node", [".output/server/index.mjs"], {
+const watchServer = (proc) => {
+  for (const stream of [proc.stdout, proc.stderr]) {
+    stream?.on("data", (d) => {
+      for (const line of String(d).split("\n")) {
+        if (/warn|error/i.test(line)) console.log("   [server]", line.slice(0, 200));
+      }
+    });
+  }
+  return proc;
+};
+let child = watchServer(spawn("node", [".output/server/index.mjs"], {
   env: { ...process.env, ...env, PORT: String(PORT), NUXT_BOARDS_URL: BASE, NUXT_MYSQL_SSL: "false", NUXT_PUBLIC_SIGNUP: "true" },
   stdio: ["ignore", "pipe", "pipe"],
-});
+}));
 for (let i = 0; i < 160; i++) {
   try { if ((await fetch(BASE + "/")).ok) break; } catch {}
   await new Promise((r) => setTimeout(r, 250));
@@ -55,6 +69,20 @@ const check = (name, ok, detail = "") => {
 };
 
 const c = await db();
+
+// The server answers before its migrations have finished, and this one re-encodes
+// images — so waiting for the port says nothing about whether it has run. Wait
+// for the migration to record itself instead.
+const waitForMigration = async (id, ms = 60000) => {
+  const until = Date.now() + ms;
+  while (Date.now() < until) {
+    const [rows] = await c.execute("SELECT 1 FROM `migrations` WHERE `id` = ?", [id]);
+    if (rows.length) return true;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return false;
+};
+
 await fetch(`${BASE}/api/auth/sign-up`, {
   method: "POST", headers: { "content-type": "application/json" },
   body: JSON.stringify({ name: "Owner", email: "owner@example.test", password: "correct horse battery" }),
@@ -148,6 +176,7 @@ for (let i = 0; i < 160; i++) {
   try { if ((await fetch(BASE + "/")).ok) break; } catch {}
   await new Promise((r) => setTimeout(r, 250));
 }
+check("the migration ran", await waitForMigration("0021_placeholder_images_to_webp"), "0021_placeholder_images_to_webp");
 
 const [[u]] = await c.execute("SELECT image FROM `user` WHERE id = ?", [owner.id]);
 const [[b]] = await c.execute("SELECT image FROM boards WHERE id = ?", [board.insertId]);
@@ -193,14 +222,15 @@ await new Promise((resolve) => {
   child.kill("SIGTERM");
   setTimeout(() => { child.kill("SIGKILL"); resolve(); }, 5000);
 });
-child = spawn("node", [".output/server/index.mjs"], {
+child = watchServer(spawn("node", [".output/server/index.mjs"], {
   env: { ...process.env, ...env, PORT: String(PORT), NUXT_BOARDS_URL: BASE, NUXT_MYSQL_SSL: "false" },
   stdio: ["ignore", "pipe", "pipe"],
-});
+}));
 for (let i = 0; i < 160; i++) {
   try { if ((await fetch(BASE + "/")).ok) break; } catch {}
   await new Promise((r) => setTimeout(r, 250));
 }
+check("the migration ran", await waitForMigration("0022_shrink_existing_profile_pictures"), "0022_shrink_existing_profile_pictures");
 
 const [[migrated]] = await c.execute("SELECT image FROM `user` WHERE id = ?", [owner.id]);
 check("the row points somewhere new", migrated.image !== `/api/uploads/${legacyName}`, migrated.image);
@@ -225,16 +255,82 @@ await new Promise((resolve) => {
   child.kill("SIGTERM");
   setTimeout(() => { child.kill("SIGKILL"); resolve(); }, 5000);
 });
-child = spawn("node", [".output/server/index.mjs"], {
+child = watchServer(spawn("node", [".output/server/index.mjs"], {
   env: { ...process.env, ...env, PORT: String(PORT), NUXT_BOARDS_URL: BASE, NUXT_MYSQL_SSL: "false" },
   stdio: ["ignore", "pipe", "pipe"],
-});
+}));
 for (let i = 0; i < 160; i++) {
   try { if ((await fetch(BASE + "/")).ok) break; } catch {}
   await new Promise((r) => setTimeout(r, 250));
 }
+check("the migration ran", await waitForMigration("0022_shrink_existing_profile_pictures"), "0022_shrink_existing_profile_pictures");
 const [[after11]] = await c.execute("SELECT image FROM `user` WHERE id = ?", [owner.id]);
 check("an already-small WebP is left where it is", after11.image === before11, `${before11} → ${after11.image}`);
+
+console.log("\n12. board covers and images inside content are converted too");
+// A cover, a screenshot pasted into a card description, the same picture reused
+// in a comment, and one file that also backs an attachment.
+const coverName = "legacycover00000000000000000.png";
+const pastedName = "legacypasted0000000000000000.png";
+const attachedName = "legacyattached00000000000000.png";
+const png = await sharp({ create: { width: 1200, height: 800, channels: 3, background: { r: 30, g: 140, b: 90 } } })
+  .png().toBuffer();
+for (const n of [coverName, pastedName, attachedName]) {
+  fs.writeFileSync(path.join(uploadsDir, n), png);
+}
+const [coverBoard] = await c.execute(
+  "INSERT INTO boards (`user`, name, style, image) VALUES (?, 'image-test', 'kanban', ?)",
+  [owner.id, `/api/uploads/${coverName}`],
+);
+const [area2] = await c.execute("INSERT INTO areas (board, name, sort) VALUES (?, 'A', 0)", [coverBoard.insertId]);
+const [card2] = await c.execute(
+  "INSERT INTO cards (area, name, sort, content) VALUES (?, 'Has an image', 0, ?)",
+  [area2.insertId, `See this:\n\n![shot](/api/uploads/${pastedName})\n`],
+);
+const [comment2] = await c.execute(
+  "INSERT INTO comments (card, `user`, content) VALUES (?, ?, ?)",
+  [card2.insertId, owner.id, `Same one again ![shot](/api/uploads/${pastedName}) and an attached one.`],
+);
+await c.execute(
+  "INSERT INTO attachments (card, filename, filetype, filesize, filedata) VALUES (?, 'keep.png', 'image/png', ?, ?)",
+  [card2.insertId, png.length, `/api/uploads/${attachedName}`],
+);
+
+await c.execute("DELETE FROM `migrations` WHERE `id` = '0023_convert_remaining_images_to_webp'");
+await new Promise((resolve) => {
+  child.once("exit", resolve);
+  child.kill("SIGTERM");
+  setTimeout(() => { child.kill("SIGKILL"); resolve(); }, 5000);
+});
+child = watchServer(spawn("node", [".output/server/index.mjs"], {
+  env: { ...process.env, ...env, PORT: String(PORT), NUXT_BOARDS_URL: BASE, NUXT_MYSQL_SSL: "false" },
+  stdio: ["ignore", "pipe", "pipe"],
+}));
+for (let i = 0; i < 160; i++) {
+  try { if ((await fetch(BASE + "/")).ok) break; } catch {}
+  await new Promise((r) => setTimeout(r, 250));
+}
+check("the migration ran", await waitForMigration("0023_convert_remaining_images_to_webp"), "0023_convert_remaining_images_to_webp");
+
+const [[cover]] = await c.execute("SELECT image FROM boards WHERE id = ?", [coverBoard.insertId]);
+check("the board cover is a .webp now", cover.image.endsWith(".webp"), cover.image);
+check("and the file behind it really is one",
+  (await sharp(path.join(uploadsDir, cover.image.split("/").pop())).metadata()).format === "webp");
+check("the original cover is gone", !fs.existsSync(path.join(uploadsDir, coverName)));
+
+const [[cardRow]] = await c.execute("SELECT content FROM cards WHERE id = ?", [card2.insertId]);
+const [[commentRow]] = await c.execute("SELECT content FROM comments WHERE id = ?", [comment2.insertId]);
+check("the card description points at a .webp", /uploads\/[a-f0-9]+\.webp/.test(cardRow.content), cardRow.content.trim());
+check("no .png reference left in it", !cardRow.content.includes(pastedName));
+const newPasted = cardRow.content.match(/uploads\/([a-f0-9]+\.webp)/)?.[1];
+check("the comment was rewritten to the same file", commentRow.content.includes(newPasted), newPasted);
+
+console.log("\n13. an attachment's file is not touched");
+const [[att]] = await c.execute("SELECT filedata FROM attachments WHERE filename = 'keep.png'");
+check("the attachment still points at its original", att.filedata === `/api/uploads/${attachedName}`, att.filedata);
+check("and that file is still there", fs.existsSync(path.join(uploadsDir, attachedName)));
+check("still a PNG, as it was sent",
+  (await sharp(path.join(uploadsDir, attachedName)).metadata()).format === "png");
 
 await c.end();
 await new Promise((resolve) => {
