@@ -75,14 +75,14 @@ const emit = defineEmits(["saved"]);
 const nuxtApp = useNuxtApp();
 
 const placeholders = [
-    "/images/board_placeholder_01.png",
-    "/images/board_placeholder_02.png",
-    "/images/board_placeholder_03.png",
-    "/images/board_placeholder_04.png",
-    "/images/board_placeholder_05.png",
-    "/images/board_placeholder_06.png",
-    "/images/board_placeholder_07.png",
-    "/images/board_placeholder_08.png",
+    "/images/board_placeholder_01.webp",
+    "/images/board_placeholder_02.webp",
+    "/images/board_placeholder_03.webp",
+    "/images/board_placeholder_04.webp",
+    "/images/board_placeholder_05.webp",
+    "/images/board_placeholder_06.webp",
+    "/images/board_placeholder_07.webp",
+    "/images/board_placeholder_08.webp",
 ];
 
 const name = ref("");

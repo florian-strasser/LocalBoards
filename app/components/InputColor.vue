@@ -104,33 +104,3 @@ const onCustomInput = (event: Event) => {
     data.value = normalizeBoardColor(value);
 };
 </script>
-
-<style scoped>
-.swatch {
-    height: 2.25rem;
-    width: 2.25rem;
-    border-radius: 0.5rem;
-    padding: 2px;
-    /* The ring is drawn as padding around the face rather than an outline, so
-       selecting a swatch doesn't change its size and the row never reflows. */
-    border: 2px solid transparent;
-}
-/* The one selection marker that can't be the primary colour: the primary
-   colour is itself one of the swatches, so a primary ring would vanish on
-   exactly the swatch it needs to mark. A neutral ring in the page's own
-   foreground stays visible against every colour, including the user's. */
-.swatch-active {
-    border-color: var(--color-dark);
-}
-@media (prefers-color-scheme: dark) {
-    .swatch-active {
-        border-color: var(--color-white);
-    }
-}
-.swatch-face {
-    display: block;
-    height: 100%;
-    width: 100%;
-    border-radius: 0.25rem;
-}
-</style>

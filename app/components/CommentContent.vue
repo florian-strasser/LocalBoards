@@ -134,17 +134,3 @@ const handleCheckboxChange = async (event: Event) => {
     }
 };
 </script>
-<style>
-/* Images in rendered content (card description + comments) are click-to-zoom;
-   the zoom cursor and a subtle lift on hover signal that they're openable. */
-.wysiwyg-wrapper img {
-    cursor: zoom-in;
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
-}
-.wysiwyg-wrapper img:hover {
-    transform: scale(1.015);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-}
-</style>

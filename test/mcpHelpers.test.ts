@@ -82,7 +82,7 @@ describe("serializeBoard / serializeArea", () => {
         name: "B",
         style: "kanban",
         status: "public",
-        image: "/images/board_placeholder_01.png",
+        image: "/images/board_placeholder_01.webp",
         color: "#2563eb",
         user: "u1",
       }),
@@ -91,7 +91,7 @@ describe("serializeBoard / serializeArea", () => {
       name: "B",
       style: "kanban",
       status: "public",
-      image: "/images/board_placeholder_01.png",
+      image: "/images/board_placeholder_01.webp",
       color: "#2563eb",
       ownerId: "u1",
     });

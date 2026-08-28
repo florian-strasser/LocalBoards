@@ -9,14 +9,15 @@
         <div class="flex flex-col gap-4 md:flex-row">
             <div class="w-92 max-w-full shrink-0 grow-0">
                 <InputImage
+                    purpose="avatar"
                     :label="$t('settingsProfilePicture')"
                     :images="[
-                        '/images/profile_placeholder_01.png',
-                        '/images/profile_placeholder_02.png',
-                        '/images/profile_placeholder_03.png',
-                        '/images/profile_placeholder_04.png',
-                        '/images/profile_placeholder_05.png',
-                        '/images/profile_placeholder_06.png',
+                        '/images/profile_placeholder_01.webp',
+                        '/images/profile_placeholder_02.webp',
+                        '/images/profile_placeholder_03.webp',
+                        '/images/profile_placeholder_04.webp',
+                        '/images/profile_placeholder_05.webp',
+                        '/images/profile_placeholder_06.webp',
                     ]"
                     v-model="image"
                 />

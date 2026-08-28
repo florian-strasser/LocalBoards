@@ -36,6 +36,7 @@
     "mysql2": "^3.23.1",
     "nodemailer": "^9.0.3",
     "nuxt": "^4.5.2",
+    "sharp": "^0.35.4",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "sortablejs": "^1.15.7",

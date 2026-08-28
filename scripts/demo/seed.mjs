@@ -40,9 +40,9 @@ await db.query("SET FOREIGN_KEY_CHECKS=1");
 await db.query(
   "INSERT INTO `user` (id,name,email,emailVerified,image,role,onboarded) VALUES ?",
   [[
-    ["u-alex","Alex Morgan","alex@demo.local",1,"/images/profile_placeholder_01.png","admin",1],
-    ["u-ben","Ben Schmidt","ben@demo.local",1,"/images/profile_placeholder_02.png","user",1],
-    ["u-carol","Carol Nguyen","carol@demo.local",1,"/images/profile_placeholder_03.png","user",1],
+    ["u-alex","Alex Morgan","alex@demo.local",1,"/images/profile_placeholder_01.webp","admin",1],
+    ["u-ben","Ben Schmidt","ben@demo.local",1,"/images/profile_placeholder_02.webp","user",1],
+    ["u-carol","Carol Nguyen","carol@demo.local",1,"/images/profile_placeholder_03.webp","user",1],
   ]],
 );
 
@@ -57,10 +57,10 @@ await db.query(
 await db.query(
   "INSERT INTO `boards` (id,user,name,style,status,image) VALUES ?",
   [[
-    [1,"u-alex","Product Roadmap","kanban","public","/images/board_placeholder_01.png"],
-    [2,"u-alex","Website Relaunch","kanban","private","/images/board_placeholder_04.png"],
-    [3,"u-alex","Personal Tasks","todo","private","/images/board_placeholder_06.png"],
-    [4,"u-ben","Marketing Ideas","kanban","private","/images/board_placeholder_03.png"],
+    [1,"u-alex","Product Roadmap","kanban","public","/images/board_placeholder_01.webp"],
+    [2,"u-alex","Website Relaunch","kanban","private","/images/board_placeholder_04.webp"],
+    [3,"u-alex","Personal Tasks","todo","private","/images/board_placeholder_06.webp"],
+    [4,"u-ben","Marketing Ideas","kanban","private","/images/board_placeholder_03.webp"],
   ]],
 );
 

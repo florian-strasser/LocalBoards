@@ -78,6 +78,9 @@ import { Plus, Trash2 } from "lucide-vue-next";
 const props = defineProps({
     label: String,
     images: Array,
+    // What the picture is for. A profile picture is never drawn larger than
+    // 144px, so the server bounds it to that; a board's cover keeps its size.
+    purpose: { type: String, default: "content" },
 });
 
 const data = defineModel();
@@ -143,6 +146,7 @@ const uploadImage = async (file: File) => {
 const uploadFileToServer = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("purpose", props.purpose);
 
     // Use the image-specific endpoint, which accepts png/jpeg/gif/webp. The
     // generic /api/upload (for card attachments) only allows png/jpeg among

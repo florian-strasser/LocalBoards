@@ -1,3 +1,33 @@
+## v0.33.0
+
+### New Features
+
+- **Images the app renders are stored as WebP, and profile pictures are scaled to the size they are drawn at.** A profile picture used to be kept exactly as it arrived — frequently a multi-megabyte photograph from a phone, displayed at 36 pixels on a card and downloaded in full by everyone who opened the board. Uploads are now re-encoded to WebP on the way in, and a profile picture is bounded to 144px wide, which is the largest it is ever shown. Images pasted into a card's description or a comment are re-encoded too, at their own size: those are meant to be looked at, so only the format changes.
+
+  A picture smaller than the bound is left alone rather than scaled up to meet it, which would spend bytes to add nothing. An animated GIF stays animated.
+
+  Attachments are deliberately untouched. Those are files somebody attached for someone else to download, and they should arrive as they were sent.
+
+- **The pictures that ship with the app are WebP.** The fourteen placeholders offered when choosing a profile picture or a board cover were PNGs totalling 1.9MB — redrawn on every dashboard. As WebP they come to 196KB, a tenth of the size, for the same images.
+
+  Anyone who already picked one has its old path saved, so a migration points those at the WebP that replaced them.
+
+- **Profile pictures uploaded before this are shrunk too.** A picture stored by an earlier version is still whatever arrived, and would have stayed that way for as long as the account existed. Each one is re-encoded to a bounded WebP on the next start and its row pointed at the new file; the original is removed once nothing else names it, since a board cover or an attachment may point at the same upload.
+
+  The new file gets a new name rather than replacing the old one in place, so anything still holding the old URL — a cached page, another open tab — keeps working until it reloads. A picture that is already a small WebP is left alone, which also makes the migration safe to run twice. Anything unreadable is skipped and keeps pointing where it did: a picture that still shows is better than a broken one.
+
+### Fixes
+
+- **A rejected image upload said the server had failed.** Every refusal from the image endpoint — a file that is not an image, one over the size limit — was caught by the same handler that reports an unexpected fault and came back as `500 Upload failed`. A caller could not tell "your file is wrong" from "we broke". Refusals keep the status they were given; only something genuinely unexpected is a `500` now.
+
+## v0.32.2
+
+### Improvements
+
+- **All CSS lives in one stylesheet.** Four components carried `<style>` blocks of their own: two held nothing but a placeholder comment, one set the zoom cursor and hover lift on images in rendered card and comment content, and one styled the colour picker's swatches. They are in `main.css` now, with their explanations intact, so there is one place to look for a rule rather than a stylesheet plus whichever component happens to own the element.
+
+  Nothing changes on screen. The swatch rules were the only scoped ones, and those class names appear in no other component, so moving them out of the component's scope reaches exactly what it reached before — checked against the rendered page: same size, same transparent border, same marker colour on the selected swatch.
+
 ## v0.32.1
 
 ### Improvements

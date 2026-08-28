@@ -706,6 +706,130 @@ const migrations: Migration[] = [
     },
   },
 
+  // The placeholder pictures people can pick for themselves or for a board
+  // shipped as PNGs — 1.9MB of them, redrawn on every dashboard. They are WebP
+  // now, a tenth of the size, and the PNGs are gone. Anyone who picked one has
+  // its old path saved, so those paths are rewritten to match; a row pointing at
+  // a file that no longer exists would show a broken image for ever.
+  //
+  // Only the placeholders are touched. An uploaded picture is stored under
+  // `/api/uploads/` and keeps whatever name it was given.
+  {
+    id: "0021_placeholder_images_to_webp",
+    up: async (db) => {
+      let rewritten = 0;
+      for (const [table, column] of [
+        ["user", "image"],
+        ["boards", "image"],
+      ]) {
+        const [result]: any = await db.execute(
+          `UPDATE \`${table}\` SET \`${column}\` = REPLACE(REPLACE(\`${column}\`, '.png', '.webp'), '.jpg', '.webp')
+             WHERE \`${column}\` LIKE '/images/%placeholder%'`,
+        );
+        rewritten += result.affectedRows ?? 0;
+      }
+      if (rewritten) {
+        logger.info(`Pointed ${rewritten} placeholder image(s) at their WebP`);
+      }
+    },
+  },
+
+  // Profile pictures uploaded before the app started re-encoding them are still
+  // whatever arrived — commonly a phone photograph of several megabytes, drawn
+  // at 36 pixels and downloaded in full by everyone who opens a board it appears
+  // on. Each one is re-encoded to a bounded WebP and the row pointed at the new
+  // file.
+  //
+  // Only `user.image`, and only files this instance stored itself. A picture
+  // that is already a small WebP is left alone rather than re-encoded for
+  // nothing, which also makes the migration safe to look at twice.
+  {
+    id: "0022_shrink_existing_profile_pictures",
+    up: async (db) => {
+      const { readFile, writeFile, unlink } = await import("node:fs/promises");
+      const { join, resolve } = await import("node:path");
+      const { randomBytes } = await import("node:crypto");
+      const { toWebp, AVATAR_MAX_WIDTH } = await import(
+        "../../server/utils/imageProcessing"
+      );
+      const sharp = (await import("sharp")).default;
+
+      const stored = /^\/(?:api\/)?uploads\/([A-Za-z0-9._-]+)$/;
+      const uploadDir = resolve(join(process.cwd(), "public", "uploads"));
+
+      const [rows]: any = await db.execute(
+        "SELECT `id`, `image` FROM `user` WHERE `image` LIKE '%/uploads/%'",
+      );
+
+      let converted = 0;
+      let saved = 0;
+
+      for (const row of rows) {
+        const match = String(row.image || "").match(stored);
+        if (!match) continue;
+
+        const oldName = match[1];
+        const oldPath = resolve(uploadDir, oldName);
+        if (!oldPath.startsWith(uploadDir)) continue;
+
+        try {
+          const original = await readFile(oldPath);
+
+          // Already small and already WebP: nothing to gain, and re-encoding
+          // would only lose a little more of the picture.
+          const meta = await sharp(original).metadata();
+          if (meta.format === "webp" && (meta.width ?? 0) <= AVATAR_MAX_WIDTH) {
+            continue;
+          }
+
+          const encoded = await toWebp(original, { maxWidth: AVATAR_MAX_WIDTH });
+          if (!encoded) continue;
+
+          // A new name rather than the old one: whatever is holding the old URL
+          // — a cached page, another tab — keeps working until it reloads.
+          const newName = `${randomBytes(16).toString("hex")}.webp`;
+          await writeFile(resolve(uploadDir, newName), encoded.data);
+          await db.execute("UPDATE `user` SET `image` = ? WHERE `id` = ?", [
+            `/api/uploads/${newName}`,
+            row.id,
+          ]);
+
+          converted += 1;
+          saved += original.length - encoded.data.length;
+
+          // The old file goes only once nothing else names it. A board cover or
+          // an attachment may point at the same upload, and unlinking it would
+          // break them.
+          const [alsoUsed]: any = await db.execute(
+            `SELECT 1 FROM \`user\` WHERE \`image\` LIKE ? LIMIT 1`,
+            [`%/uploads/${oldName}`],
+          );
+          const [onBoard]: any = await db.execute(
+            "SELECT 1 FROM `boards` WHERE `image` LIKE ? LIMIT 1",
+            [`%/uploads/${oldName}`],
+          );
+          const [onCard]: any = await db.execute(
+            "SELECT 1 FROM `attachments` WHERE `filedata` LIKE ? LIMIT 1",
+            [`%/uploads/${oldName}`],
+          );
+          if (!alsoUsed.length && !onBoard.length && !onCard.length) {
+            await unlink(oldPath).catch(() => {});
+          }
+        } catch {
+          // Unreadable, missing, or not an image sharp can parse. The row keeps
+          // pointing where it did — a picture that still shows is better than a
+          // broken one.
+        }
+      }
+
+      if (converted) {
+        logger.info(
+          `Re-encoded ${converted} profile picture(s), ${Math.round(saved / 1024)}KB smaller`,
+        );
+      }
+    },
+  },
+
   // To add a further schema change, append a new migration here, e.g.:
   // {
   //   id: "0015_add_x",

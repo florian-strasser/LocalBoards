@@ -111,7 +111,26 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const safeFilename = `${randomBytes(16).toString("hex")}.${fileExt}`;
+    // What the image is for decides whether it is bounded in size. A profile
+    // picture is never drawn larger than 144px, so there is no reason to keep
+    // the 4000px original of it; anything else keeps its dimensions.
+    const purposeField = formData.find((part) => part.name === "purpose");
+    const purpose: ImagePurpose =
+      purposeField?.data?.toString() === "avatar" ? "avatar" : "content";
+
+    // Stored as WebP whatever arrived. An image the app renders itself is
+    // downloaded by everyone who opens the page it is on, and a phone camera's
+    // JPEG is an expensive way to draw a 36px avatar.
+    const encoded = await toWebp(fileBuffer, { maxWidth: widthFor(purpose) });
+    if (!encoded) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Invalid request",
+      });
+    }
+
+    const storedBuffer = encoded.data;
+    const safeFilename = `${randomBytes(16).toString("hex")}.webp`;
 
     // Create uploads directory if it doesn't exist
     const uploadDir = join(process.cwd(), "public", "uploads");
@@ -128,7 +147,7 @@ export default defineEventHandler(async (event) => {
     // Save the file
     const filePath = join(uploadDir, safeFilename);
 
-    await fs.writeFile(filePath, fileBuffer);
+    await fs.writeFile(filePath, storedBuffer);
 
     // Return the URL where the image can be accessed
     const imageUrl = `/api/uploads/${safeFilename}`;
@@ -136,10 +155,19 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       imageUrl: imageUrl,
-      type: file.type,
-      size: fileBuffer.length,
+      // What was stored, not what arrived — the caller asked for a file and
+      // this is the file it got.
+      type: "image/webp",
+      size: storedBuffer.length,
+      width: encoded.width,
+      height: encoded.height,
     };
-  } catch (error) {
+  } catch (error: any) {
+    // A refusal already knows what it is — a file that is not an image, or is
+    // too big — and saying "Upload failed" with a 500 tells the caller the
+    // server broke when it was the file that was wrong. Only something
+    // genuinely unexpected becomes a 500.
+    if (error?.statusCode) throw error;
     logger.error("Image upload error:", error);
     throw createError({
       statusCode: 500,

@@ -26,6 +26,32 @@ COPY . ./
 
 RUN npm run build
 
+# sharp is a native module, and everything above ran on the machine doing the
+# building — which is deliberately not the machine that will run this: the build
+# stage is pinned to $BUILDPLATFORM while the runtime below targets
+# $TARGETPLATFORM. Nitro copies node_modules into .output as it finds it, so
+# without this the image ships a binary the runtime cannot load and every image
+# upload fails.
+#
+# The target's copy is fetched in a directory of its own and swapped into the
+# build output afterwards. Running `npm install --os/--cpu` inside the project
+# instead re-resolves *every* optional dependency for that platform and strips
+# the build machine's own native bindings — which breaks `npm run build` above,
+# so this has to come after it and stay out of its way.
+ARG TARGETARCH
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+      amd64) SHARP_CPU=x64 ;; \
+      arm64) SHARP_CPU=arm64 ;; \
+      *) echo "unsupported architecture: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    mkdir -p /sharp && cd /sharp; \
+    npm init -y >/dev/null; \
+    npm install --no-save --os=linux --libc=glibc --cpu="${SHARP_CPU}" sharp; \
+    rm -rf /app/.output/server/node_modules/@img /app/.output/server/node_modules/sharp; \
+    cp -R /sharp/node_modules/@img /sharp/node_modules/sharp /app/.output/server/node_modules/; \
+    ls /app/.output/server/node_modules/@img
+
 # --- Runtime -------------------------------------------------------------
 #
 # Built on the official MySQL image rather than on Node, so the container can
