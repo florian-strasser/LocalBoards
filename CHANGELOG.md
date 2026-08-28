@@ -6,6 +6,10 @@
 
   Each one is re-encoded on the next start and every reference to it is pointed at the new file. As with the profile pictures, the converted file gets a new name so a page still holding the old URL keeps working until it reloads, and the original is removed only once nothing names it any more — a cover, a comment and an attachment can all point at the same upload. A file that is already WebP is left alone, and so is one that WebP would only make bigger, which happens with a small screenshot of flat colour. Attachments are still untouched: those are files somebody attached to be downloaded as they were sent.
 
+- **Two processes starting against the same new database no longer collide.** Nothing recorded that a migration was *being* applied, only that it had been — so two processes reaching an empty database together both read an empty list, both started at the first migration, and the slower one stopped on a duplicate key with every table already created by the other. It is how the browser tests failed: the test harness and the server it starts share one throwaway database, and the server answers as ready while it is still migrating. A deployment bringing up a second replica has the same shape.
+
+  Migrations now take a lock named after the database, and read the list of what has run while holding it, so the second process waits and then finds the work already done. The lock is scoped to the schema, so two instances sharing a MySQL server never wait on each other, and if the server refuses to grant it — a restricted account, a proxy in between — startup carries on as it did before rather than refusing to run.
+
 ## v0.33.0
 
 ### New Features

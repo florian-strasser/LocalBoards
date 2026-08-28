@@ -990,6 +990,16 @@ export function runMigrations(): Promise<void> {
   return migrationPromise;
 }
 
+// One database, one migration at a time. The name is scoped to the schema so two
+// instances sharing a MySQL server don't wait on each other; MySQL caps a lock
+// name at 64 characters.
+const MIGRATION_LOCK = `lokalboards_migrations_${mysqlDatabase}`.slice(0, 64);
+
+// Long enough for the slowest migration on a large database — the image
+// conversions re-encode every picture — and short enough that a lock left behind
+// by a killed process does not hang a deployment forever.
+const MIGRATION_LOCK_TIMEOUT = 600;
+
 async function applyMigrations(): Promise<void> {
   // Tracks which migrations have run.
   await db.execute(`CREATE TABLE IF NOT EXISTS \`migrations\` (
@@ -998,15 +1008,58 @@ async function applyMigrations(): Promise<void> {
     PRIMARY KEY (\`id\`)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`);
 
-  const [rows]: any = await db.execute("SELECT `id` FROM `migrations`");
-  const applied = new Set((rows as any[]).map((r) => r.id));
+  // Two processes can arrive here at once — a deployment rolling a second
+  // replica, or the browser tests, where the server and the test harness both
+  // migrate the same fresh database. Both would read an empty `migrations`
+  // table, both would start at `0001`, and the slower one would fail on the
+  // primary key with every table already created by the other. A named lock
+  // makes one wait and then find the work already recorded.
+  //
+  // The lock lives on its own connection for as long as it is held: MySQL ties
+  // it to the session, so releasing the connection back to the pool mid-run
+  // would drop the lock. The migrations themselves keep using the pool.
+  const guard = await db.getConnection();
+  let held = false;
+  try {
+    try {
+      const [rows]: any = await guard.query("SELECT GET_LOCK(?, ?) AS ok", [
+        MIGRATION_LOCK,
+        MIGRATION_LOCK_TIMEOUT,
+      ]);
+      held = rows?.[0]?.ok === 1;
+      if (!held) {
+        logger.warn(
+          "Timed out waiting for another process to finish migrating; continuing without the lock",
+        );
+      }
+    } catch (err) {
+      // GET_LOCK is standard in MySQL and MariaDB, but a proxy or a restricted
+      // grant could refuse it. That is how this ran before the lock existed, so
+      // carry on rather than refusing to start.
+      logger.warn(
+        `Could not take the migration lock, continuing without it: ${(err as Error)?.message}`,
+      );
+    }
 
-  for (const migration of migrations) {
-    if (applied.has(migration.id)) continue;
-    await migration.up(db);
-    await db.execute("INSERT INTO `migrations` (`id`) VALUES (?)", [
-      migration.id,
-    ]);
-    logger.info(`Applied database migration: ${migration.id}`);
+    // Read inside the lock: whoever waited here needs the list as it is now,
+    // not as it was before the other process ran.
+    const [rows]: any = await db.execute("SELECT `id` FROM `migrations`");
+    const applied = new Set((rows as any[]).map((r) => r.id));
+
+    for (const migration of migrations) {
+      if (applied.has(migration.id)) continue;
+      await migration.up(db);
+      await db.execute("INSERT INTO `migrations` (`id`) VALUES (?)", [
+        migration.id,
+      ]);
+      logger.info(`Applied database migration: ${migration.id}`);
+    }
+  } finally {
+    if (held) {
+      await guard
+        .query("SELECT RELEASE_LOCK(?)", [MIGRATION_LOCK])
+        .catch(() => {});
+    }
+    guard.release();
   }
 }

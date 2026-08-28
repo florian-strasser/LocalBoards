@@ -1,6 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
-const PORT = 3000;
+// 3000 by default, matching a normal local run. Overridable so the suite can be
+// run beside a development server that already holds that port.
+const PORT = Number(process.env.PLAYWRIGHT_PORT || 3000);
 const baseURL = `http://127.0.0.1:${PORT}`;
 
 const dbEnv = {
