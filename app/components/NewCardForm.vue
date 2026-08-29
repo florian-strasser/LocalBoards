@@ -17,7 +17,7 @@
                 ref="newCardInput"
                 data-testid="new-card-input"
                 :placeholder="$t('enterAnCardName')"
-                class="form-control font-bold resize-none"
+                class="form-control font-bold resize-none field-grows"
             />
             <div class="flex gap-x-1 mt-2">
                 <input

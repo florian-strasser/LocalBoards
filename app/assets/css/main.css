@@ -756,3 +756,27 @@ select.form-control,
    card within `emptyInsertThreshold` of an empty list, and shows its placeholder
    there as the card arrives. Reserving a card-sized space in every empty area
    for the length of any drag was worse than the problem. */
+
+/* ---------------------------------------------------------------------------
+   A field that grows with what is typed into it.
+   --------------------------------------------------------------------------- */
+/* The name of a new card was two rows and no more: a third line scrolled out of
+   sight inside the box while it was being written. `field-sizing: content` sizes
+   the field to its contents instead.
+
+   The `rows` attribute stops sizing a field once this is on, so the two-line
+   resting height is restated here as a minimum — until a third line is needed
+   the box looks exactly as it did. The maximum stops a pasted essay from pushing
+   the rest of the column off the screen; past that it scrolls, as before.
+
+   Both are two lines plus what `.form-control` puts around them: 0.5rem of
+   padding top and bottom, and a 1px border on each side.
+
+   Where `field-sizing` is not implemented the whole declaration is dropped and
+   the field keeps the two rows it always had. */
+.field-grows {
+    field-sizing: content;
+    min-height: calc(2lh + 1rem + 2px);
+    max-height: calc(10lh + 1rem + 2px);
+    overflow-y: auto;
+}

@@ -1,3 +1,21 @@
+## v0.33.3
+
+### Improvements
+
+- **The name of a new card grows past two lines as it is written.** The field was two rows and no more, so a third line scrolled out of sight while it was still being typed — the writing was there, just not where it could be read. It now takes the height of what is in it, using the browser's own `field-sizing`, so nothing has to be scrolled back to check.
+
+  Its resting height is unchanged: until a third line is needed the field looks exactly as it did. Past ten lines it stops growing and scrolls again, so a pasted wall of text cannot push the rest of the column off the screen. A browser that does not implement `field-sizing` ignores the rule and keeps the two rows it always had, which is what it did before.
+
+### Fixes
+
+- **A new board can be given its colour while it is being created.** The colour was offered only once the board already existed, in its settings — so making a coloured board meant creating it, opening the menu on its tile and setting the colour there, and the dialog that asks for a name, a cover and a style stayed silent about the one thing it could not do. It is in the create dialog now, in the same place and with the same swatches as in the board's own settings, and it strikes the same bargain: a cover image and a colour cannot both be shown, so choosing either clears the other.
+
+- **Creating an area said a card had been created, in German.** The toast that confirms a new area read "Karte erstellt". The page asks for the right message and every other language answers correctly — only the German string had been filled in with the wrong noun, so the confirmation named the wrong thing entirely. It reads "Bereich erstellt" now, matching the button that was just pressed. Checked the rest of the German file for the same mix-up while there; nothing else names a card where it means an area, or the other way round.
+
+### Documentation
+
+- **Every screenshot retaken.** The guide's fifteen, the README's, and the homepage's heroes in each of their widths — one demo run, so they are all the same build on the same day. The one that prompted it is the dialog for a new board, which had been shot before it could set a colour and so illustrated a step the text already described; its caption had been naming a control that was not in the picture. The board views carry this release's spacing too, with an area's first card and its "create a card" form starting at the same height.
+
 ## v0.33.2
 
 ### Fixes

@@ -52,6 +52,12 @@
                             v-model="newBoardImage"
                         />
                     </div>
+                    <div>
+                        <InputColor
+                            :label="$t('boardColor')"
+                            v-model="newBoardColor"
+                        />
+                    </div>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label
@@ -155,6 +161,17 @@ const newBoardName = ref($t("untitledBoard"));
 const newBoardStyle = ref("kanban");
 const newBoardStatus = ref("private");
 const newBoardImage = ref(null);
+const newBoardColor = ref("");
+
+// The same bargain the board's own settings strike: a cover image covers the
+// whole tile, so a colour behind one would never be seen. Picking either clears
+// the other, and the dialog always shows which of the two the board is wearing.
+watch(newBoardImage, (value) => {
+    if (value) newBoardColor.value = "";
+});
+watch(newBoardColor, (value) => {
+    if (value) newBoardImage.value = null;
+});
 
 // Where a board made from a "+" tile should be filed. The tile in a group sends
 // its own id and the position at the end of it; the one above the groups sends
@@ -234,6 +251,7 @@ const saveBoard = async () => {
                 name: newName,
                 style: newBoardStyle.value,
                 image: newBoardImage.value,
+                color: newBoardColor.value || null,
                 status: newBoardStatus.value,
             },
         });
