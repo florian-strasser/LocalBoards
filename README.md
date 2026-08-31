@@ -1,3 +1,5 @@
+
+
 # LokalBoards
 [![Nuxt](https://img.shields.io/github/package-json/dependency-version/florian-strasser/LokalBoards/nuxt?label=Nuxt&logo=nuxt&color=00DC82&style=flat)](https://nuxt.com)
 [![Socket.IO](https://img.shields.io/github/package-json/dependency-version/florian-strasser/LokalBoards/socket.io?label=Socket.IO&logo=socketdotio&color=25C2A0&style=flat)](https://socket.io)
@@ -59,6 +61,8 @@ cd LokalBoards
 ```bash
 npm install
 ```
+
+Use Node.js 22 and npm 11; the lockfile is generated with npm 11.
 
 ### Configure Environment Variables
 Create a `.env` file (and optionally a `.env.local` file for local development) with the following settings. Adjust the values to match your database and email configuration.
