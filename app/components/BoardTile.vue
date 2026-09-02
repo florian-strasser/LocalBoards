@@ -9,8 +9,8 @@
         :class="color ? 'board-tile-colored' : 'bg-primary'"
     >
         <div
-            class="relative z-20 flex flex-col gap-y-6 justify-between items-start min-h-48 px-6 py-5"
-            :class="color ? 'board-tile-body' : 'group-hover:bg-primary-hover'"
+            class="board-tile-face relative z-20 flex flex-col gap-y-6 justify-between items-start min-h-48 px-6 py-5"
+            :class="bodyHoverClass"
         >
             <!-- What the board is — unread, shared — reads from the left, where
                  a tile is read from; the menu, which is something to do rather
@@ -222,4 +222,15 @@ const colorStyle = computed(() =>
           }
         : undefined,
 );
+
+// What hovering does to the face of the tile, which depends on what that face is.
+//
+// A picture takes a translucent veil instead of a colour. This body sits above
+// the image, so an opaque background here replaced the photograph with a flat
+// block of primary at the moment it was pointed at; 18% of black or white leaves
+// the picture visible and shifts it by as much as a coloured tile shifts.
+const bodyHoverClass = computed(() => {
+    if (props.image) return "board-tile-veil";
+    return color.value ? "board-tile-body" : "group-hover:bg-primary-hover";
+});
 </script>

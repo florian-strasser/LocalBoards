@@ -47,7 +47,7 @@ const watchServer = (proc) => {
   for (const stream of [proc.stdout, proc.stderr]) {
     stream?.on("data", (d) => {
       for (const line of String(d).split("\n")) {
-        if (/warn|error/i.test(line)) console.log("   [server]", line.slice(0, 200));
+        if (/warn|error/i.test(line) && !/email/i.test(line)) console.log("   [server]", line.slice(0, 200));
       }
     });
   }
@@ -73,7 +73,10 @@ const c = await db();
 // The server answers before its migrations have finished, and this one re-encodes
 // images — so waiting for the port says nothing about whether it has run. Wait
 // for the migration to record itself instead.
-const waitForMigration = async (id, ms = 60000) => {
+// Generous: on a database with a lot of stored pictures the conversion is
+// minutes of work, and a wait that expires first reports a migration as broken
+// when it is only busy.
+const waitForMigration = async (id, ms = 600000) => {
   const until = Date.now() + ms;
   while (Date.now() < until) {
     const [rows] = await c.execute("SELECT 1 FROM `migrations` WHERE `id` = ?", [id]);

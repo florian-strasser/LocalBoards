@@ -178,6 +178,8 @@
   "newUser": "Nieuwe gebruiker",
   "noCommentsYet": "Nog geen opmerkingen.",
   "noNotifications": "Nog geen meldingen",
+  "showOlder": "Oudere tonen",
+  "loadingOlder": "Bezig met laden…",
   "noUsersFound": "Geen gebruikers gevonden",
   "notices": "Mededelingen",
   "notifAssignedCard": "wees \"{cardName}\" aan jou toe",

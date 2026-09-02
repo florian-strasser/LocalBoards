@@ -861,9 +861,17 @@ const migrations: Migration[] = [
       const [comments]: any = await db.execute(
         "SELECT `id`, `content` AS text FROM `comments` WHERE `content` LIKE '%/uploads/%'",
       );
+      // A comment notification stores a copy of the comment it announces, which
+      // means a copy of the picture's address too. Left out of this, the copy
+      // went on naming a file the rest of the migration had just replaced and
+      // then deleted, and the bell showed a broken image while the comment
+      // itself was fine.
+      const [notes]: any = await db.execute(
+        "SELECT `id`, `message` AS text FROM `notifications` WHERE `message` LIKE '%/uploads/%'",
+      );
 
       const names = new Set<string>();
-      for (const row of [...covers, ...cards, ...comments]) {
+      for (const row of [...covers, ...cards, ...comments, ...notes]) {
         for (const match of String(row.text || "").matchAll(REFERENCE)) {
           names.add(match[1]);
         }
@@ -914,6 +922,7 @@ const migrations: Migration[] = [
         ["boards", "image", covers],
         ["cards", "content", cards],
         ["comments", "content", comments],
+        ["notifications", "message", notes],
       ] as const) {
         for (const row of rows) {
           // Re-read rather than rewriting the copy taken at the top: encoding
@@ -945,6 +954,7 @@ const migrations: Migration[] = [
           db.execute("SELECT 1 FROM `cards` WHERE `content` LIKE ? LIMIT 1", [like]),
           db.execute("SELECT 1 FROM `comments` WHERE `content` LIKE ? LIMIT 1", [like]),
           db.execute("SELECT 1 FROM `attachments` WHERE `filedata` LIKE ? LIMIT 1", [like]),
+          db.execute("SELECT 1 FROM `notifications` WHERE `message` LIKE ? LIMIT 1", [like]),
         ]).then((results) => [results.some(([r]: any) => r.length)]);
         if (used) continue;
         try {
@@ -960,6 +970,133 @@ const migrations: Migration[] = [
       logger.info(
         `Converted ${renamed.size} image(s) to WebP, ${Math.round(saved / 1024)}KB smaller, removed ${removed} original(s)`,
       );
+    },
+  },
+
+  // Repairs what the version of `0023` that shipped in v0.33.0 left behind. That
+  // one converted the pictures named by boards, cards and comments, and deleted
+  // each original once nothing it knew about named it any more — but it did not
+  // know about `notifications`, which keep their own copy of the comment they
+  // announce. So the copy went on naming a file that had just been deleted, and
+  // a picture posted in July showed as broken in the bell while the very same
+  // picture was still fine on the card.
+  //
+  // `0023` has been taught about notifications since, which is enough for an
+  // instance that has not run it yet. This is for the ones that already have:
+  // there the damage is done and the old name is the only thing left pointing at
+  // what the picture used to be.
+  //
+  // The repair is possible because a comment notification is a copy: its message
+  // is `New comment by "X" on card "Y": ` followed by the comment's own HTML. So
+  // for a notification that names a file which is no longer there, the comments
+  // on that same card are read, and the one whose text matches — every upload
+  // address blanked out first, since those are exactly what differ — says what
+  // the picture is called now. Anything that cannot be matched that way is left
+  // exactly as it is: a broken picture is better than a wrong one.
+  {
+    id: "0024_repair_notification_images",
+    up: async (db) => {
+      const { access } = await import("node:fs/promises");
+      const { join, resolve } = await import("node:path");
+
+      const uploadDir = resolve(join(process.cwd(), "public", "uploads"));
+      const REFERENCE = /\/(?:api\/)?uploads\/([A-Za-z0-9._-]+)/g;
+      const namesIn = (text: string) =>
+        [...String(text || "").matchAll(REFERENCE)].map((m) => m[1]);
+
+      const [notes]: any = await db.execute(
+        "SELECT `id`, `cardId`, `message` FROM `notifications` WHERE `message` LIKE '%/uploads/%'",
+      );
+      if (!notes.length) return;
+
+      const known = new Map<string, boolean>();
+      const present = async (name: string) => {
+        if (!known.has(name)) {
+          const file = resolve(uploadDir, name);
+          if (!file.startsWith(uploadDir)) known.set(name, false);
+          else
+            known.set(
+              name,
+              await access(file).then(
+                () => true,
+                () => false,
+              ),
+            );
+        }
+        return known.get(name)!;
+      };
+
+      // Two texts are the same message when they differ only in which files
+      // they name — which is the whole of what this migration is fixing.
+      const blanked = (text: string) =>
+        String(text || "").replace(REFERENCE, "/uploads/#");
+
+      let repaired = 0;
+      let unmatched = 0;
+
+      for (const note of notes) {
+        const named = namesIn(note.message);
+        let missing = false;
+        for (const name of named) {
+          if (!(await present(name))) {
+            missing = true;
+            break;
+          }
+        }
+        if (!missing) continue;
+
+        if (!note.cardId) {
+          unmatched += 1;
+          continue;
+        }
+
+        const [comments]: any = await db.execute(
+          "SELECT `content` FROM `comments` WHERE `card` = ? AND `content` LIKE '%/uploads/%'",
+          [note.cardId],
+        );
+
+        const message = blanked(note.message);
+        const matches = comments.filter((row: any) =>
+          message.endsWith(blanked(row.content)),
+        );
+        // Two comments with the same words and different pictures cannot be
+        // told apart; that is a guess, and this does not guess.
+        const distinct = new Set(
+          matches.map((row: any) => namesIn(row.content).join("|")),
+        );
+        if (matches.length === 0 || distinct.size !== 1) {
+          unmatched += 1;
+          continue;
+        }
+
+        const replacements = namesIn(matches[0].content);
+        if (replacements.length !== named.length) {
+          unmatched += 1;
+          continue;
+        }
+
+        let index = 0;
+        const next = String(note.message).replace(REFERENCE, (whole, name) => {
+          const replacement = replacements[index++];
+          return replacement ? whole.replace(name, replacement) : whole;
+        });
+        if (next === note.message) continue;
+
+        await db.execute(
+          "UPDATE `notifications` SET `message` = ? WHERE `id` = ?",
+          [next, note.id],
+        );
+        repaired += 1;
+      }
+
+      if (repaired || unmatched) {
+        logger.info(
+          `Repaired the pictures in ${repaired} notification(s)` +
+            (unmatched
+              ? `; ${unmatched} still name a file that is gone and could not be matched to a comment`
+              : ""),
+        );
+      }
     },
   },
 

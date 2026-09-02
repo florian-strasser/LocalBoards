@@ -102,6 +102,7 @@
     </div>
 </template>
 <script setup lang="ts">
+import { safeRedirect } from "@/utils/redirectTarget";
 import * as z from "zod";
 import { KeyRound } from "lucide-vue-next";
 
@@ -179,16 +180,23 @@ const handleLogin = async () => {
         // Validate the form data
         schema.parse(formData);
 
+        // Where the middleware said this person was heading before they were
+        // asked to sign in. Checked here rather than trusted: it arrived in the
+        // address bar, where anybody can put anything.
+        const destination = safeRedirect(route.query.redirect);
+
         const { data, error } = await $fetch(`/api/auth/sign-in`, {
             method: "POST",
             body: {
                 email: email.value,
                 password: password.value,
-                callbackURL: "/dashboard/",
+                callbackURL: destination,
             },
         });
         if (data.callbackURL) {
-            navigateTo(data.callbackURL);
+            // Checked again on the way back: what the server returns is what
+            // was sent, and there is no reason to relax about it twice.
+            navigateTo(safeRedirect(data.callbackURL));
         }
     } catch (e) {
         // Handle validation errors

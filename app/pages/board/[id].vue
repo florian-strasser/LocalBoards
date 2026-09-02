@@ -456,17 +456,13 @@ const unreadCardIds = ref(new Set());
 // Load which cards on this board still have unread notifications for this user.
 const refreshUnreadCards = async () => {
     try {
-        const res = await $fetch(`/api/data/notifications?userId=${userID}`);
-        const ids = new Set();
-        for (const n of res?.notifications || []) {
-            if (
-                !n.isRead &&
-                n.cardId &&
-                String(n.boardId) === String(boardID.value)
-            ) {
-                ids.add(n.cardId);
-            }
-        }
+        // Just the ids, and just this board's: asking for the notifications
+        // themselves meant downloading every message the account had ever
+        // received — with its actor and avatar — to end up with this handful.
+        const res = await $fetch(
+            `/api/data/notifications?unreadCards=1&boardId=${boardID.value}`,
+        );
+        const ids = new Set(res?.cardIds || []);
         // A card that's already open is being read; never highlight it.
         if (cardModal.value) ids.delete(cardModal.value);
         unreadCardIds.value = ids;

@@ -1,3 +1,5 @@
+import { safeRedirect } from "@/utils/redirectTarget";
+
 export default defineNuxtRouteMiddleware(async (to) => {
   const runtimeConfig = useRuntimeConfig();
   const allowSignup =
@@ -30,7 +32,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const { data: session } = await useFetch("/api/auth/get-session");
 
     if (!session.value) {
-      return navigateTo("/");
+      // Carry the address that was asked for, so signing in finishes the
+      // journey instead of landing on the dashboard. `fullPath` rather than
+      // `path`: a link to a card is `/board/12?card=345`, and the card is the
+      // half that matters.
+      //
+      // Encoded by hand rather than handed to the router as a query object:
+      // the router leaves a `?` inside a value alone, so `redirect=/board/12?card=345`
+      // came back apart as `redirect=/board/12` plus a stray `card=345`, and the
+      // card was lost on the way through the login form.
+      return navigateTo(`/?redirect=${encodeURIComponent(to.fullPath)}`);
     } else if (session.value.data.user.role !== "admin") {
       if (
         to.path.startsWith("/new-user") ||
@@ -47,7 +58,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const { data: session } = await useFetch("/api/auth/get-session");
 
     if (session.value) {
-      return navigateTo("/dashboard/");
+      // Already signed in and following a link that was saved while signed out:
+      // honour it rather than dropping them on the dashboard.
+      return navigateTo(safeRedirect(to.query.redirect));
     }
   }
 });

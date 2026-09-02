@@ -780,3 +780,98 @@ select.form-control,
     max-height: calc(10lh + 1rem + 2px);
     overflow-y: auto;
 }
+
+/* A board tile whose face is a photograph.
+
+   Hovering used to paint the hover colour onto the tile's body, which sits above
+   the picture — so a photo tile answered the pointer by replacing the picture
+   with a flat block of primary. What lands there now is a veil rather than a
+   colour: the picture stays visible through it, and the tile still darkens on
+   the light theme and lightens on the dark one, which is the direction a
+   coloured tile already moves.
+
+   The strength is measured against the coloured tiles rather than guessed, so
+   the two shift by about the same amount under the same gesture. A coloured tile
+   mixes 18% of the page's own extreme into its colour; 18% of black matches that
+   on the light theme, where both are multiplying a colour down.
+
+   White is not symmetrical with black, which is why the dark theme asks for
+   more. A veil over a photograph lands as `0.82 × pixel + 0.18 × 255`, so it
+   lifts a dark pixel a long way and a bright one barely at all — and a
+   photograph is mostly not dark, while the flat colour beside it might be. At
+   18% the pictures moved about a third less than their neighbours, measured
+   across the whole tile; 26% brings them level.
+
+   A `brightness()` filter cannot do this at all in the dark: multiplying
+   darkens toward black well enough, but nothing multiplied by anything reaches
+   white. */
+.group:hover .board-tile-veil {
+    background-color: rgb(0 0 0 / 18%);
+}
+@media (prefers-color-scheme: dark) {
+    .group:hover .board-tile-veil {
+        background-color: rgb(255 255 255 / 26%);
+    }
+}
+
+/* One length and easing for every tile, whichever way it answers. Without it a
+   photograph faded while a colour snapped. */
+.board-tile-face {
+    transition: background-color 0.2s ease-out;
+}
+
+/* ---------------------------------------------------------------------------
+   Dragging on a touch screen.
+   --------------------------------------------------------------------------- */
+/* A board tile is a link, and a long press on a link is already spoken for on
+   iOS: Safari opens its preview and begins selecting text. SortableJS waits
+   250ms before it calls a touch a drag — deliberately, so that swiping the
+   dashboard still scrolls it — and the browser's own long-press behaviour
+   arrives in the middle of that wait and takes the gesture away. The tile then
+   never moves at all, which is exactly what a phone showed.
+
+   A card on a board never had this problem because it is a `<button>`: none of
+   this applies to one. Saying so here is the whole fix; the drag itself was
+   working, and a touch drag driven through the browser's input pipeline
+   reordered the tiles before this rule existed. */
+[data-board-id] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* The grip that reorders whole groups asks for the gesture the moment it is
+   touched — there is no delay to wait through, because a handle is not
+   something you would swipe the page from. Telling the browser that stops it
+   scrolling the page instead of moving the group. */
+.group-drag-handle {
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* ---------------------------------------------------------------------------
+   What a dialog dims the page with.
+   --------------------------------------------------------------------------- */
+/* The page's own background rather than black.
+   
+   Safari tints its address bar with the colour of the page behind it, and this
+   instance sets no `theme-color`, so that bar is whatever the page's background
+   is. A black scrim left the two disagreeing: the page went dark while the bar
+   above it stayed pale, and on a phone that reads as the dialog having failed to
+   cover something. Dimming toward the page's own ground colour keeps the whole
+   screen — bar included — one colour, which is what the device does with every
+   other sheet it shows.
+
+   It is not a dark theme drawn light: on the dark theme the page's ground is
+   near-black, so this still dims. It only stops insisting on black when the page
+   is not. */
+.modal-backdrop {
+    background-color: color-mix(in oklab, var(--color-slate) 82%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+    .modal-backdrop {
+        background-color: color-mix(in oklab, var(--color-dark) 82%, transparent);
+    }
+}

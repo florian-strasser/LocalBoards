@@ -178,6 +178,8 @@
   "newUser": "Nový uživatel",
   "noCommentsYet": "Zatím žádné komentáře.",
   "noNotifications": "Zatím žádná oznámení",
+  "showOlder": "Zobrazit starší",
+  "loadingOlder": "Načítání…",
   "noUsersFound": "Žádní uživatelé nenalezeni",
   "notices": "Poznámky",
   "notifAssignedCard": "přiřadil(a) vám „{cardName}“",

@@ -178,6 +178,8 @@
   "newUser": "Новий користувач",
   "noCommentsYet": "Коментарів ще немає.",
   "noNotifications": "Сповіщень ще немає",
+  "showOlder": "Показати старіші",
+  "loadingOlder": "Завантаження…",
   "noUsersFound": "Користувачів не знайдено",
   "notices": "Нотатки",
   "notifAssignedCard": "призначив(-ла) вам «{cardName}»",

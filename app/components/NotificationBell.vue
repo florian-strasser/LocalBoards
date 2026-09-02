@@ -12,6 +12,7 @@
             <button
                 @click="toggleNotifications"
                 class="relative text-gray hover:text-primary-hover cursor-pointer block z-10"
+                :aria-label="$t('headerNotifications')"
                 v-tooltip="$t('headerNotifications')"
             >
                 <Bell class="size-5" />
@@ -109,6 +110,19 @@
                 >
                     {{ $t("noNotifications") }}
                 </p>
+                <!-- The rest of the history, a page at a time. Sits inside the
+                     scrolling list rather than under it, so it is where reading
+                     ends up rather than somewhere to scroll back to. -->
+                <div v-if="hasMore" class="p-3">
+                    <button
+                        type="button"
+                        @click="loadMore"
+                        :disabled="loadingMore"
+                        class="w-full rounded-lg px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
+                    >
+                        {{ loadingMore ? $t("loadingOlder") : $t("showOlder") }}
+                    </button>
+                </div>
             </div>
         </div>
         </Teleport>
@@ -129,7 +143,8 @@ const props = defineProps({
 const showNotifications = ref(false);
 // Shared with whoever marks notifications read (opening a card or a board), so
 // the unread dot goes out immediately instead of at the next page load.
-const { notifications, unreadCount, refresh } = useNotifications();
+const { notifications, unreadCount, hasMore, loadingMore, refresh, loadMore } =
+    useNotifications();
 
 const bellWrapper = ref(null);
 const panel = ref(null);

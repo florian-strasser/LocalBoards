@@ -1,10 +1,17 @@
 <template>
+    <!-- `h-dvh`, not `h-screen`: on a phone `100vh` is the viewport as it would
+         be with the browser's own bars out of the way, so the foot of a dialog
+         sat behind Safari's address bar — and which end was swallowed depended
+         on whether that bar was set to the top or the bottom of the screen. The
+         dynamic viewport is what is actually visible. The page behind is
+         scroll-locked while a dialog is open, so the bars cannot slide away
+         underneath it and change that height mid-read. -->
     <div
         :class="{ 'transform translate-x-full': !visible }"
-        class="fixed top-0 left-0 w-full h-screen z-40 flex flex-col justify-center overflow-hidden"
+        class="fixed top-0 left-0 w-full h-dvh z-40 flex flex-col justify-center overflow-hidden"
     >
         <motion.div
-            class="absolute top-0 left-0 w-full h-full bg-black/50"
+            class="modal-backdrop absolute top-0 left-0 w-full h-full"
             :style="{ opacity: backdropOpacity }"
             @click="closeModal"
         />

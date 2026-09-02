@@ -1,3 +1,60 @@
+## v0.34.0
+
+### New Features
+
+- **Signing in finishes the journey you started.** A link or a bookmark to a board, followed while signed out, sent you to the login page and then to the dashboard — leaving you to find the board again yourself, which is the one thing you had already said you wanted. The address you asked for now travels with you as `?redirect=`, and signing in takes you there. A link to a particular card arrives at that card, not merely at its board.
+
+  It also works the other way round: opening such a link while already signed in goes straight through instead of stopping at the dashboard.
+
+  The destination is checked rather than trusted, because it arrives in the address bar where anyone can put anything. Only a path on this instance is followed — `https://elsewhere.example`, the protocol-relative `//elsewhere.example`, and the backslash form some browsers read the same way are all ignored in favour of the dashboard. A login page that forwards anywhere is a phishing link that genuinely begins on your own domain, and this one does not. Nor does it send you back to a sign-in page, which would be a loop rather than a destination.
+
+### Improvements
+
+- **A dialog dims the page with the page's own colour instead of black.** Safari tints its address bar with the colour of the page behind it, and LokalBoards names no colour of its own for that, so the bar is simply whatever the page's background is. A black scrim left the two disagreeing — the page went dark while the bar above it stayed pale — and on a phone that reads as the dialog having failed to cover something rather than as a dialog. The page now fades toward its own ground colour, so the whole screen including the bar stays one colour, the way the device's own sheets behave.
+
+  It is not a dark theme drawn light. On the dark theme the page's ground is near-black, so this still dims exactly as it did; it only stops insisting on black when the page is not black. The card keeps its shadow, which is what separates it from the page in either theme.
+
+- **Hovering a board with a cover picture no longer hides the picture.** The tile answered the pointer by painting the hover colour across its face — and since that face sits above the cover, the photograph vanished behind a flat block of blue at exactly the moment it was being aimed at. Only tiles with a picture were affected; a coloured tile was already shifting its own colour, which is the behaviour that was wanted.
+
+  What lands there now is a veil rather than a colour — the picture stays visible through it and darkens on the light theme, lightens on the dark one, which is the direction a coloured tile already moves. Its strength is measured against those tiles rather than guessed at, so a photograph and a colour shift by about the same amount under the same gesture. The dark theme needs a heavier veil than the light one to get there: white over a photograph lifts its dark pixels a long way and its bright ones barely at all, and a photograph is mostly not dark.
+
+  Every tile eases into its hover over the same fifth of a second, whether it answers with a veil or with a colour. A coloured tile used to snap to its new shade the instant the pointer arrived, which read as two different components once a picture beside it was fading.
+
+- **The notification bell loads twenty-five at a time.** It used to fetch every notification an account had ever received in order to show the first handful — a list that only grows, sent in full on every open, to fill a panel that shows about six. It now asks for the newest twenty-five, with a **Show older** button at the end of the list for the next twenty-five, and so on until there are none left.
+
+  The unread dot still speaks for the whole history rather than for the page in hand: the count is made in the database, so an account with forty unread notifications shows the dot even though the panel is holding twenty-five. Paging is anchored to the last notification in hand rather than to a count of rows, so a notification arriving while someone is reading cannot shift the window and make a page repeat itself or skip one. The page size is a request, not a rule — a caller that asks for the whole list, as the board page does when working out which cards have unread changes, still gets it.
+
+- **A board asks which cards have unread changes, instead of reading every notification to work it out.** Opening a board draws a marker on the cards that have something unread on them, and the page arrived at that list by downloading the account's entire notification history — every message, every actor and avatar — and counting what was left. The question it actually has is which card ids those are, and that is what it asks now: a list of numbers instead of a history that only grows. The endpoint answers it with `unreadCards`, scoped to one board with `boardId`.
+
+### Fixes
+
+- **A tooltip no longer stands over the dialog the button just opened.** Tapping a button that carries a tooltip left the tooltip on screen, drawn above the dialog that the tap had opened. A tooltip explains the control you are pointing at, and a touch screen has nothing to point with: the tap activates the control instead of hovering it, and on iOS it also leaves the button focused — which is what the tooltip was listening for. Where the screen cannot hover, there is no tooltip now.
+
+  Pressing a control puts its tooltip away in any case, which the desktop wanted too: there the pointer stays where it was after a click, so the tooltip sat over the dialog for as long as nobody moved the mouse.
+
+- **A dialog fits the screen a phone actually has.** The bottom of a dialog sat behind Safari's address bar — or the top of it did, depending on which end of the screen that bar is set to — so the button a dialog exists for could be out of reach. A dialog was sized to `100vh`, which on a phone does not mean the visible screen: it means the screen as it would be with the browser's own bars out of the way. The dynamic viewport, which is what is left after them, is what a dialog is sized to now. Every full-height page in the app was already measured this way; the dialogs were the last thing still asking for the taller figure.
+
+- **Board tiles can be dragged on a phone.** Rearranging the dashboard, or moving a board into a group, did nothing at all on a touch screen: the tile stayed where it was. A board tile is a link, and pressing and holding a link is already spoken for on iOS — Safari opens its own preview of it and starts selecting the text. The drag waits a quarter of a second before it accepts a press as a drag, on purpose, so that swiping the dashboard still scrolls it; the browser's long-press arrives in the middle of that wait and takes the gesture. A card inside a board never had the problem because a card is a button, and none of that applies to one.
+
+  The tiles now say they want neither the preview nor the selection, which is the whole of the fix — the dragging itself was working the whole time. The grip that reorders whole groups is told the same, and additionally that a touch landing on it is a drag rather than a scroll: unlike a tile, a grip is not something anybody swipes the page from.
+
+- **Pictures posted in a comment are no longer broken in the notification bell.** A comment notification keeps its own copy of the comment, the picture's address included. The migration that moved every stored image to WebP rewrote the boards, the cards and the comments, but never the notifications — so that copy went on naming the original file, and the same migration then deleted it, having found nothing it knew about still pointing at it. The picture stayed perfectly fine on the card and showed as broken in the bell, for anything posted before the upgrade.
+
+  The conversion knows about notifications now, both when rewriting and when deciding whether a file is still wanted, which settles it for anyone who has not upgraded yet. For those who have, the damage is already done and the old name is all that is left, so a second migration repairs it from the comment: a notification naming a file that is no longer there is matched against the comments on its own card, and the one whose text is identical once the addresses are blanked out says what the picture is called now. Where nothing matches — a comment since deleted, or two comments alike in everything but their pictures — the message is left exactly as it was rather than guessed at.
+
+### Documentation
+
+- **Every screenshot retaken.** The guide's fifteen, the README's, and the homepage's heroes in each of their widths — one demo run, so they are all the same build on the same day. What is different in them this time is mostly the dialogs: the page behind one now fades toward its own colour rather than to black, which changes every picture a dialog appears in, the README's among them.
+
+- **The notifications endpoint is in the API reference.** It was reachable with an API key and documented nowhere, and it has just grown parameters worth knowing about. The page covers reading the list whole or a page at a time with `limit` and `before`, what `hasMore` and `unreadCount` mean and why the count is not taken from the page in hand, the `unreadCards` answer and its `boardId`, and the three ways to mark something read — each with an example in every language the reference offers.
+
+- **The README says which Node and npm to use.** Running the application requires Node.js 22 and npm 11; the lockfile is generated with npm 11, and npm 10 refuses it.
+
+### Contributors
+
+- Florian Strasser ([@florian-strasser](https://github.com/florian-strasser))
+- WebBrain ([@webbrain-one](https://github.com/webbrain-one))
+
 ## v0.33.3
 
 ### Improvements

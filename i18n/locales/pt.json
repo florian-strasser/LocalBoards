@@ -178,6 +178,8 @@
   "newUser": "Novo usuário",
   "noCommentsYet": "Ainda não há comentários.",
   "noNotifications": "Ainda não há notificações",
+  "showOlder": "Mostrar mais antigas",
+  "loadingOlder": "Carregando…",
   "noUsersFound": "Nenhum usuário encontrado",
   "notices": "Notas",
   "notifAssignedCard": "atribuiu “{cardName}” a você",

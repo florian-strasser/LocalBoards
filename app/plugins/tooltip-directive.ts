@@ -51,8 +51,17 @@ export default defineNuxtPlugin((nuxtApp) => {
         }
       };
 
+      // A tooltip explains the control you are pointing at, and a screen with no
+      // pointer has nothing to point with: a tap activates the control instead
+      // of hovering it. On iOS that tap also leaves the button focused, and this
+      // shows on focus — so the tooltip appeared at the moment of the tap and
+      // then stood there, drawn at `z-100` over whatever the tap had just
+      // opened. Where there is no hover there is no tooltip.
+      const canHover = () =>
+        window.matchMedia?.("(hover: hover)")?.matches ?? true;
+
       const show = () => {
-        if (!tooltip.textContent) return;
+        if (!tooltip.textContent || !canHover()) return;
         position();
         tooltip.style.opacity = "1";
       };
@@ -66,6 +75,12 @@ export default defineNuxtPlugin((nuxtApp) => {
       el.addEventListener("mouseleave", hide);
       el.addEventListener("focus", show);
       el.addEventListener("blur", hide);
+      // Pressing the control answers the question the tooltip was asking, so it
+      // has no business staying. Without this it lingered on the desktop too,
+      // over the dialog the press had just opened, for as long as the pointer
+      // happened to rest on the button.
+      el.addEventListener("pointerdown", hide);
+      el.addEventListener("click", hide);
       // A fixed tooltip would otherwise linger where the element used to be, so
       // hide it as soon as anything scrolls; the next hover repositions it.
       window.addEventListener("scroll", hide, { passive: true, capture: true });
@@ -84,6 +99,10 @@ export default defineNuxtPlugin((nuxtApp) => {
       if (el._tooltipHide) el.removeEventListener("mouseleave", el._tooltipHide);
       if (el._tooltipShow) el.removeEventListener("focus", el._tooltipShow);
       if (el._tooltipHide) el.removeEventListener("blur", el._tooltipHide);
+      if (el._tooltipHide) {
+        el.removeEventListener("pointerdown", el._tooltipHide);
+        el.removeEventListener("click", el._tooltipHide);
+      }
       if (el._tooltipEl?.parentNode)
         el._tooltipEl.parentNode.removeChild(el._tooltipEl);
       el._tooltipEl = null;
