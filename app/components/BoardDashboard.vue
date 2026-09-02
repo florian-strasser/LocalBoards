@@ -532,15 +532,27 @@ const deleteBoardModal = ref(false);
 const leaveBoardModal = ref(false);
 const invitations = ref<any[]>([]);
 
-const openSettings = (id: number) => {
+// These dialogs sit behind `v-if="activeBoard"`, so the first use of a tile's
+// menu creates one and opens it in the same tick — and a dialog that is already
+// open when it is created shows itself without animating. (That unanimated path
+// is deliberate, for a card opened straight from a URL: there is nothing to
+// animate from when the page arrives with the dialog already showing.) Naming
+// the board first and opening on the next tick gives it a closed state to
+// animate out of. Only the first one ever looked wrong, because `activeBoard`
+// stays set afterwards and the dialogs are already there for the second.
+const openForBoard = async (id: number, flag: { value: boolean }) => {
     activeBoardId.value = id;
-    settingsModal.value = true;
+    await nextTick();
+    flag.value = true;
 };
 
+const openSettings = (id: number) => openForBoard(id, settingsModal);
+
 // The invite dialog is given the board's current invitations, the same list the
-// board page hands it, so it opens showing who is already on the board.
+// board page hands it, so it opens showing who is already on the board. They are
+// fetched before it is named, so the dialog is created with them already in hand
+// rather than filling in after it is on screen.
 const openInvite = async (id: number) => {
-    activeBoardId.value = id;
     invitations.value = [];
     try {
         const data: any = await $fetch(
@@ -550,18 +562,12 @@ const openInvite = async (id: number) => {
     } catch (err) {
         console.error("Could not load the board's members:", err);
     }
-    inviteModal.value = true;
+    await openForBoard(id, inviteModal);
 };
 
-const askDeleteBoard = (id: number) => {
-    activeBoardId.value = id;
-    deleteBoardModal.value = true;
-};
+const askDeleteBoard = (id: number) => openForBoard(id, deleteBoardModal);
 
-const askLeaveBoard = (id: number) => {
-    activeBoardId.value = id;
-    leaveBoardModal.value = true;
-};
+const askLeaveBoard = (id: number) => openForBoard(id, leaveBoardModal);
 
 // A board's own row, updated in place. The tile re-renders from it, so a rename
 // or a new colour shows without a round trip.

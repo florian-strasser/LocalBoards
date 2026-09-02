@@ -1,3 +1,13 @@
+## v0.34.1
+
+### Fixes
+
+- **The first dialog opened from a tile's menu animates like every one after it.** It appeared all at once, while the second and every subsequent one rose and faded in properly. These dialogs are only built once a board has been named, so the first use of a menu created the dialog and opened it in the same breath — and a dialog that already stands open when it is created has nothing to animate out of, so it simply showed itself. That immediate path is there on purpose, for a card opened straight from a link, where the page arrives with the dialog already up. Naming the board first and opening a moment later gives it a closed state to start from.
+
+- **The permissions dialog lists a board's members when it is opened from the dashboard.** Reached from a tile's menu it showed only the invite form, as though nobody had ever been given access — while the same dialog, opened from the board itself, listed everyone. Nothing was wrong with the board or the invitations; the dialog was simply asked to draw before the answer came back. It took a copy of the list at the moment it was created, the dashboard creates it the instant a tile's menu is used, and the members are fetched after that. On a board page they are already in hand, which is why only one of the two ever looked broken.
+
+  The dialog follows the list now instead of copying it once, and the dashboard waits for the members before opening it, so it neither starts empty nor fills in a moment later.
+
 ## v0.34.0
 
 ### New Features

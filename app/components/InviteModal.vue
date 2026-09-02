@@ -188,8 +188,22 @@ const props = defineProps({
     invitations: Array,
 });
 
-// Convert the invitations prop to a ref
-const invitations = ref(props.invitations || []);
+// A local copy, because this list is edited here: inviting somebody adds a row
+// and removing one takes it away, before the parent has re-read anything.
+//
+// It follows the prop rather than being copied from it once. The dashboard
+// mounts this dialog the moment a tile's menu is used and fetches the board's
+// members afterwards, so at setup the prop is still the empty array it was
+// initialised with — and a one-time copy of that stayed empty, which is why the
+// same dialog listed nobody there while listing everybody on the board page,
+// where the members are already in hand before it opens.
+const invitations = ref([...(props.invitations || [])]);
+watch(
+    () => props.invitations,
+    (value) => {
+        invitations.value = [...(value || [])];
+    },
+);
 
 // An invitation can outlive the account it names — a deleted user leaves the
 // row behind, and the join then returns no name. Reading `.substring` off that
