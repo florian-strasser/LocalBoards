@@ -1,3 +1,13 @@
+## v0.34.2
+
+### Security
+
+- **Tiptap and fast-uri updated, and the editor's packages brought onto one version.** Two advisories were raised against dependencies LokalBoards does not name directly. `@tiptap/core` before 3.30.4 turns an own `__proto__` key into inherited executable DOM attributes through its `mergeAttributes()` helper (moderate, CVSS 6.4); `fast-uri` before 3.1.6 can be confused about which host a scheme-relative reference points at, because it only canonicalises a host when the input carries an explicit scheme (high, CVSS 7.5).
+
+  The editor's packages were held apart by exact peer dependencies — the starter kit moved while the emoji, image and file-handler extensions stayed behind, which would have left two copies of `@tiptap/core` in the same editor. They are all on 3.31.0 now, and there is one copy. `fast-uri` was pinned by an override of this project's own, which is what kept it on the affected version; the override now asks for the patched one.
+
+- **A third advisory closed while the file was open.** `qs`, reached through the MCP toolkit's copy of Express, could be made to bypass its array limit or to spend the server's time on an attacker's input (moderate). It was not reported by Dependabot alongside the other two, but it was fixable in the same breath. `npm audit` reports nothing outstanding now.
+
 ## v0.34.1
 
 ### Fixes
