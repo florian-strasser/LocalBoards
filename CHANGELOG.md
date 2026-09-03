@@ -1,3 +1,15 @@
+## v0.35.0
+
+### Improvements
+
+- **A kanban board's areas snap into place as it scrolls.** Scrolling sideways used to leave an area sitting anywhere — half off the edge of the window as often as not. It now settles on one at a time, and always at the same inset the header's own logo sits at, so the area you land on lines up with the rest of the page rather than with wherever the scroll happened to stop.
+
+  Sortable's own drag-to-scroll — holding a card or an area near the edge of the screen to reach one further along — nudges the scroll position forward in small steps, and a snap that resolved on every one of those nudges would have undone each step as soon as it was made, leaving the drag stuck. Snapping is suspended for the length of any drag and returns the moment it ends, so reordering across the edge of the screen still works, and the board settles cleanly on an area once you let go.
+
+- **A link in a card or a comment opens in a new tab.** Following one used to replace the board you were reading it from — often mid-edit, with a dialog open — and leave the back button as the only way home. Links now open beside the board instead of on top of it. It holds for every link however it was written: typed in the editor, written as Markdown, or pasted as a bare address and turned into a link on the way to the screen.
+
+  They also carry `rel="noopener noreferrer"`. A page opened in a new tab is otherwise handed a reference to the tab that opened it and can quietly send that tab somewhere else — a convincing way to replace a board with a page asking for its password — and the address of a self-hosted instance is nobody else's business either. Current browsers assume the first half of that; older ones do not.
+
 ## v0.34.2
 
 ### Security

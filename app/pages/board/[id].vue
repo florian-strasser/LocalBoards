@@ -103,7 +103,15 @@
         <div
             ref="boardScroller"
             class="@container w-full grow min-h-0 overflow-x-auto overflow-y-hidden bg-slate dark:bg-dark"
-            :class="{ 'pb-10': boardStyle !== 'kanban' }"
+            :class="{
+                'pb-10': boardStyle !== 'kanban',
+                // `scroll-pl-8` matches the areas wrapper's own `px-8`: without
+                // it a snapped area's left edge lands flush with the scroll
+                // container's edge rather than at the same 2rem inset as
+                // everything else on the page, including the header's logo.
+                'snap-x snap-mandatory scroll-pl-8':
+                    boardStyle === 'kanban' && !areaSnapSuspended,
+            }"
             :style="
                 anyModalOpen
                     ? {
@@ -138,7 +146,7 @@
                         :key="area.id"
                         class="p-4 space-y-1 rounded-lg bg-white dark:bg-slate"
                         :class="{
-                            'flex max-h-full min-h-0 w-92 max-w-[calc(100cqw-4rem)] shrink-0 grow-0 flex-col':
+                            'flex max-h-full min-h-0 w-92 max-w-[calc(100cqw-4rem)] shrink-0 grow-0 flex-col snap-start':
                                 boardStyle == 'kanban',
                             'w-full': boardStyle == 'todo',
                         }"
@@ -217,7 +225,7 @@
                             // Always a column's width, open or not: sizing it
                             // to its content while idle made the whole board jump
                             // sideways the moment the form appeared.
-                            'w-92 max-w-[calc(100cqw-4rem)] shrink-0 grow-0':
+                            'w-92 max-w-[calc(100cqw-4rem)] shrink-0 grow-0 snap-start':
                                 boardStyle == 'kanban',
                             'w-full': boardStyle == 'todo',
                         }"
@@ -1077,6 +1085,15 @@ const deleteBoard = async () => {
 // `data-area-id`, so the id is read from whichever ancestor has it.
 const areaIdOf = (el) => el?.closest?.("[data-area-id]")?.dataset?.areaId;
 
+// SortableJS reaches an area or a card that has scrolled out of view by nudging
+// `scrollLeft` in small steps while the pointer holds near an edge — and a
+// mandatory snap re-settles the container to its nearest point on every one of
+// those writes, which is the current point: the nudges never add up to
+// anything and the drag looks stuck. Turning the snap off for the length of a
+// drag is what lets that autoscroll actually get anywhere; it is back the
+// moment the drag ends, in time for the next deliberate scroll to snap again.
+const areaSnapSuspended = ref(false);
+
 
 const initSort = () => {
     if (areasWrapper.value) {
@@ -1093,6 +1110,9 @@ const initSort = () => {
                 // has exactly one of those.
                 const el = (scroller.firstElementChild as HTMLElement) ?? scroller;
                 const sortChild = Sortable.create(el, {
+                    onStart: () => {
+                        areaSnapSuspended.value = true;
+                    },
                     group: "cards",
                     // A touch that starts on a card should be allowed to
                     // become a scroll. Without a delay SortableJS claims the
@@ -1105,6 +1125,7 @@ const initSort = () => {
                     delayOnTouchOnly: true,
                     touchStartThreshold: 5,
                     onEnd: async (event) => {
+                        areaSnapSuspended.value = false;
                         if (event.from !== event.to) {
                             // Card moved to a different area
                             onboarding.advance("move-card");
@@ -1167,6 +1188,9 @@ const initSort = () => {
         });
         if (writeAccess.value) {
             const sortable = Sortable.create(areasWrapper.value, {
+                onStart: () => {
+                    areaSnapSuspended.value = true;
+                },
                 group: "areas",
                 // A touch that starts on a card should be allowed to
                 // become a scroll. Without a delay SortableJS claims the
@@ -1184,6 +1208,7 @@ const initSort = () => {
                 filter: "input, textarea, [contenteditable]",
                 preventOnFilter: false,
                 onEnd: async (event) => {
+                    areaSnapSuspended.value = false;
                     if (
                         event.oldIndex !== undefined &&
                         event.newIndex !== undefined

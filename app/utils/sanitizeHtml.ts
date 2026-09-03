@@ -72,6 +72,28 @@ const ALLOWED_ATTR = [
   "data-name",
 ];
 
+// A link in a card or a comment leaves for somewhere else, and the board it was
+// written on is a working page — often mid-edit, with a dialog open. Following a
+// link in the same tab throws that away and makes the back button the only way
+// home. Every link opens in a new tab instead.
+//
+// `rel` is not decoration: a page opened with `target="_blank"` is handed a
+// reference to the tab that opened it and can navigate that tab elsewhere — a
+// convincing way to replace a board with a page asking for its password.
+// `noopener` withholds the reference and `noreferrer` also stops this
+// instance's address being passed on, which for a self-hosted board is nobody
+// else's business. Current browsers imply `noopener` here; older ones do not.
+//
+// Set after sanitising rather than in the markup, so it holds for every link
+// however the content was authored — typed in the editor, written as Markdown,
+// or pasted as a bare address and turned into a link by the renderer.
+DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+  if (node.nodeName === "A" && (node as Element).hasAttribute("href")) {
+    (node as Element).setAttribute("target", "_blank");
+    (node as Element).setAttribute("rel", "noopener noreferrer");
+  }
+});
+
 export function sanitizeHtml(dirty: string | null | undefined): string {
   if (!dirty) return "";
   return DOMPurify.sanitize(dirty, { ALLOWED_TAGS, ALLOWED_ATTR });

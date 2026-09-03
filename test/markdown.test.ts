@@ -4,6 +4,7 @@ import {
   renderMarkdown,
   htmlToMarkdown,
 } from "../app/utils/markdown";
+import { sanitizeHtml } from "../app/utils/sanitizeHtml";
 
 // The legacy TipTap HTML the migration must convert (mirrors seeded content).
 const legacyHtml =
@@ -94,5 +95,37 @@ describe("round-trip stability", () => {
     const html = renderMarkdown("- [x] done\n\n[link](https://x.com)");
     expect(html).toContain('data-type="taskList"');
     expect(html).toContain('href="https://x.com"');
+  });
+});
+
+describe("links in rendered content", () => {
+  it("opens a Markdown link in a new tab", () => {
+    const html = renderMarkdown("See [the docs](https://example.com/guide).");
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noopener noreferrer"');
+  });
+
+  it("does the same for a bare address the renderer linkifies", () => {
+    const html = renderMarkdown("See https://example.com/guide for details.");
+    expect(html).toContain("<a ");
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noopener noreferrer"');
+  });
+
+  // The reason `rel` is there: without `noopener` the opened page is handed a
+  // reference to this tab and can navigate it somewhere else.
+  it("replaces a rel the author supplied rather than trusting it", () => {
+    const html = sanitizeHtml('<p><a href="https://example.com" rel="opener">x</a></p>');
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).not.toContain('rel="opener"');
+  });
+
+  it("leaves an anchor with no href alone", () => {
+    expect(sanitizeHtml("<p><a>not a link</a></p>")).not.toContain("target=");
+  });
+
+  it("still refuses a javascript: url", () => {
+    const html = sanitizeHtml('<p><a href="javascript:alert(1)">x</a></p>');
+    expect(html).not.toContain("javascript:");
   });
 });
